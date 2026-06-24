@@ -596,7 +596,24 @@ function expandCountForeach(text: string): { text: string; changed: boolean } {
 
 // ── {iv} helper ──────────────────────────────────────────────────────────────
 
-/** Walk back up to 50 messages in the channel to find the most recent attachment. */
+/**
+ * Extract all media URLs from a message's embeds (video > image > thumbnail).
+ * Returns direct URLs; Discord CDN replacements are not needed for embed URLs.
+ */
+function embedMediaUrls(msg: Message): string[] {
+  const urls: string[] = [];
+  for (const embed of msg.embeds) {
+    const src =
+      embed.video?.proxyURL ?? embed.video?.url ??
+      embed.image?.proxyURL ?? embed.image?.url ??
+      embed.thumbnail?.proxyURL ?? embed.thumbnail?.url ??
+      null;
+    if (src) urls.push(src);
+  }
+  return urls;
+}
+
+/** Walk back up to 50 messages in the channel to find the most recent attachment or embed. */
 async function findLastChannelAttachment(message: Message): Promise<string> {
   const channel = message.channel;
   if (!("messages" in channel)) return "";
@@ -605,10 +622,8 @@ async function findLastChannelAttachment(message: Message): Promise<string> {
     for (const [, msg] of fetched) {
       const att = [...msg.attachments.values()][0];
       if (att?.url) return toCdnUrl(att.url);
-      for (const embed of msg.embeds) {
-        const src = embed.video?.url ?? embed.image?.url ?? null;
-        if (src) return src;
-      }
+      const embedSrc = embedMediaUrls(msg)[0];
+      if (embedSrc) return embedSrc;
     }
   } catch { /* fall through */ }
   return "";
@@ -618,33 +633,41 @@ export async function resolveIv(message: Message): Promise<string> {
   // 1. Attachment on this message
   const allAttachments = [...message.attachments.values()];
   if (allAttachments[0]?.url) return toCdnUrl(allAttachments[0].url);
-  // 2. Replied-to message attachment
+  // 2. Embed on this message
+  const ownEmbedSrc = embedMediaUrls(message)[0];
+  if (ownEmbedSrc) return ownEmbedSrc;
+  // 3. Replied-to message: attachment then embed
   if (message.reference?.messageId) {
     try {
       const refMsg = await message.channel.messages.fetch(message.reference.messageId);
       const refAttach = [...refMsg.attachments.values()][0] ?? null;
       if (refAttach?.url) return toCdnUrl(refAttach.url);
+      const refEmbedSrc = embedMediaUrls(refMsg)[0];
+      if (refEmbedSrc) return refEmbedSrc;
     } catch { /* fall through */ }
   }
-  // 3. Last attachment in channel history
+  // 4. Last attachment or embed in channel history
   return findLastChannelAttachment(message);
 }
 
-/** Resolve ALL attachment URLs: current message → reply → channel history fallback for first slot. */
+/** Resolve ALL media URLs: current message → reply → channel history fallback. Includes embeds. */
 export async function resolveAllIvUrls(message: Message): Promise<string[]> {
   const urls: string[] = [];
   for (const a of message.attachments.values()) {
     if (a.url) urls.push(toCdnUrl(a.url));
   }
+  for (const u of embedMediaUrls(message)) urls.push(u);
+
   if (message.reference?.messageId) {
     try {
       const refMsg = await message.channel.messages.fetch(message.reference.messageId);
       for (const a of refMsg.attachments.values()) {
         if (a.url) urls.push(toCdnUrl(a.url));
       }
+      for (const u of embedMediaUrls(refMsg)) urls.push(u);
     } catch { /* fall through */ }
   }
-  // If nothing found yet, fall back to last attachment in channel history
+  // If nothing found yet, fall back to last attachment/embed in channel history
   if (urls.length === 0) {
     const fallback = await findLastChannelAttachment(message);
     if (fallback) urls.push(fallback);
