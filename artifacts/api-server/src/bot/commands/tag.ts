@@ -1194,12 +1194,6 @@ export async function processTagscript(
           replacement = evalInVm(content.trim());
           break;
         }
-        case "eval": {
-          const evalResult = await processTagscript(content, args, message, rawArgs);
-          if (typeof evalResult !== "string") { mediaResult = evalResult; replacement = ""; }
-          else replacement = evalResult;
-          break;
-        }
         case "set": {
           const pipeIdx = content.indexOf("|");
           if (pipeIdx !== -1) {
@@ -1652,6 +1646,12 @@ export async function processTagscript(
           const ihtxR = await runShellWithFiles(scriptLines2.join("\n"));
           if (typeof ihtxR === "string") cbReplacement = ihtxR;
           else { mediaResult = ihtxR; cbReplacement = ""; }
+          break;
+        }
+        case "eval": {
+          const evalCbResult = await processTagscript(cbContent, args, message, rawArgs);
+          if (typeof evalCbResult !== "string") { mediaResult = evalCbResult; cbReplacement = ""; }
+          else cbReplacement = evalCbResult;
           break;
         }
         case "runcodetxt": {
