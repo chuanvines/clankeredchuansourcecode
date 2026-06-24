@@ -423,7 +423,7 @@ function evalCondition(condition: string): boolean {
 }
 
 /** Matches the innermost tag — content must not contain { or }. */
-const INNERMOST_TAG_RE = /\{(arg|math|eval|imagescript|iscript|attach|js|ts|py|sh|runcodetxt|ihtx|ihtxffmpeg|veb|set|get|if|replace|upper|lower|len|choose|or|repeat|range|foreach|substring|indexof|tag):([^{}]*)\}/;
+const INNERMOST_TAG_RE = /\{(arg|math|imagescript|iscript|attach|js|ts|py|sh|runcodetxt|ihtx|ihtxffmpeg|veb|set|get|if|replace|upper|lower|len|choose|or|repeat|range|foreach|substring|indexof|tag):([^{}]*)\}/;
 
 /**
  * Expand block-style {if:cond}...{elif:cond}...{else}...{/if} constructs.
@@ -520,7 +520,7 @@ function expandBlockIf(text: string): { text: string; changed: boolean } {
  * For these we use balanced-brace extraction instead of INNERMOST_TAG_RE so that
  * inner braces (e.g. ${var}, awk BEGIN{...}, JS objects) don't break parsing.
  */
-const CODE_BLOCK_TAGS = new Set(["sh", "js", "ts", "py", "imagescript", "iscript", "ihtxffmpeg", "runcodetxt", "attach"]);
+const CODE_BLOCK_TAGS = new Set(["sh", "js", "ts", "py", "eval", "imagescript", "iscript", "ihtxffmpeg", "runcodetxt", "attach"]);
 
 /**
  * Find the first {tagName:...} block in `text` using balanced-brace counting.
@@ -1172,7 +1172,14 @@ export async function processTagscript(
           break;
         }
         case "eval": {
-          replacement = evalInVm(content.trim());
+          const evalUrls = await getAllIvUrls();
+          if (evalUrls.length > 0) {
+            const { env: evalEnv, cleanup: evalCleanup } = await downloadAttachmentsToEnv(evalUrls);
+            try { replacement = await runSubprocess("node", ["--input-type=module"], content, evalEnv); }
+            finally { await evalCleanup(); }
+          } else {
+            replacement = await runSubprocess("node", ["--input-type=module"], content);
+          }
           break;
         }
         case "set": {
@@ -2105,7 +2112,7 @@ export async function handleTagCommand(
       "{foreach:N|template}      — repeat template N times (tagscript in template runs each iteration)",
       "  e.g. {set:#|0}{foreach:3|{set:#|{math:{get:#}+1}}[a{get:#}]} -> [a1][a2][a3]",
       "{math:<expr>}             — evaluate math  e.g. {math:7*2} -> 14",
-      "{eval:<code>}             — evaluate a JS expression in a safe VM",
+      "{eval:<code>}             — run Node.js code, returns stdout (same as {js:} but uses balanced-brace parsing)",
       "{imagescript:<code>}      — media scripting language: load + ihtx effects + multipitch + speed",
       "  load <url> <var>        — download URL into variable",
       "  copy <var> <dest>       — copy a variable",
