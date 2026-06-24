@@ -520,7 +520,7 @@ function expandBlockIf(text: string): { text: string; changed: boolean } {
  * For these we use balanced-brace extraction instead of INNERMOST_TAG_RE so that
  * inner braces (e.g. ${var}, awk BEGIN{...}, JS objects) don't break parsing.
  */
-const CODE_BLOCK_TAGS = new Set(["sh", "js", "ts", "py", "eval", "imagescript", "iscript", "ihtxffmpeg", "runcodetxt", "attach"]);
+const CODE_BLOCK_TAGS = new Set(["sh", "js", "ts", "py", "eval", "ignore", "imagescript", "iscript", "ihtxffmpeg", "runcodetxt", "attach"]);
 
 /**
  * Find the first {tagName:...} block in `text` using balanced-brace counting.
@@ -1648,7 +1648,8 @@ export async function processTagscript(
           else { mediaResult = ihtxR; cbReplacement = ""; }
           break;
         }
-        case "eval": {
+        case "eval":
+        case "ignore": {
           const evalCbResult = await processTagscript(cbContent, args, message, rawArgs);
           if (typeof evalCbResult !== "string") { mediaResult = evalCbResult; cbReplacement = ""; }
           else cbReplacement = evalCbResult;
