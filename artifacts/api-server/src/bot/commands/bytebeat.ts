@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdtemp, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import vm from "node:vm";
 import { logger } from "../lib/logger.js";
 import { uploadToCatbox } from "./catboxupload.js";
 
@@ -26,20 +27,63 @@ const MODE_ALIASES: Record<string, BytebeatMode> = {
   f32:       "float",
 };
 
-const BLOCKED_IDENTIFIERS =
-  /\b(process|require|import|fetch|eval|Function|globalThis|global|__dirname|__filename|module|exports|setTimeout|setInterval|clearTimeout|clearInterval|Buffer|fs|child_process|XMLHttpRequest|WebSocket)\b/;
+// ── TagScript-compatible math sandbox (mirrors tag.ts MATH_SANDBOX + prepMath) ──
 
+function _gcd(a: number, b: number): number {
+  a = Math.abs(Math.round(a)); b = Math.abs(Math.round(b));
+  while (b) { const tmp = b; b = a % b; a = tmp; }
+  return a;
+}
+
+const BYTEBEAT_SANDBOX = {
+  e: Math.E, pi: Math.PI, PI: Math.PI, tau: 2 * Math.PI,
+  phi: (1 + Math.sqrt(5)) / 2,
+  Math,
+  abs: Math.abs, sqrt: Math.sqrt, cbrt: Math.cbrt,
+  pow: Math.pow, exp: Math.exp, sign: Math.sign,
+  floor: Math.floor, ceil: Math.ceil, round: Math.round,
+  min: Math.min, max: Math.max,
+  log: Math.log10, log2: Math.log2, ln: Math.log,
+  sin: Math.sin, cos: Math.cos, tan: Math.tan,
+  asin: Math.asin, acos: Math.acos, atan: Math.atan, atan2: Math.atan2,
+  sinh: Math.sinh, cosh: Math.cosh, tanh: Math.tanh,
+  asinh: Math.asinh, acosh: Math.acosh, atanh: Math.atanh,
+  gcd: _gcd,
+  mod: (a: number, b: number) => a % b,
+  parseInt, parseFloat, isNaN, isFinite,
+};
+
+/** Mirror of tag.ts prepMath — replaces ^ with ** so users can write 2^8. */
+function prepMath(expr: string): string {
+  return expr.replace(/\^/g, "**");
+}
+
+/**
+ * Compile the bytebeat expression into a callable function using the same
+ * vm sandbox as TagScript's {eval:} block.  Compiled once, called per sample.
+ */
 function buildEvaluator(code: string): (t: number) => number {
-  if (BLOCKED_IDENTIFIERS.test(code)) {
-    throw new Error("Code contains disallowed identifiers.");
+  const prepared = prepMath(code.trim());
+  if (!prepared) throw new Error("Empty expression.");
+
+  // Wrap in a function that receives `t` so the vm context is only created once.
+  const script = new vm.Script(`(function(t){ return (${prepared}); })`);
+  const ctx = vm.createContext({ ...BYTEBEAT_SANDBOX });
+
+  let fn: (t: number) => unknown;
+  try {
+    fn = script.runInContext(ctx, { timeout: 1000 }) as (t: number) => unknown;
+  } catch (err) {
+    throw new Error(err instanceof Error ? err.message : String(err));
   }
-  const fn = new Function("t", "Math", `"use strict"; return (${code});`) as (
-    t: number,
-    math: typeof Math,
-  ) => number;
+
   return (t: number) => {
-    const result = fn(t, Math);
-    return typeof result === "number" ? result : 0;
+    try {
+      const v = fn(t);
+      return typeof v === "number" ? v : 0;
+    } catch {
+      return 0;
+    }
   };
 }
 
@@ -133,8 +177,8 @@ export async function runBytebeat(message: Message): Promise<void> {
       "**Modes:** `u8` (classic unsigned) · `s8` (signed) · `float` (floatbeat, values -1..1)\n" +
       "**Examples:**\n" +
       "• `&bytebeat u8 8000 10 t*(t>>5|t>>8)`\n" +
-      "• `&bytebeat float 44100 5 Math.sin(t/10)*Math.sin(t/700)`\n" +
-      "`t` = sample index · `Math.*` functions available\n" +
+      "• `&bytebeat float 44100 5 sin(t/10)*sin(t/700)`\n" +
+      "`t` = sample index · same math functions as `{eval:}` (sin, cos, floor, ^, etc.)\n" +
       `Max duration: **${MAX_DURATION}s** · Sample rate: **${MIN_SAMPLERATE}–${MAX_SAMPLERATE} Hz**`,
     );
     return;
