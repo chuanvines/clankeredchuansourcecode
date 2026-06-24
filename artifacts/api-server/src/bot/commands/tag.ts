@@ -1172,14 +1172,9 @@ export async function processTagscript(
           break;
         }
         case "eval": {
-          const evalUrls = await getAllIvUrls();
-          if (evalUrls.length > 0) {
-            const { env: evalEnv, cleanup: evalCleanup } = await downloadAttachmentsToEnv(evalUrls);
-            try { replacement = await runSubprocess("node", ["--input-type=module"], content, evalEnv); }
-            finally { await evalCleanup(); }
-          } else {
-            replacement = await runSubprocess("node", ["--input-type=module"], content);
-          }
+          const evalResult = await processTagscript(content, args, message, rawArgs);
+          if (typeof evalResult !== "string") { mediaResult = evalResult; replacement = ""; }
+          else replacement = evalResult;
           break;
         }
         case "set": {
@@ -2112,7 +2107,7 @@ export async function handleTagCommand(
       "{foreach:N|template}      — repeat template N times (tagscript in template runs each iteration)",
       "  e.g. {set:#|0}{foreach:3|{set:#|{math:{get:#}+1}}[a{get:#}]} -> [a1][a2][a3]",
       "{math:<expr>}             — evaluate math  e.g. {math:7*2} -> 14",
-      "{eval:<code>}             — run Node.js code, returns stdout (same as {js:} but uses balanced-brace parsing)",
+      "{eval:<tagscript>}        — evaluate content as tagscript and insert the result  e.g. {eval:{arg:0}}",
       "{imagescript:<code>}      — media scripting language: load + ihtx effects + multipitch + speed",
       "  load <url> <var>        — download URL into variable",
       "  copy <var> <dest>       — copy a variable",
