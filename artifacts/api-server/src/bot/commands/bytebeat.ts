@@ -1,5 +1,8 @@
 import { Message, AttachmentBuilder } from "discord.js";
 import { spawn } from "node:child_process";
+import { mkdtemp, writeFile, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { logger } from "../lib/logger.js";
 import { uploadToCatbox } from "./catboxupload.js";
 
@@ -70,44 +73,54 @@ function generatePcm(
   return buf;
 }
 
-function pcmToWav(
-  pcmBuf: Buffer,
-  mode: BytebeatMode,
-  sampleRate: number,
-): Promise<Buffer> {
+function spawnFfmpeg(args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
-    const ffmpegFormat =
-      mode === "float" ? "f32le" : mode === "u8" ? "u8" : "s8";
-
-    const args = [
-      "-y",
-      "-f", ffmpegFormat,
-      "-ar", String(sampleRate),
-      "-ac", "1",
-      "-i", "pipe:0",
-      "-c:a", "pcm_s16le",
-      "-f", "wav",
-      "pipe:1",
-    ];
-
-    const proc = spawn("ffmpeg", args, { stdio: ["pipe", "pipe", "pipe"] });
-    const chunks: Buffer[] = [];
+    const proc = spawn("ffmpeg", args, { stdio: ["ignore", "pipe", "pipe"] });
     const errChunks: Buffer[] = [];
-
-    proc.stdout.on("data", (d: Buffer) => chunks.push(d));
     proc.stderr.on("data", (d: Buffer) => errChunks.push(d));
     proc.on("close", (code) => {
       if (code === 0) {
-        resolve(Buffer.concat(chunks));
+        resolve();
       } else {
         const stderr = Buffer.concat(errChunks).toString().slice(-800);
         reject(new Error(`FFmpeg exited ${code}: ${stderr}`));
       }
     });
     proc.on("error", reject);
-    proc.stdin.write(pcmBuf);
-    proc.stdin.end();
   });
+}
+
+async function pcmToWaveformVideo(
+  pcmBuf: Buffer,
+  mode: BytebeatMode,
+  sampleRate: number,
+  tmpDir: string,
+): Promise<Buffer> {
+  const ffmpegFormat =
+    mode === "float" ? "f32le" : mode === "u8" ? "u8" : "s8";
+
+  const rawPath = join(tmpDir, "input.raw");
+  const outPath = join(tmpDir, "bytebeat.mp4");
+
+  await writeFile(rawPath, pcmBuf);
+
+  await spawnFfmpeg([
+    "-y",
+    "-f", ffmpegFormat,
+    "-ar", String(sampleRate),
+    "-ac", "1",
+    "-i", rawPath,
+    "-filter_complex",
+    "[0:a]showwaves=s=640x360:mode=line:colors=lime|white:rate=60[v]",
+    "-map", "[v]",
+    "-map", "0:a",
+    "-c:v", "libx264", "-preset", "fast", "-crf", "22",
+    "-c:a", "aac", "-b:a", "128k",
+    "-movflags", "+faststart",
+    outPath,
+  ]);
+
+  return readFile(outPath);
 }
 
 export async function runBytebeat(message: Message): Promise<void> {
@@ -183,22 +196,23 @@ export async function runBytebeat(message: Message): Promise<void> {
     );
   } catch { return; }
 
+  const tmpDir = await mkdtemp(join(tmpdir(), "bytebeat-"));
   try {
     const pcmBuf = generatePcm(evaluator, mode, sampleRate, duration);
-    const wavBuf = await pcmToWav(pcmBuf, mode, sampleRate);
+    const videoBuf = await pcmToWaveformVideo(pcmBuf, mode, sampleRate, tmpDir);
 
     const snippet = code.length > 80 ? code.slice(0, 80) + "…" : code;
     const label =
       `🎵 **Bytebeat** — \`${snippet}\`\n` +
       `Mode: \`${mode}\` · ${sampleRate} Hz · ${duration}s`;
 
-    if (wavBuf.length <= DISCORD_MAX_BYTES) {
+    if (videoBuf.length <= DISCORD_MAX_BYTES) {
       await statusMsg.delete().catch(() => {});
-      const file = new AttachmentBuilder(wavBuf, { name: "bytebeat.wav" });
+      const file = new AttachmentBuilder(videoBuf, { name: "bytebeat.mp4" });
       await message.reply({ content: label, files: [file] });
     } else {
       await statusMsg.edit("📦 File too large for Discord — uploading to catbox.moe…").catch(() => {});
-      const catboxUrl = await uploadToCatbox(wavBuf, "bytebeat.wav");
+      const catboxUrl = await uploadToCatbox(videoBuf, "bytebeat.mp4");
       await statusMsg.delete().catch(() => {});
       await message.reply(`${label}\n📦 Too large for Discord → ${catboxUrl}`);
     }
@@ -206,5 +220,7 @@ export async function runBytebeat(message: Message): Promise<void> {
     logger.error({ err }, "&bytebeat failed");
     const msg = err instanceof Error ? err.message : "Unknown error";
     await statusMsg.edit({ content: `❌ Bytebeat failed: \`${msg.slice(0, 300)}\`` });
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
   }
 }
