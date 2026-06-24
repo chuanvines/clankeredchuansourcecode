@@ -31,6 +31,7 @@ import { runWorldNumbers } from "./commands/worldnumbers.js";
 import { runVeb } from "./commands/veb.js";
 import { runYtdl } from "./commands/ytdl.js";
 import { runTts } from "./commands/tts.js";
+import { runBytebeat } from "./commands/bytebeat.js";
 import { registerCommands } from "./register.js";
 import { parseEffectsString } from "./effects/parser.js";
 import { processMedia, detectMediaType, probeMediaMeta } from "./effects/processor.js";
@@ -91,10 +92,10 @@ function getRandomEffects(): string {
 }
 
 export async function startBot(): Promise<void> {
-  const token = process.env["DISCORD_TOKEN"];
+  const token = process.env["BOT_TOKEN"] ?? process.env["DISCORD_TOKEN"];
 
   if (!token) {
-    logger.warn("DISCORD_TOKEN not set — Discord bot will not start");
+    logger.warn("BOT_TOKEN not set — Discord bot will not start");
     return;
   }
 
@@ -1294,6 +1295,14 @@ export async function startBot(): Promise<void> {
     if (blockedMessages.has(message.id)) return;
     if (!message.content.trim().toLowerCase().startsWith("&tts")) return;
     await runTts(message);
+  });
+
+  // ── prefix command: &bytebeat <mode> <samplerate> <duration> <code> ─────
+  client.on(Events.MessageCreate, async (message: Message) => {
+    if (message.author.bot) return;
+    if (blockedMessages.has(message.id)) return;
+    if (!message.content.trim().toLowerCase().startsWith("&bytebeat")) return;
+    await runBytebeat(message);
   });
 
   // ── alias: destroy <effects>  →  &veb <effects> ──────────────────────────

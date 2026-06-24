@@ -8,11 +8,11 @@ import { data as canvasCommand } from "./commands/canvas.js";
 import { logger } from "./lib/logger.js";
 
 export async function registerCommands(): Promise<void> {
-  const token = process.env["DISCORD_TOKEN"];
-  const clientId = process.env["DISCORD_CLIENT_ID"];
+  const token = process.env["BOT_TOKEN"] ?? process.env["DISCORD_TOKEN"];
+  const clientId = process.env["CLIENT_ID"] ?? process.env["DISCORD_CLIENT_ID"];
 
   if (!token || !clientId) {
-    logger.warn("Missing DISCORD_TOKEN or DISCORD_CLIENT_ID — skipping command registration");
+    logger.warn("Missing BOT_TOKEN or CLIENT_ID — skipping command registration");
     return;
   }
 
