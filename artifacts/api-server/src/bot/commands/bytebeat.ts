@@ -158,7 +158,7 @@ async function pcmToWaveformVideo(
     "[0:a]showwaves=s=640x360:mode=line:colors=lime|white:rate=60[v]",
     "-map", "[v]",
     "-map", "0:a",
-    "-c:v", "libx264", "-preset", "fast", "-crf", "22",
+    "-c:v", "libx264", "-preset", "fast", "-crf", "22", "-pix_fmt", "yuv420p",
     "-c:a", "aac", "-b:a", "128k",
     "-movflags", "+faststart",
     outPath,

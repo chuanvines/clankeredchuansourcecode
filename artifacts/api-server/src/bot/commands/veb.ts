@@ -16,6 +16,7 @@ import axios from "axios";
 import { logger } from "../lib/logger.js";
 import { toCdnUrl, uploadToCatbox } from "./catboxupload.js";
 import { resolveIv } from "./tag.js";
+import { runAutotune } from "../effects/processor.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -132,13 +133,21 @@ export async function runVeb(message: Message): Promise<void> {
 
     await writeFile(inputPath, Buffer.from(resp.data));
 
+    // Extract autotune=<url> before passing to Python (Python's AutotuneBot is unavailable).
+    // We'll apply the TS FFmpeg autotune post-process on the Python output instead.
+    const autotuneMatch = effectStr.match(/(?:^|,)atb(?:=(\S+))?|(?:^|,)autotune=(\S+)/i);
+    const autotuneUrl = autotuneMatch ? (autotuneMatch[1] ?? autotuneMatch[2] ?? null) : null;
+    const pyEffectStr = autotuneUrl
+      ? effectStr.replace(/(?:^|,)\s*(?:atb(?:=\S+)?|autotune=\S+)/gi, "").replace(/^,+|,+$/g, "").trim()
+      : effectStr;
+
     // Call Python backend: python3 videoEdit.py "<effects>" "<inputFile>" "<workingDir>"
     let stdout = "";
     let stderr = "";
     try {
       const result = await execFileAsync(
         "python3",
-        [PY_SCRIPT, effectStr, inputPath, tmpDir, PY_ASSET_DIR],
+        [PY_SCRIPT, pyEffectStr || "noop", inputPath, tmpDir, PY_ASSET_DIR],
         { timeout: VEB_TIMEOUT_MS, maxBuffer: 8 * 1024 * 1024 },
       );
       stdout = result.stdout.trim();
@@ -155,11 +164,36 @@ export async function runVeb(message: Message): Promise<void> {
     clearInterval(ticker);
 
     // stdout is the output file path printed by the Python script
-    const outPath = stdout.split("\n").pop()?.trim() ?? "";
+    let outPath = stdout.split("\n").pop()?.trim() ?? "";
     if (!outPath) {
       const errMsg = stderr || "(no output path returned)";
       await statusMsg.edit({ content: `❌ veb failed:\n\`\`\`\n${errMsg.slice(0, 1800)}\n\`\`\`` });
       return;
+    }
+
+    // Apply TS autotune post-process if requested
+    if (autotuneUrl) {
+      try {
+        const carrierPath = join(tmpDir, "autotune_carrier.mp3");
+        const carrierResp = await axios.get<ArrayBuffer>(autotuneUrl, {
+          responseType: "arraybuffer", timeout: 30_000,
+          headers: { "User-Agent": BROWSER_UA },
+        });
+        await writeFile(carrierPath, Buffer.from(carrierResp.data));
+        const atOutPath = join(tmpDir, `autotune_out${extname(outPath) || ".mp4"}`);
+        const outExtLower = (extname(outPath) || ".mp4").toLowerCase();
+        const isVideo = [".mp4", ".webm", ".mkv", ".mov", ".gif"].includes(outExtLower);
+        await runAutotune(outPath, carrierPath, atOutPath, {
+          effects: [], rep: 1, dur: null,
+          inputUrl: "", inputExt: extname(outPath) || ".mp4",
+          mediaType: isVideo ? "video" : "audio",
+        });
+        outPath = atOutPath;
+      } catch (atErr) {
+        const msg = atErr instanceof Error ? atErr.message : String(atErr);
+        await statusMsg.edit({ content: `❌ veb autotune failed: \`${msg.slice(0, 300)}\`` });
+        return;
+      }
     }
 
     const outBuf  = await readFile(outPath);

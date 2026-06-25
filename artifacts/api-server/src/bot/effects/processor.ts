@@ -595,7 +595,7 @@ async function concatClips(
   await spawnFfmpeg(["-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c", "copy", dst]);
 }
 
-async function runAutotune(
+export async function runAutotune(
   inputPath: string,
   carrierPath: string,
   outputPath: string,
