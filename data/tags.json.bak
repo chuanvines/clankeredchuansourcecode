@@ -2742,5 +2742,12 @@
     "ownerUsername": "yasinreturns",
     "createdAt": "2026-06-24T19:45:26.873Z",
     "updatedAt": "2026-06-24T19:45:26.873Z"
+  },
+  "gm109": {
+    "script": "{ihtx:huehsv=126,mirror=180,pitch=3}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-24T19:52:15.312Z",
+    "updatedAt": "2026-06-24T19:52:15.312Z"
   }
 }

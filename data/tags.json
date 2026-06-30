@@ -2749,5 +2749,12 @@
     "ownerUsername": "yasinreturns",
     "createdAt": "2026-06-24T19:52:15.312Z",
     "updatedAt": "2026-06-24T19:52:15.312Z"
+  },
+  "gm138": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i 180\nhue i 180\ninvert i\nmirror i 0\ntvsim i 0.75\nautotune=https://files.catbox.moe/g796gq.wav\npitch i -10 -7 0 3\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-30T14:27:54.974Z",
+    "updatedAt": "2026-06-30T14:27:54.974Z"
   }
 }

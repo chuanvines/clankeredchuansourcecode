@@ -32,7 +32,6 @@ import { runVeb } from "./commands/veb.js";
 import { runYtdl } from "./commands/ytdl.js";
 import { runTts } from "./commands/tts.js";
 import { runBytebeat } from "./commands/bytebeat.js";
-import { runLsc } from "./commands/lsc.js";
 import { registerCommands } from "./register.js";
 import { parseEffectsString } from "./effects/parser.js";
 import { processMedia, detectMediaType, probeMediaMeta } from "./effects/processor.js";
@@ -1371,71 +1370,6 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "&undo failed");
       await message.reply("❌ Could not delete that message (missing permissions?).").catch(() => {});
-    }
-  });
-
-  // ── prefix command: &lsc <text>[:<url>] ──────────────────────────────────
-  client.on(Events.MessageCreate, async (message: Message) => {
-    if (message.author.bot) return;
-    if (blockedMessages.has(message.id)) return;
-    if (!message.content.trim().startsWith("&lsc")) return;
-
-    const rest = message.content.slice(message.content.indexOf("&lsc") + 4).trim();
-    if (!rest) {
-      await message.reply(
-        "❌ Usage: `&lsc <text>` (attach/reply to video) or `&lsc <text>:<url>`\n" +
-        "Example: `&lsc Hello World:https://files.catbox.moe/abc123.mp4`",
-      );
-      return;
-    }
-
-    // Split on last occurrence of :<http to allow colons in text
-    const urlMatch = rest.match(/^([\s\S]+?):?(https?:\/\/\S+)$/);
-    let text: string;
-    let videoUrl: string | null;
-
-    if (urlMatch) {
-      text = urlMatch[1]!.trim();
-      videoUrl = urlMatch[2]!;
-    } else {
-      text = rest;
-      videoUrl = null;
-    }
-
-    // Fall back to attachment → replied-to message → inline URL in rest
-    if (!videoUrl) {
-      const allAttachments = [...message.attachments.values()];
-      videoUrl = allAttachments[0]?.url ?? null;
-    }
-    if (!videoUrl && message.reference?.messageId) {
-      try {
-        const refMsg = await message.channel.messages.fetch(message.reference.messageId);
-        const refAttach = [...refMsg.attachments.values()][0] ?? null;
-        videoUrl = refAttach?.url ?? null;
-        if (!videoUrl) {
-          const m = /https?:\/\/\S+/.exec(refMsg.content);
-          if (m) videoUrl = m[0]!;
-        }
-      } catch { /* fall through */ }
-    }
-
-    if (!videoUrl) {
-      await message.reply("❌ No video found. Attach a video, reply to one, or include a URL after the colon.");
-      return;
-    }
-
-    let statusMsg: Message;
-    try {
-      statusMsg = await message.reply(`⏳ Applying \`lsc\` effect…`);
-    } catch { return; }
-
-    try {
-      const buffer = await runLsc(text, videoUrl);
-      await sendResultOrCatbox(message, statusMsg, buffer, "lsc_result.mp4", `✅ lsc: \`${text}\``);
-    } catch (err) {
-      logger.error({ err }, "Prefix &lsc failed");
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit({ content: `❌ lsc failed: \`${msg.slice(0, 300)}\`` });
     }
   });
 

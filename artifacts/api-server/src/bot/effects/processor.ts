@@ -403,6 +403,76 @@ export async function processMedia(opts: ProcessOptions): Promise<ProcessResult>
       return { buffer: await readFile(szFinalPath), ext: outExt, contentType: getContentType(outExt) };
     }
 
+    // Handle lsc: temporal split-screen with thumbnail overlay and text label
+    if (filters.pendingLsc && opts.mediaType === "video" && !opts.forceGif) {
+      const { text, videoUrl } = filters.pendingLsc;
+      const lscInput = videoUrl ? join(tmpDir, "lsc_extra.mp4") : normPath;
+      if (videoUrl) {
+        try {
+          await writeFile(lscInput, await downloadFile(videoUrl));
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          throw new Error(`lsc: could not download video URL: ${msg}`);
+        }
+      }
+      const { duration: lscDur } = await probeMediaMeta(lscInput);
+      if (!lscDur || lscDur <= 0) throw new Error("lsc: could not determine video duration");
+      const half = lscDur / 2;
+
+      const safeText = text
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\u2019")
+        .replace(/:/g, "\\:")
+        .replace(/\[/g, "\\[")
+        .replace(/\]/g, "\\]");
+
+      const lscFC = [
+        `[0:v]split=4[_lv1][_lv2][_lv3][_lv4]`,
+        `[0:a]asplit=4[_la1][_la2][_la3][_la4]`,
+        `[_lv1]trim=0:${half},setpts=PTS-STARTPTS[_lia]`,
+        `[_lv2]setpts=PTS-STARTPTS,setpts=0.5*PTS,scale=iw/2:ih/2[_lia2]`,
+        `[_lv3]trim=${half},setpts=PTS-STARTPTS[_lib]`,
+        `[_lv4]setpts=PTS-STARTPTS,setpts=0.5*PTS,scale=iw/2:ih/2[_lib2]`,
+        `[_lia][_lia2]overlay=0:0[_lpart1]`,
+        `[_lib][_lib2]overlay=W/2:H/2[_lpart2]`,
+        `[_lpart1][_lpart2]concat=n=2:v=1:a=0,drawtext=text='${safeText}':fontsize=50:fontcolor=white:box=1:boxcolor=black@0.5:boxborderw=10:x=(w-tw-10):y=10[vout]`,
+        `[_la1]atrim=0:${half},asetpts=PTS-STARTPTS,loudnorm[_laa]`,
+        `[_la2]asetpts=PTS-STARTPTS,atempo=2.0[_laa2]`,
+        `[_la3]atrim=${half},asetpts=PTS-STARTPTS,loudnorm[_lab]`,
+        `[_la4]asetpts=PTS-STARTPTS,atempo=2.0[_lab2]`,
+        `[_laa][_laa2]amix=inputs=2[_laout1]`,
+        `[_lab][_lab2]amix=inputs=2[_laout2]`,
+        `[_laout1][_laout2]concat=n=2:v=0:a=1[aout]`,
+      ].join(";");
+
+      const lscClips: string[] = [];
+      let lscCurrent = lscInput;
+      for (let i = 0; i < repCount; i++) {
+        const lscOut = join(tmpDir, `lsc${i}${outExt}`);
+        await spawnFfmpeg([
+          "-y", "-i", lscCurrent,
+          "-filter_complex", lscFC,
+          "-map", "[vout]", "-map", "[aout]",
+          "-t", String(lscDur),
+          "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p",
+          "-c:a", "aac", "-b:a", "128k",
+          "-movflags", "+faststart",
+          lscOut,
+        ]);
+        lscClips.push(lscOut);
+        lscCurrent = lscOut;
+      }
+
+      let lscFinalPath: string;
+      if (lscClips.length === 1) {
+        lscFinalPath = lscClips[0]!;
+      } else {
+        lscFinalPath = join(tmpDir, `final${outExt}`);
+        await concatClips(lscClips, lscFinalPath, "video", tmpDir);
+      }
+      return { buffer: await readFile(lscFinalPath), ext: outExt, contentType: getContentType(outExt) };
+    }
+
     const clips: string[] = [];
     let currentPath = normPath;
     for (let i = 0; i < repCount; i++) {

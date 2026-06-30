@@ -40,6 +40,11 @@ export type PendingAutotune = {
   ref: { inputIndex: number };
 };
 
+export type PendingLsc = {
+  text: string;
+  videoUrl: string | null;
+};
+
 export type FilterResult = {
   videoSegments: VideoSegment[];
   pitchSubparams: string[];
@@ -55,6 +60,7 @@ export type FilterResult = {
   hasSierpinski: boolean;
   hasNbfxEarthquake: boolean;
   hasWmm3dripple: boolean;
+  pendingLsc: PendingLsc | null;
 };
 
 // ── Assembly ──────────────────────────────────────────────────────────────────
@@ -172,6 +178,7 @@ export function buildFilters(effects: ParsedEffect[]): FilterResult {
   let hasSierpinski = false;
   let hasNbfxEarthquake = false;
   let hasWmm3dripple = false;
+  let pendingLsc: PendingLsc | null = null;
 
   for (const effect of effects) {
     switch (effect.name) {
@@ -1072,6 +1079,14 @@ export function buildFilters(effects: ParsedEffect[]): FilterResult {
         break;
       }
 
+      case "lsc": {
+        const text = effect.param ?? "";
+        const rawUrl = effect.subparams[1] ?? null;
+        const videoUrl = (!rawUrl || rawUrl === "{iv}") ? null : rawUrl;
+        pendingLsc = { text, videoUrl };
+        break;
+      }
+
       case "sierpinskiransomware":
         hasSierpinski = true;
         break;
@@ -1502,7 +1517,7 @@ export function buildFilters(effects: ParsedEffect[]): FilterResult {
     }
   }
 
-  return { videoSegments, pitchSubparams, audioFilters, pendingHalds, pendingWatermarks, pendingLuts, builtinLuts, rawFfmpegAudio, hasRadar, pendingTvsim, pendingAutotune, hasSierpinski, hasNbfxEarthquake, hasWmm3dripple };
+  return { videoSegments, pitchSubparams, audioFilters, pendingHalds, pendingWatermarks, pendingLuts, builtinLuts, rawFfmpegAudio, hasRadar, pendingTvsim, pendingAutotune, hasSierpinski, hasNbfxEarthquake, hasWmm3dripple, pendingLsc };
 }
 
 // ── audio filter complex builder ──────────────────────────────────────────────
