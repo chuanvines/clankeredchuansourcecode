@@ -418,6 +418,7 @@ export async function processMedia(opts: ProcessOptions): Promise<ProcessResult>
       const { duration: lscDur } = await probeMediaMeta(lscInput);
       if (!lscDur || lscDur <= 0) throw new Error("lsc: could not determine video duration");
       const half = lscDur / 2;
+      const lscHasAudio = await probeHasAudio(lscInput);
 
       const safeText = text
         .replace(/\\/g, "\\\\")
@@ -426,24 +427,36 @@ export async function processMedia(opts: ProcessOptions): Promise<ProcessResult>
         .replace(/\[/g, "\\[")
         .replace(/\]/g, "\\]");
 
-      const lscFC = [
+      const lscFontPath = join(dirname(fileURLToPath(import.meta.url)), "assets", "arialbold.ttf");
+      const videoChain = [
         `[0:v]split=4[_lv1][_lv2][_lv3][_lv4]`,
-        `[0:a]asplit=4[_la1][_la2][_la3][_la4]`,
         `[_lv1]trim=0:${half},setpts=PTS-STARTPTS[_lia]`,
         `[_lv2]setpts=PTS-STARTPTS,setpts=0.5*PTS,scale=iw/2:ih/2[_lia2]`,
         `[_lv3]trim=${half},setpts=PTS-STARTPTS[_lib]`,
         `[_lv4]setpts=PTS-STARTPTS,setpts=0.5*PTS,scale=iw/2:ih/2[_lib2]`,
         `[_lia][_lia2]overlay=0:0[_lpart1]`,
         `[_lib][_lib2]overlay=W/2:H/2[_lpart2]`,
-        `[_lpart1][_lpart2]concat=n=2:v=1:a=0,drawtext=text='${safeText}':fontsize=50:fontcolor=white:box=1:boxcolor=black@0.5:boxborderw=10:x=(w-tw-10):y=10[vout]`,
-        `[_la1]atrim=0:${half},asetpts=PTS-STARTPTS,loudnorm[_laa]`,
-        `[_la2]asetpts=PTS-STARTPTS,atempo=2.0[_laa2]`,
-        `[_la3]atrim=${half},asetpts=PTS-STARTPTS,loudnorm[_lab]`,
-        `[_la4]asetpts=PTS-STARTPTS,atempo=2.0[_lab2]`,
-        `[_laa][_laa2]amix=inputs=2[_laout1]`,
-        `[_lab][_lab2]amix=inputs=2[_laout2]`,
+        `[_lpart1][_lpart2]concat=n=2:v=1:a=0,format=yuv420p,drawtext=fontfile='${lscFontPath}':text='${safeText}':fontsize=50:fontcolor=white:box=1:boxcolor=black@0.5:boxborderw=10:x=(w-tw-10):y=10[vout]`,
+      ];
+
+      const audioChain = lscHasAudio ? [
+        `[0:a]asplit=4[_la1][_la2][_la3][_la4]`,
+        `[_la1]atrim=0:${half},asetpts=PTS-STARTPTS,aresample=44100[_laa]`,
+        `[_la2]asetpts=PTS-STARTPTS,atempo=2.0,aresample=44100[_laa2]`,
+        `[_la3]atrim=${half},asetpts=PTS-STARTPTS,aresample=44100[_lab]`,
+        `[_la4]asetpts=PTS-STARTPTS,atempo=2.0,aresample=44100[_lab2]`,
+        `[_laa][_laa2]amix=inputs=2:normalize=0[_laout1]`,
+        `[_lab][_lab2]amix=inputs=2:normalize=0[_laout2]`,
         `[_laout1][_laout2]concat=n=2:v=0:a=1[aout]`,
-      ].join(";");
+      ] : [];
+
+      const lscFC = [...videoChain, ...audioChain].join(";");
+      const lscMaps = lscHasAudio
+        ? ["-map", "[vout]", "-map", "[aout]"]
+        : ["-map", "[vout]"];
+      const lscAudioArgs = lscHasAudio
+        ? ["-c:a", "aac", "-b:a", "128k"]
+        : ["-an"];
 
       const lscClips: string[] = [];
       let lscCurrent = lscInput;
@@ -452,10 +465,10 @@ export async function processMedia(opts: ProcessOptions): Promise<ProcessResult>
         await spawnFfmpeg([
           "-y", "-i", lscCurrent,
           "-filter_complex", lscFC,
-          "-map", "[vout]", "-map", "[aout]",
+          ...lscMaps,
           "-t", String(lscDur),
           "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p",
-          "-c:a", "aac", "-b:a", "128k",
+          ...lscAudioArgs,
           "-movflags", "+faststart",
           lscOut,
         ]);

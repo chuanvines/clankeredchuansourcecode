@@ -56,11 +56,11 @@
     "updatedAt": "2026-06-11T07:26:14.479Z"
   },
   "py": {
-    "script": "{py:{arg:0}}",
+    "script": "{py:{args}}",
     "ownerId": "1431176242614501538",
     "ownerUsername": "btve436",
     "createdAt": "2026-06-11T07:26:29.022Z",
-    "updatedAt": "2026-06-11T07:26:29.022Z"
+    "updatedAt": "2026-06-30T09:54:52.931Z"
   },
   "ffmpeg": {
     "script": "{runcodetxt:https://pastebin.com/raw/3hxzDGBD}\n{sh:\nload {iv}\n\nsr=$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nfr=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $FILE_1)\n\nffmpeg -i \"$FILE_1\" {arg:*} -pix_fmt yuv420p output/input.mp4\n}",
@@ -2744,10 +2744,619 @@
     "updatedAt": "2026-06-24T19:45:26.873Z"
   },
   "gm109": {
-    "script": "{ihtx:huehsv=126,mirror=180,pitch=3}",
+    "script": "use \".t realgm109\" for the real version {ihtx:huehsv=126,mirror=180,pitch=3}",
     "ownerId": "1387479962323255306",
     "ownerUsername": "yasinreturns",
     "createdAt": "2026-06-24T19:52:15.312Z",
-    "updatedAt": "2026-06-24T19:52:15.312Z"
+    "updatedAt": "2026-06-25T08:23:33.370Z"
+  },
+  "lebgm17": {
+    "script": "{ihtx:hflip,invlum,swapuv,huehsv=-35,pitch=0;3}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T08:20:19.355Z",
+    "updatedAt": "2026-06-25T08:20:19.355Z"
+  },
+  "leb_gm17": {
+    "script": "{tag:lebgm17}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T08:20:31.811Z",
+    "updatedAt": "2026-06-25T08:20:31.811Z"
+  },
+  "tbwve571_gm17": {
+    "script": "{tag:lebgm17}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T08:20:39.424Z",
+    "updatedAt": "2026-06-25T08:20:39.424Z"
+  },
+  "tbwve571gm17": {
+    "script": "{tag:lebgm17}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T08:20:42.196Z",
+    "updatedAt": "2026-06-25T08:20:42.196Z"
+  },
+  "571_gm17": {
+    "script": "{tag:lebgm17}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T08:20:44.631Z",
+    "updatedAt": "2026-06-25T08:20:44.631Z"
+  },
+  "571gm17": {
+    "script": "{tag:lebgm17}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T08:20:47.988Z",
+    "updatedAt": "2026-06-25T08:20:47.988Z"
+  },
+  "gm634": {
+    "script": "{ihtx:invlum,huehsv=180,pitch=-16;34}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T08:21:17.240Z",
+    "updatedAt": "2026-06-25T08:21:17.240Z"
+  },
+  "realgm109": {
+    "script": "{ihtx:scroll=ypos=0.4,mirror=180;0;0.7,mirror=180;0;0.4,gradientmap=[[0,0,255,255],[255,0,255,255],[123,0,115,255],[0,0,0,255]],autotune=https://files.catbox.moe/ycj49o.mp4 }",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T09:19:22.228Z",
+    "updatedAt": "2026-06-25T09:19:22.228Z"
+  },
+  "real_gm109": {
+    "script": "{tag:realgm109}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T09:19:36.301Z",
+    "updatedAt": "2026-06-25T09:19:36.301Z"
+  },
+  "invertcolor": {
+    "script": "huehsv=180,pitch=-5",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-25T15:45:14.566Z",
+    "updatedAt": "2026-06-25T15:45:14.566Z"
+  },
+  "invertcolor_ffmpeg_opposite": {
+    "script": "huehsv=180,pitch=5",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-25T15:46:37.388Z",
+    "updatedAt": "2026-06-25T15:46:37.388Z"
+  },
+  "gmffmpeg": {
+    "script": "invert,pitch=-12;-5;0;4;7;12",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-25T15:47:41.958Z",
+    "updatedAt": "2026-06-25T15:47:41.958Z"
+  },
+  "test": {
+    "script": "{arg:0}",
+    "ownerId": "1384340498025545789",
+    "ownerUsername": "abobyc_1722",
+    "createdAt": "2026-06-25T16:45:39.620Z",
+    "updatedAt": "2026-06-25T16:45:39.620Z"
+  },
+  "gm110": {
+    "script": "{ihtx:scroll=ypos=0.4,mirror=180;0;0.7,mirror=180;0;0.4,lut=https://files.catbox.moe/n3q7ws.cube ,autotune=https://files.catbox.moe/ycj49o.mp4 }",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T19:38:49.154Z",
+    "updatedAt": "2026-06-25T19:38:49.154Z"
+  },
+  "gm111": {
+    "script": "{ihtx:invert,huehsv=-170,saturation=0.5,swirl=-600,pitch=-7.5;-3.5;1}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T19:44:44.288Z",
+    "updatedAt": "2026-06-25T19:44:44.288Z"
+  },
+  "gm112": {
+    "script": "{ihtx:swapuv,huehsv=180,mirror=90,fisheye=0.5,pitch=-8;-4;-3;1}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T19:47:35.520Z",
+    "updatedAt": "2026-06-25T19:47:35.520Z"
+  },
+  "gm113": {
+    "script": "{ihtx:huehsv=180,invert,hue=180,mirror=180,mirror=90,pitch=-17;-12;-7;0;5;12;17;24}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T19:52:59.633Z",
+    "updatedAt": "2026-06-25T19:52:59.633Z"
+  },
+  "gm114": {
+    "script": "{ihtx:hue=180,gm4,pitch=-24;-19;-12}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T19:54:55.067Z",
+    "updatedAt": "2026-06-25T19:54:55.067Z"
+  },
+  "gm115": {
+    "script": "{ihtx:huehsv=235,mirror=0,pitch=4;8;12}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T19:58:35.471Z",
+    "updatedAt": "2026-06-25T19:58:35.471Z"
+  },
+  "ogm1": {
+    "script": "huehsv=180,pitch=-8",
+    "ownerId": "1267643111648268339",
+    "ownerUsername": "gonzaloei.bau",
+    "createdAt": "2026-06-25T20:08:22.232Z",
+    "updatedAt": "2026-06-25T20:08:22.232Z"
+  },
+  "whar": {
+    "script": "rahW",
+    "ownerId": "1506313018105921556",
+    "ownerUsername": "hioi_43480",
+    "createdAt": "2026-06-25T20:10:09.562Z",
+    "updatedAt": "2026-06-25T20:10:09.562Z"
+  },
+  "gm116": {
+    "script": "{sh:\nload {iv}\n\nffmpeg -i $FILE_1 -vf selectivecolor=blacks='0 0 0 0':whites='1 1 0 0',format=yuv420p -filter_complex \"[0:a]rubberband=formant=712923000:pitch=2^(12/12)[a1];[0:a]rubberband=formant=712923000:pitch=2^(17/12)[a2];[0:a]rubberband=formant=712923000:pitch=2^(24/12)[a3];[a1][a2][a3]amix=3,volume=3,atrim=0.02[outa]\" -map 0:v -map \"[outa]\" ./output/gm116.mp4}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-25T20:24:09.504Z",
+    "updatedAt": "2026-06-25T20:24:09.504Z"
+  },
+  "happyx": {
+    "script": "{ihtx:invert,huehsv=180,wave=0;5;0;4;0;166,pitch=4;12}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T13:40:37.578Z",
+    "updatedAt": "2026-06-26T13:40:37.578Z"
+  },
+  "happy_x": {
+    "script": "{ihtx:invert,huehsv=180,wave=0;5;0;4;0;166,pitch=4;12}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T13:40:39.901Z",
+    "updatedAt": "2026-06-26T13:40:39.901Z"
+  },
+  "gm117": {
+    "script": "{ihtx:invert,huehsv=180,wave=0;5;0;4;0;166,pitch=4;12,areverse,vreverse}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T13:40:46.844Z",
+    "updatedAt": "2026-06-26T13:41:37.914Z"
+  },
+  "gm118": {
+    "script": "{ihtx:hue=180,gm4,realgm4,pitch=-24;-19;-19;-14;-12;-7}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T13:43:41.364Z",
+    "updatedAt": "2026-06-26T13:43:41.364Z"
+  },
+  "gm119": {
+    "script": "{ihtx:huehsv=-45,mirror=90,pitch=-1;2}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T13:44:49.526Z",
+    "updatedAt": "2026-06-26T13:44:49.526Z"
+  },
+  "gm120": {
+    "script": "{ihtx:invert,rightsplit(huehsv=-45),pitch=-13;-12;-6;-5;-1;0;3;4;6;7;11;12}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T13:46:48.780Z",
+    "updatedAt": "2026-06-26T13:46:48.780Z"
+  },
+  "gm121": {
+    "script": "{ihtx:mirror=90,gradientmap=[[255,255,255],[255,170,170],[255,85,85],[255,0,0],[127,0,0],[0,0,0]],pitch=-1;3;4}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T13:52:42.640Z",
+    "updatedAt": "2026-06-26T13:52:42.640Z"
+  },
+  "notscary": {
+    "script": "use \".t notscarywave\" for nbfx wave version {ihtx:huehsv=180,mirror=270,tvsim=0.75}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T13:55:44.642Z",
+    "updatedAt": "2026-06-26T13:55:44.642Z"
+  },
+  "not_scary": {
+    "script": "use \".t notscarywave\" for nbfx wave version {ihtx:huehsv=180,mirror=270,tvsim=0.75}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T13:55:51.450Z",
+    "updatedAt": "2026-06-26T13:55:51.450Z"
+  },
+  "notscarywave": {
+    "script": "{ihtx:huehsv=180,mirror=270,wave=8;0;2;0;0;0;6}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T13:56:13.362Z",
+    "updatedAt": "2026-06-26T14:11:06.969Z"
+  },
+  "notscary_wave": {
+    "script": "{tag:notscarywave}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T13:56:35.746Z",
+    "updatedAt": "2026-06-26T13:56:35.746Z"
+  },
+  "not_scary_wave": {
+    "script": "{tag:notscarywave}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T13:56:38.844Z",
+    "updatedAt": "2026-06-26T13:56:38.844Z"
+  },
+  "gm122": {
+    "script": "{ihtx:wave=0;8;0;2;31;31,invert,gm4,huehsv=180,mirror=270,wave=8;0;2;0;31;31;6,pitch=-2.5;2.5;0.5;5.5;2.5;7.5;5.5;10.5,audiodestroy}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T14:19:56.722Z",
+    "updatedAt": "2026-06-26T14:19:56.722Z"
+  },
+  "gm7103": {
+    "script": "{ihtx:invlum,huehsv=180,fisheye=1,pitch=-20;-17;-15;-10;-6;-1;4;9;14;19;24}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T15:27:55.775Z",
+    "updatedAt": "2026-06-26T15:28:30.699Z"
+  },
+  "gm7102.9": {
+    "script": "{ihtx:huehsv=180,fisheye=1,pitch=-14;5;10}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T15:33:34.182Z",
+    "updatedAt": "2026-06-26T15:33:34.182Z"
+  },
+  "gm7102_9": {
+    "script": "{tag:gm7102.9}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T15:33:42.471Z",
+    "updatedAt": "2026-06-26T15:33:42.471Z"
+  },
+  "gm7102": {
+    "script": "{tag:gm7102_9}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T15:33:54.848Z",
+    "updatedAt": "2026-06-26T15:33:54.848Z"
+  },
+  "tm": {
+    "script": "{ihtx:invert,huehsv=-150,pitch=10}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T15:42:01.239Z",
+    "updatedAt": "2026-06-26T15:42:01.239Z"
+  },
+  "tmaj": {
+    "script": "{tag:tm}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T15:42:05.675Z",
+    "updatedAt": "2026-06-26T15:42:05.675Z"
+  },
+  "tmajor": {
+    "script": "{tag:tmaj}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T15:42:10.110Z",
+    "updatedAt": "2026-06-26T15:42:10.110Z"
+  },
+  "t_major": {
+    "script": "{tag:tmajor}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T15:42:18.517Z",
+    "updatedAt": "2026-06-26T15:42:18.517Z"
+  },
+  "gm123": {
+    "script": "{ihtx:invert,huehsv=-150,pitch=10,areverse,vreverse}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T15:42:34.999Z",
+    "updatedAt": "2026-06-26T15:42:34.999Z"
+  },
+  "gm124": {
+    "script": "{ihtx:hflip,invertrgb=0;1;1,fisheye=2,pitch=-5;-3;-1}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-26T15:44:25.878Z",
+    "updatedAt": "2026-06-26T15:44:40.138Z"
+  },
+  "assyst_is_down": {
+    "script": "{attach:https://files.catbox.moe/hub9tl.mp4 }",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-27T09:23:27.639Z",
+    "updatedAt": "2026-06-27T09:23:27.639Z"
+  },
+  "danielview1280_ffmpeg_masandrik": {
+    "script": "# Use `.t sync+` and `.t sync+ alt` {eval:{text:https://cdn.discordapp.com/attachments/1124758334805909509/1507968678652543048/d1280_ffmpeg_masandrik.txt?ex=6a13d4c5&is=6a128345&hm=c98a11598f744b5a64825648227c558faf4952c79acfd6e7cc5d431d61acede2&}}",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-27T13:10:28.039Z",
+    "updatedAt": "2026-06-27T13:10:28.039Z"
+  },
+  "d1280_ffmpeg_masandrik": {
+    "script": "# Use `.t sync+` and `.t sync+ alt`. {eval:{text:https://cdn.discordapp.com/attachments/1124758334805909509/1507968678652543048/d1280_ffmpeg_masandrik.txt?ex=6a13d4c5&is=6a128345&hm=c98a11598f744b5a64825648227c558faf4952c79acfd6e7cc5d431d61acede2&}}",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-27T13:11:49.849Z",
+    "updatedAt": "2026-06-27T13:11:49.849Z"
+  },
+  "d1280ffmpeg_masandrik": {
+    "script": "hey you! use `.t sync+` to make it perfect.\n{eval:{text:https://files.catbox.moe/bvtsl5.txt",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-27T13:12:57.353Z",
+    "updatedAt": "2026-06-27T13:12:57.353Z"
+  },
+  "purpleyellow_ffmpeg": {
+    "script": "lut=https://files.catbox.moe/69zypm.cube",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-27T13:14:09.905Z",
+    "updatedAt": "2026-06-27T13:14:09.905Z"
+  },
+  "pwylw": {
+    "script": "lut=https://files.catbox.moe/69zypm.cube, pitch=-12;0;12",
+    "ownerId": "1514676145788817506",
+    "ownerUsername": "kazbekgkt",
+    "createdAt": "2026-06-27T13:14:45.327Z",
+    "updatedAt": "2026-06-27T13:14:52.254Z"
+  },
+  "scrooge": {
+    "script": "{ihtx:hflip,hue=180,swapuv,pitch=-3;6}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-29T14:38:59.064Z",
+    "updatedAt": "2026-06-29T14:38:59.064Z"
+  },
+  "scroogeeffect": {
+    "script": "{tag:scrooge}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-29T14:39:07.123Z",
+    "updatedAt": "2026-06-29T14:39:07.123Z"
+  },
+  "scrooge_effect": {
+    "script": "{tag:scrooge}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-29T14:39:12.313Z",
+    "updatedAt": "2026-06-29T14:39:12.313Z"
+  },
+  "gm125": {
+    "script": "{sh:\nload {iv}\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\n\nffmpeg -i $FILE_1 -vf \"format=rgb24,geq=r='r(X,Y)*(1-T/$d)+b(X,Y)*(T/$d)':g='g(X,Y)':b='b(X,Y)*(1-T/$d)+r(X,Y)*(T/$d)'\" -filter_complex \"[0:a]rubberband=formant=712923000:pitch=2^(-14/12)[a1];[0:a]rubberband=formant=712923000:pitch=2^(0/12)[a2];[a1][a2]amix=2,volume=2,atrim=0.02[outa]\" -map 0:v -map \"[outa]\" -pix_fmt yuv420p ./output/gm125.mp4}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-29T18:42:30.505Z",
+    "updatedAt": "2026-06-29T19:03:23.223Z"
+  },
+  "notsocrack": {
+    "script": "CRACK CRACK BUIDODJEILHHQRC",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-29T18:51:54.816Z",
+    "updatedAt": "2026-06-29T18:51:54.816Z"
+  },
+  "gm126": {
+    "script": "{ihtx:hflip,huehsv=126,pitch=-3}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-29T19:34:33.913Z",
+    "updatedAt": "2026-06-29T19:34:33.913Z"
+  },
+  "gm127": {
+    "script": "{ihtx:invert,huehsv=-150,gm4,pitch=10;15,areverse,vreverse}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-29T19:35:57.973Z",
+    "updatedAt": "2026-06-29T19:35:57.973Z"
+  },
+  "mangoes": {
+    "script": "{attach:https://youtu.be/7Z4DY3r-lW8?si=-dqFSthHmgoqgirO}",
+    "ownerId": "1233340285044523109",
+    "ownerUsername": "drive.tuner",
+    "createdAt": "2026-06-29T19:38:54.271Z",
+    "updatedAt": "2026-06-29T19:38:54.271Z"
+  },
+  "xisdiet": {
+    "script": "{ihtx:tile=3;3,wave=8;2;1;T*3/vd;0;0;4,pitch=-8,audioequalizer=20;20;5;10;30}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-29T19:56:26.845Z",
+    "updatedAt": "2026-06-29T19:57:32.230Z"
+  },
+  "x_is_diet": {
+    "script": "{tag:xisdiet}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-29T20:02:35.444Z",
+    "updatedAt": "2026-06-29T20:02:35.444Z"
+  },
+  "is_diet": {
+    "script": "{tag:xisdiet}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-29T20:02:38.240Z",
+    "updatedAt": "2026-06-29T20:02:38.240Z"
+  },
+  "isdiet": {
+    "script": "{tag:xisdiet}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-29T20:02:41.910Z",
+    "updatedAt": "2026-06-29T20:02:41.910Z"
+  },
+  "diet": {
+    "script": "{tag:xisdiet}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-29T20:02:44.057Z",
+    "updatedAt": "2026-06-29T20:02:44.057Z"
+  },
+  "randompranks": {
+    "script": "nsb is down\n {iscript:\nload {iv} a\nload https://youtu.be/gRcj6CAhe7s dirt\nsnip dirt {range:700|7200}/100\nsnip dirt 0 {range:1|500}/100\nspeed dirt {range:25|1000}/100\nvolume dirt {range:25|1000}/100\naudiopitch dirt {range:170|2000}/1000\naudiopitch dirt {range:170|2000}/1000\nget a width w\nget a height h\nget a duration d\nrepeatduration dirt d\n{choose:haah|hooh|waaw|woow} a\nwaves a {range:-10000|10000}/100 w/({range:-1000|1000}/100) {range:100|1000}/100\nrotate a 90\nwaves a {range:-10000|10000}/100 h/({range:-1000|1000}/100) {range:100|1000}/100\nrotate a -90\nhueshifthsv a {range:0|36000}/100 {range:0|300}/100 {range:-100|100}/100\n{choose:adestroy|haah|hooh|waaw|woow} a\n{choose:adestroy|flip|flop} a\ncover a w h\naudioputreplace a dirt\nrender a\n}",
+    "ownerId": "958167624133521488",
+    "ownerUsername": "mr.media2k",
+    "createdAt": "2026-06-30T06:30:35.043Z",
+    "updatedAt": "2026-06-30T06:30:35.043Z"
+  },
+  "k+": {
+    "script": "https://files.catbox.moe/mi0xo5.mov",
+    "ownerId": "1500537210473025546",
+    "ownerUsername": "athing0295_30291",
+    "createdAt": "2026-06-30T07:08:18.760Z",
+    "updatedAt": "2026-06-30T07:08:18.760Z"
+  },
+  "idk": {
+    "script": "&ihtx mirror=270,hflip,gm91deform,hflip,channelblend=b;g;r,hue=10,pitch=4.5;-5,areverse 10 0.367 mov",
+    "ownerId": "1473985677132566649",
+    "ownerUsername": "petyadimitrova.",
+    "createdAt": "2026-06-30T07:29:11.899Z",
+    "updatedAt": "2026-06-30T07:29:11.899Z"
+  },
+  "wbs.mp4": {
+    "script": "https://files.catbox.moe/rcdndn.mp4",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-30T09:03:03.497Z",
+    "updatedAt": "2026-06-30T09:03:03.497Z"
+  },
+  "gm128": {
+    "script": "used a different lut generator since notsobot is down {ihtx:tile=3;3,wave=8;2;1;T*3/vd;0;0;4,lut=https://file.garden/Z9gVTBuF7kApO0XE/gm128_000000.cube ,pitch=-8;0;4;9;16}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-30T09:08:37.716Z",
+    "updatedAt": "2026-06-30T09:08:37.716Z"
+  },
+  "klaskysource2": {
+    "script": "{tag:ks}",
+    "ownerId": "1233340285044523109",
+    "ownerUsername": "drive.tuner",
+    "createdAt": "2026-06-30T09:14:29.426Z",
+    "updatedAt": "2026-06-30T09:14:29.426Z"
+  },
+  "gm129": {
+    "script": "{ihtx:invlum,mirror=90,pixelate=20,pitch=-12;-5;0;4;7;12,audiovibrato=5000;0.15}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-30T09:17:49.072Z",
+    "updatedAt": "2026-06-30T09:17:49.072Z"
+  },
+  "gm130": {
+    "script": "{ihtx:huehsv=180,hue=180,invert,pitch=-32;-29;-15;-12;0;3;12;15;21;24;32;35}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-30T09:25:41.880Z",
+    "updatedAt": "2026-06-30T09:51:33.705Z"
+  },
+  "js": {
+    "script": "{js:{args}}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-30T09:55:01.618Z",
+    "updatedAt": "2026-06-30T09:55:01.618Z"
+  },
+  "ts": {
+    "script": "{ts:{args}}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-30T09:55:12.036Z",
+    "updatedAt": "2026-06-30T09:55:12.036Z"
+  },
+  "pitchblack": {
+    "script": "{ihtx:lut=https://file.garden/Z9gVTBuF7kApO0XE/pitch%20black_000000.cube, pitch=-24}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-30T09:59:29.098Z",
+    "updatedAt": "2026-06-30T09:59:29.098Z"
+  },
+  "pitch_black": {
+    "script": "{tag:pitchblack}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-30T09:59:35.190Z",
+    "updatedAt": "2026-06-30T09:59:35.190Z"
+  },
+  "pitchwhite": {
+    "script": "{ihtx:gm4,invert,huehsv=180,pitch=24}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-30T09:59:52.062Z",
+    "updatedAt": "2026-06-30T09:59:52.062Z"
+  },
+  "$ormulator": {
+    "script": "{ihtx:invert,huehsv=180,invlum,tvsim=.75,pitch=-12;7;16}",
+    "ownerId": "1356624375939469372",
+    "ownerUsername": "greenandyellowcatjuice",
+    "createdAt": "2026-06-30T10:00:03.908Z",
+    "updatedAt": "2026-06-30T10:00:03.908Z"
+  },
+  "pitch_white": {
+    "script": "{tag:pitchwhite}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-30T10:00:08.219Z",
+    "updatedAt": "2026-06-30T10:00:08.219Z"
+  },
+  "gm131": {
+    "script": "{ihtx:lut=https://file.garden/Z9gVTBuF7kApO0XE/pitch%20black_000000.cube, pitch=-24,areverse,vreverse}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-30T10:03:14.676Z",
+    "updatedAt": "2026-06-30T10:03:14.676Z"
+  },
+  "gm132": {
+    "script": "{ihtx:huehsv=180,swirl=-130,tvsim=0.75,pitch=-12;-10;-8;-5;0}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-30T10:05:44.014Z",
+    "updatedAt": "2026-06-30T10:05:44.014Z"
+  },
+  "nameless_effect_2.0": {
+    "script": "{sh:\nload {iv}\nload https://files.catbox.moe/dg5tyh.mp4\nload https://files.catbox.moe/s16tx2.mp4\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nffmpeg -i $FILE_1 -i $FILE_2 -i $FILE_3 -filter_complex \"[0]format=gbrp[v1];[1]format=gray,gblur=40,scale=$w:$h,frei0r=contrast0r:\"0.25\"[v2];[2]format=gray,gblur=40,scale=$w:$h,frei0r=contrast0r:\"0.25\"[v3];[v1][v2][v3]displace\" 1.mp4\nffmpeg -i 1.mp4 0.wav\nsox 0.wav 1.wav pitch -2400\nffmpeg -i 1.mp4 -i 1.wav -map 0:v -map 1:a 2.mp4\nffmpeg -i 2.mp4 -af rubberband=pitch='2^(24/12)':formant=712923000 -pix_fmt yuv420p ./output/jshah.mp4}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-06-30T10:06:06.057Z",
+    "updatedAt": "2026-06-30T10:10:16.794Z"
+  },
+  "gm808": {
+    "script": "{ihtx:huehsv=180,swirl=-130,fisheye=-.5,pitch=1;6}",
+    "ownerId": "1356624375939469372",
+    "ownerUsername": "greenandyellowcatjuice",
+    "createdAt": "2026-06-30T10:06:36.961Z",
+    "updatedAt": "2026-06-30T10:06:36.961Z"
+  },
+  "gm133": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nhuehsv i 180\ninvlum i\ngm4 i\nswapuv i\npitch i -1 2 4 6\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-30T10:14:33.634Z",
+    "updatedAt": "2026-06-30T10:15:07.823Z"
+  },
+  "gm134": {
+    "script": "{ihtx:swapuv,mirror=90,pitch=0;3}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-30T10:16:51.360Z",
+    "updatedAt": "2026-06-30T10:16:51.360Z"
+  },
+  "gm135": {
+    "script": "{ihtx:lut=https://files.catbox.moe/3kcneh.cube ,pitch=0;2}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-30T13:51:02.329Z",
+    "updatedAt": "2026-06-30T13:51:02.329Z"
+  },
+  "gm136": {
+    "script": "{ihtx:invert,hue=-135,swapuv,wave=0;3;0;5;31;175,pitch=0;-7}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-30T13:55:40.936Z",
+    "updatedAt": "2026-06-30T13:55:40.936Z"
   }
 }
