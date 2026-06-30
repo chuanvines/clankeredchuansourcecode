@@ -424,10 +424,11 @@ export async function processMedia(opts: ProcessOptions): Promise<ProcessResult>
       // Thumbnail overlay: always the base {iv} video (normPath)
       const lscThumbPath = normPath;
 
-      const { duration: lscDur } = await probeMediaMeta(lscMainPath);
-      if (!lscDur || lscDur <= 0) throw new Error("lsc: could not determine video duration");
+      // Duration and audio always come from {iv} (normPath), not the URL video
+      const { duration: lscDur } = await probeMediaMeta(normPath);
+      if (!lscDur || lscDur <= 0) throw new Error("lsc: could not determine {iv} duration");
       const half = (lscDur / 2).toFixed(6);
-      const lscHasAudio = await probeHasAudio(lscMainPath);
+      const lscHasAudio = await probeHasAudio(normPath);
 
       const safeText = text
         .replace(/\\/g, "\\\\")
@@ -453,10 +454,10 @@ export async function processMedia(opts: ProcessOptions): Promise<ProcessResult>
           `:box=1:boxcolor=black@0.5:boxborderw=10:x=(w-tw-10):y=10[vout]`,
       ];
 
-      // Audio from main video (inputs 0/2): trim each half then concat
+      // Audio from {iv} (inputs 1/3 = normPath): trim each half then concat
       const audioChain = lscHasAudio ? [
-        `[0:a]atrim=0:${half},asetpts=PTS-STARTPTS,aresample=44100[_laa]`,
-        `[2:a]atrim=${half},asetpts=PTS-STARTPTS,aresample=44100[_lab]`,
+        `[1:a]atrim=0:${half},asetpts=PTS-STARTPTS,aresample=44100[_laa]`,
+        `[3:a]atrim=${half},asetpts=PTS-STARTPTS,aresample=44100[_lab]`,
         `[_laa][_lab]concat=n=2:v=0:a=1[aout]`,
       ] : [];
 
