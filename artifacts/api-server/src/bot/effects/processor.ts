@@ -403,22 +403,31 @@ export async function processMedia(opts: ProcessOptions): Promise<ProcessResult>
       return { buffer: await readFile(szFinalPath), ext: outExt, contentType: getContentType(outExt) };
     }
 
-    // Handle lsc: temporal split-screen with thumbnail overlay and text label
+    // Handle lsc: temporal split-screen with thumbnail overlay and text label.
+    // Inputs: 0=main, 1=thumb({iv}), 2=main, 3=thumb({iv})
+    // Main video is split at its midpoint; {iv} is scaled to 1/4 size as overlay thumbnail.
+    // When no URL is given, main = {iv} = normPath (same file used for all 4 inputs).
     if (filters.pendingLsc && opts.mediaType === "video" && !opts.forceGif) {
       const { text, videoUrl } = filters.pendingLsc;
-      const lscInput = videoUrl ? join(tmpDir, "lsc_extra.mp4") : normPath;
+
+      // Main video: URL if provided, otherwise the base {iv} video
+      const lscMainPath = videoUrl ? join(tmpDir, "lsc_main.mp4") : normPath;
       if (videoUrl) {
         try {
-          await writeFile(lscInput, await downloadFile(videoUrl));
+          await writeFile(lscMainPath, await downloadFile(videoUrl));
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           throw new Error(`lsc: could not download video URL: ${msg}`);
         }
       }
-      const { duration: lscDur } = await probeMediaMeta(lscInput);
+
+      // Thumbnail overlay: always the base {iv} video (normPath)
+      const lscThumbPath = normPath;
+
+      const { duration: lscDur } = await probeMediaMeta(lscMainPath);
       if (!lscDur || lscDur <= 0) throw new Error("lsc: could not determine video duration");
-      const half = lscDur / 2;
-      const lscHasAudio = await probeHasAudio(lscInput);
+      const half = (lscDur / 2).toFixed(6);
+      const lscHasAudio = await probeHasAudio(lscMainPath);
 
       const safeText = text
         .replace(/\\/g, "\\\\")
@@ -428,26 +437,27 @@ export async function processMedia(opts: ProcessOptions): Promise<ProcessResult>
         .replace(/\]/g, "\\]");
 
       const lscFontPath = join(dirname(fileURLToPath(import.meta.url)), "assets", "arialbold.ttf");
+
+      // 4 inputs: [0]=main, [1]=thumb, [2]=main, [3]=thumb
+      // [0:v] → first half of main; [1:v] → thumbnail for first half
+      // [2:v] → second half of main; [3:v] → thumbnail for second half
       const videoChain = [
-        `[0:v]split=4[_lv1][_lv2][_lv3][_lv4]`,
-        `[_lv1]trim=0:${half},setpts=PTS-STARTPTS[_lia]`,
-        `[_lv2]setpts=PTS-STARTPTS,setpts=0.5*PTS,scale=iw/2:ih/2[_lia2]`,
-        `[_lv3]trim=${half},setpts=PTS-STARTPTS[_lib]`,
-        `[_lv4]setpts=PTS-STARTPTS,setpts=0.5*PTS,scale=iw/2:ih/2[_lib2]`,
+        `[0:v]trim=0:${half},setpts=PTS-STARTPTS[_lia]`,
+        `[1:v]setpts=PTS-STARTPTS,scale=iw/2:ih/2[_lia2]`,
+        `[2:v]trim=${half},setpts=PTS-STARTPTS[_lib]`,
+        `[3:v]setpts=PTS-STARTPTS,scale=iw/2:ih/2[_lib2]`,
         `[_lia][_lia2]overlay=0:0[_lpart1]`,
         `[_lib][_lib2]overlay=W/2:H/2[_lpart2]`,
-        `[_lpart1][_lpart2]concat=n=2:v=1:a=0,format=yuv420p,drawtext=fontfile='${lscFontPath}':text='${safeText}':fontsize=50:fontcolor=white:box=1:boxcolor=black@0.5:boxborderw=10:x=(w-tw-10):y=10[vout]`,
+        `[_lpart1][_lpart2]concat=n=2:v=1:a=0,format=yuv420p,` +
+          `drawtext=fontfile='${lscFontPath}':text='${safeText}':fontsize=50:fontcolor=white` +
+          `:box=1:boxcolor=black@0.5:boxborderw=10:x=(w-tw-10):y=10[vout]`,
       ];
 
+      // Audio from main video (inputs 0/2): trim each half then concat
       const audioChain = lscHasAudio ? [
-        `[0:a]asplit=4[_la1][_la2][_la3][_la4]`,
-        `[_la1]atrim=0:${half},asetpts=PTS-STARTPTS,aresample=44100[_laa]`,
-        `[_la2]asetpts=PTS-STARTPTS,atempo=2.0,aresample=44100[_laa2]`,
-        `[_la3]atrim=${half},asetpts=PTS-STARTPTS,aresample=44100[_lab]`,
-        `[_la4]asetpts=PTS-STARTPTS,atempo=2.0,aresample=44100[_lab2]`,
-        `[_laa][_laa2]amix=inputs=2:normalize=0[_laout1]`,
-        `[_lab][_lab2]amix=inputs=2:normalize=0[_laout2]`,
-        `[_laout1][_laout2]concat=n=2:v=0:a=1[aout]`,
+        `[0:a]atrim=0:${half},asetpts=PTS-STARTPTS,aresample=44100[_laa]`,
+        `[2:a]atrim=${half},asetpts=PTS-STARTPTS,aresample=44100[_lab]`,
+        `[_laa][_lab]concat=n=2:v=0:a=1[aout]`,
       ] : [];
 
       const lscFC = [...videoChain, ...audioChain].join(";");
@@ -459,11 +469,15 @@ export async function processMedia(opts: ProcessOptions): Promise<ProcessResult>
         : ["-an"];
 
       const lscClips: string[] = [];
-      let lscCurrent = lscInput;
+      let lscMainCurrent = lscMainPath;
       for (let i = 0; i < repCount; i++) {
         const lscOut = join(tmpDir, `lsc${i}${outExt}`);
         await spawnFfmpeg([
-          "-y", "-i", lscCurrent,
+          "-y",
+          "-i", lscMainCurrent,  // 0: main video (first half source + audio)
+          "-i", lscThumbPath,    // 1: thumbnail overlay for first half
+          "-i", lscMainCurrent,  // 2: main video (second half source + audio)
+          "-i", lscThumbPath,    // 3: thumbnail overlay for second half
           "-filter_complex", lscFC,
           ...lscMaps,
           "-t", String(lscDur),
@@ -473,7 +487,7 @@ export async function processMedia(opts: ProcessOptions): Promise<ProcessResult>
           lscOut,
         ]);
         lscClips.push(lscOut);
-        lscCurrent = lscOut;
+        lscMainCurrent = lscOut;
       }
 
       let lscFinalPath: string;

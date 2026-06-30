@@ -3365,5 +3365,12 @@
     "ownerUsername": "obltot671",
     "createdAt": "2026-06-30T16:40:05.768Z",
     "updatedAt": "2026-06-30T16:40:05.768Z"
+  },
+  "gm138": {
+    "script": "{imagescript:\nload {iv} i\nhuehsv i 180\nhue i 180\ninvert i\nmirror i 0\ntvsim i 0.75\nautotune=https://files.catbox.moe/g796gq.wav\nareverse i\npitch i -10 -7 0 3\n}",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-06-30T16:54:21.292Z",
+    "updatedAt": "2026-06-30T16:54:21.292Z"
   }
 }
