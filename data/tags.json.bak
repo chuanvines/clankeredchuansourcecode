@@ -3409,11 +3409,11 @@
     "updatedAt": "2026-06-30T17:27:38.063Z"
   },
   "gm141": {
-    "script": "use gm54p for part 2 {ihtx:lut=https://files.catbox.moe/3tnqu2.cube ,fisheye=1,pitch=-10;-7;-4;-1;2;9;12;14;15;17;18;20;21;23;26}",
+    "script": "use &t gm54p for part 2 {ihtx:lut=https://files.catbox.moe/3tnqu2.cube ,fisheye=1,pitch=-10;-7;-4;-1;2;9;12;14;15;17;18;20;21;23;26}",
     "ownerId": "1387479962323255306",
     "ownerUsername": "yasinreturns",
     "createdAt": "2026-06-30T17:30:10.988Z",
-    "updatedAt": "2026-06-30T17:30:10.988Z"
+    "updatedAt": "2026-06-30T17:30:31.939Z"
   },
   "gm54p": {
     "script": "{ihtx:pitch=5;10;14}",
