@@ -883,6 +883,28 @@ export function buildFilters(effects: ParsedEffect[]): FilterResult {
         break;
       }
 
+      case "cartoon": {
+        // frei0r "cartoon" plugin: params are triLevel;threshold (each 0.0-1.0)
+        const triLevel = effect.subparams[0] ?? "0.11";
+        const threshold = effect.subparams[1] ?? "0.20";
+        vf(videoSegments, `frei0r=filter_name=cartoon:filter_params=${triLevel}|${threshold}`);
+        break;
+      }
+
+      case "distort0r": {
+        // frei0r "distort0r" plugin: params are amount;tilt (each 0.0-1.0)
+        const amount = effect.subparams[0] ?? "0.2";
+        const tilt = effect.subparams[1] ?? "0.5";
+        vf(videoSegments, `frei0r=filter_name=distort0r:filter_params=${amount}|${tilt}`);
+        break;
+      }
+
+      case "nervous": {
+        // frei0r "nervous" plugin: randomly swaps in a previous frame (glitch effect)
+        vf(videoSegments, `frei0r=filter_name=nervous`);
+        break;
+      }
+
       case "orb2": {
         vf(
           videoSegments,
