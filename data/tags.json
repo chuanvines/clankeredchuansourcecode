@@ -182,7 +182,7 @@
     "updatedAt": "2026-06-11T13:59:41.362Z"
   },
   "ihtx_custom_ffmpeg": {
-    "script": "\u26a0\ufe0f Warning: Make sure you use `&t sync` afterwards to make sure the video is synced to the audio\n{sh:\nload {iv}\n\nsr=$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nfr=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $FILE_1)\n\nffmpeg -y -i $FILE_1 -vf trim=end={arg:1} -c:v libx264 -c:a aac -af atrim=end={arg:1} 1.mp4\n\npower={arg:0}\nfor i in $(seq 2 $((power + 1))); do\n  prev=$((i-1))\n  ffmpeg -y -i ${prev}.mp4 {arg:2+} -t {arg:1} -preset ultrafast -crf 23 -pix_fmt yuv420p ${i}.mp4\ndone\n\nfor i in $(seq 2 $((power + 1))); do\n  echo \"file '${i}.mp4'\" >> list.txt\ndone\nffmpeg -y -f concat -safe 0 -i list.txt -c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p -c:a aac ./output/ihtx.mp4\n}",
+    "script": "⚠️ Warning: Make sure you use `&t sync` afterwards to make sure the video is synced to the audio\n{sh:\nload {iv}\n\nsr=$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nfr=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $FILE_1)\n\nffmpeg -y -i $FILE_1 -vf trim=end={arg:1} -c:v libx264 -c:a aac -af atrim=end={arg:1} 1.mp4\n\npower={arg:0}\nfor i in $(seq 2 $((power + 1))); do\n  prev=$((i-1))\n  ffmpeg -y -i ${prev}.mp4 {arg:2+} -t {arg:1} -preset ultrafast -crf 23 -pix_fmt yuv420p ${i}.mp4\ndone\n\nfor i in $(seq 2 $((power + 1))); do\n  echo \"file '${i}.mp4'\" >> list.txt\ndone\nffmpeg -y -f concat -safe 0 -i list.txt -c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p -c:a aac ./output/ihtx.mp4\n}",
     "ownerId": "1431176242614501538",
     "ownerUsername": "btve436",
     "createdAt": "2026-06-11T14:00:18.259Z",
@@ -392,7 +392,7 @@
     "updatedAt": "2026-06-11T17:14:59.687Z"
   },
   "ihtxfc": {
-    "script": "{if:{tag:745467049572082899}|=|true|then:{js:console.error(`You are currently banned from using this tag`)}|else:\n{set:string|{substring:{args}|{indexof:{arg:2}|{args}}}}\n{set:vidlen|{sh:\nload {iv}\nffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\"\n}}\n{set:time|{if:{arg:1}|=|vidlen|then:{get:vidlen}|else:{arg:1}}}\n\n{set:code|\nload {iv}\n\n{js:const n = {arg:0};\nconst time = parseFloat(`{get:time}`.trim());\nconst segdur = time / n;\nconst segs = [...Array(n)].map((_, i) => `ffmpeg -i $FILE_1 -ss ${i * segdur} -t ${segdur} {get:string} ${i+1}.ts`);\nconst concat = [...Array(n)].map((_, i) => `${i+1}.ts`).join(\"|\");\nsegs.forEach(s => console.log(s));\nconsole.log(`ffmpeg -i \"concat:${concat}\" ./output/ihtx_custom.mp4`);\n}}\n\u26a0\ufe0f Warning: Make sure you use `.t sync` afterwards to make sure the video is synced to the audio\n{sh:{js:console.log(`{get:code}`)}}\n}",
+    "script": "{if:{tag:745467049572082899}|=|true|then:{js:console.error(`You are currently banned from using this tag`)}|else:\n{set:string|{substring:{args}|{indexof:{arg:2}|{args}}}}\n{set:vidlen|{sh:\nload {iv}\nffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\"\n}}\n{set:time|{if:{arg:1}|=|vidlen|then:{get:vidlen}|else:{arg:1}}}\n\n{set:code|\nload {iv}\n\n{js:const n = {arg:0};\nconst time = parseFloat(`{get:time}`.trim());\nconst segdur = time / n;\nconst segs = [...Array(n)].map((_, i) => `ffmpeg -i $FILE_1 -ss ${i * segdur} -t ${segdur} {get:string} ${i+1}.ts`);\nconst concat = [...Array(n)].map((_, i) => `${i+1}.ts`).join(\"|\");\nsegs.forEach(s => console.log(s));\nconsole.log(`ffmpeg -i \"concat:${concat}\" ./output/ihtx_custom.mp4`);\n}}\n⚠️ Warning: Make sure you use `.t sync` afterwards to make sure the video is synced to the audio\n{sh:{js:console.log(`{get:code}`)}}\n}",
     "ownerId": "1510601340638990337",
     "ownerUsername": "jose917372",
     "createdAt": "2026-06-11T17:19:12.724Z",
@@ -1539,8 +1539,8 @@
     "createdAt": "2026-06-15T14:14:47.417Z",
     "updatedAt": "2026-06-15T14:14:47.417Z"
   },
-  "entt\u2019s_gm": {
-    "script": "ENTT\u2019s_Luigigroup {imagescript:\nload {iv} i\ngradientmap=[[0,0,255,255],[0,255,255,255],[255,0,0,255]]\nfisheye=2\npitch=-1\n}",
+  "entt’s_gm": {
+    "script": "ENTT’s_Luigigroup {imagescript:\nload {iv} i\ngradientmap=[[0,0,255,255],[0,255,255,255],[255,0,0,255]]\nfisheye=2\npitch=-1\n}",
     "ownerId": "1221656858612203581",
     "ownerUsername": "gucci_17__75369",
     "createdAt": "2026-06-15T14:16:28.624Z",
@@ -1553,7 +1553,7 @@
     "createdAt": "2026-06-15T14:17:55.230Z",
     "updatedAt": "2026-06-15T14:17:55.230Z"
   },
-  "entt\u2019s_luigigroup": {
+  "entt’s_luigigroup": {
     "script": "{imagescript:\nload {iv} i\ngradientmap=[[0,0,255,255],[0,255,255,255],[255,0,0,255]]\nfisheye=2\npitch=-1\n}",
     "ownerId": "1221656858612203581",
     "ownerUsername": "gucci_17__75369",
@@ -1574,7 +1574,7 @@
     "createdAt": "2026-06-15T14:18:05.717Z",
     "updatedAt": "2026-06-15T14:18:05.717Z"
   },
-  "opposite_entt\u2019s_luigigroup": {
+  "opposite_entt’s_luigigroup": {
     "script": "{imagescript:\nload {iv} i\ngradientmap=[[255,0,0,255],[255,255,0,255],[0,0,255,255]]\nfisheye=-2\npitch=1\n}",
     "ownerId": "1221656858612203581",
     "ownerUsername": "gucci_17__75369",
@@ -1953,7 +1953,7 @@
     "updatedAt": "2026-06-16T17:34:29.288Z"
   },
   "foreach": {
-    "script": "{foreach:{argslen}|{set:e|{math:{get:e}+1}}{get:e}\u200e\u25cf}",
+    "script": "{foreach:{argslen}|{set:e|{math:{get:e}+1}}{get:e}‎●}",
     "ownerId": "1431176242614501538",
     "ownerUsername": "btve436",
     "createdAt": "2026-06-16T17:36:57.189Z",
@@ -2632,7 +2632,7 @@
     "updatedAt": "2026-06-20T16:11:41.950Z"
   },
   "ihtx_custom_ffmpeg+": {
-    "script": "\u26a0\ufe0f Warning: Make sure you use `&t sync` afterwards to make sure the video is synced to the audio\n{sh:\nload {iv}\n\npower={arg:0}\nduration_arg={arg:1}\noutputformat={arg:3}\nif [ -z \"$outputformat\" ] || [ \"$outputformat\" = \"default\" ]; then outputformat=\"mp4\"; fi\n\ninputformat={arg:4}\nif [ -z \"$inputformat\" ] || [ \"$inputformat\" = \"default\" ]; then inputformat=\"mkv\"; fi\nif [ \"$inputformat\" = \"mkv\" ]; then fmtflag=\"matroska\"; else fmtflag=\"$inputformat\"; fi\n\nffmpeg -y -i $FILE_1 -c:v libx264 -c:a aac 1.${inputformat}\n\nsr=$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of default=nokey=1:noprint_wrappers=1 1.${inputformat})\nfr=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nokey=1:noprint_wrappers=1 1.${inputformat})\nd=$(ffprobe -i 1.${inputformat} -show_entries format=duration -v quiet -of csv=\"p=0\")\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 1.${inputformat})\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 1.${inputformat})\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 1.${inputformat})\nif [ \"$duration_arg\" = \"vidlen\" ]; then duration=$d; else duration=$duration_arg; fi\n\nfor i in $(seq 2 $((power + 1))); do\n  prev=$((i-1))\n  ffmpeg -y -i ${prev}.${inputformat} -c:v libx264 -c:a aac -r ${fr} -t ${duration} -f ${fmtflag} {arg:5+} _iter_${i}.${inputformat}\n  ffmpeg -y -i _iter_${i}.${inputformat} -map 0:v:0 -map 0:a:0? -c copy ${i}.${inputformat}\n  rm -f _iter_${i}.${inputformat}\ndone\n\n# {arg:2}\n\nfor i in $(seq 2 $((power + 1))); do\n  echo \"file '${i}.${inputformat}'\" >> list.txt\ndone\nffmpeg -y -f concat -safe 0 -i list.txt -c:v libx264 -preset ultrafast -crf 23 -c:a aac -ar 44100 -ac 2 -movflags +faststart ./output/ihtx.${outputformat}\n}",
+    "script": "⚠️ Warning: Make sure you use `&t sync` afterwards to make sure the video is synced to the audio\n{sh:\nload {iv}\n\npower={arg:0}\nduration_arg={arg:1}\noutputformat={arg:3}\nif [ -z \"$outputformat\" ] || [ \"$outputformat\" = \"default\" ]; then outputformat=\"mp4\"; fi\n\ninputformat={arg:4}\nif [ -z \"$inputformat\" ] || [ \"$inputformat\" = \"default\" ]; then inputformat=\"mkv\"; fi\nif [ \"$inputformat\" = \"mkv\" ]; then fmtflag=\"matroska\"; else fmtflag=\"$inputformat\"; fi\n\nffmpeg -y -i $FILE_1 -c:v libx264 -c:a aac 1.${inputformat}\n\nsr=$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of default=nokey=1:noprint_wrappers=1 1.${inputformat})\nfr=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nokey=1:noprint_wrappers=1 1.${inputformat})\nd=$(ffprobe -i 1.${inputformat} -show_entries format=duration -v quiet -of csv=\"p=0\")\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 1.${inputformat})\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 1.${inputformat})\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 1.${inputformat})\nif [ \"$duration_arg\" = \"vidlen\" ]; then duration=$d; else duration=$duration_arg; fi\n\nfor i in $(seq 2 $((power + 1))); do\n  prev=$((i-1))\n  ffmpeg -y -i ${prev}.${inputformat} -c:v libx264 -c:a aac -r ${fr} -t ${duration} -f ${fmtflag} {arg:5+} _iter_${i}.${inputformat}\n  ffmpeg -y -i _iter_${i}.${inputformat} -map 0:v:0 -map 0:a:0? -c copy ${i}.${inputformat}\n  rm -f _iter_${i}.${inputformat}\ndone\n\n# {arg:2}\n\nfor i in $(seq 2 $((power + 1))); do\n  echo \"file '${i}.${inputformat}'\" >> list.txt\ndone\nffmpeg -y -f concat -safe 0 -i list.txt -c:v libx264 -preset ultrafast -crf 23 -c:a aac -ar 44100 -ac 2 -movflags +faststart ./output/ihtx.${outputformat}\n}",
     "ownerId": "1431176242614501538",
     "ownerUsername": "btve436",
     "createdAt": "2026-06-20T16:36:39.234Z",
@@ -2715,7 +2715,7 @@
     "createdAt": "2026-06-24T06:42:24.572Z",
     "updatedAt": "2026-06-24T06:42:24.572Z"
   },
-  "\ufdfd": {
+  "﷽": {
     "script": "{eval:{args}}",
     "ownerId": "1431176242614501538",
     "ownerUsername": "btve436",
@@ -3421,5 +3421,26 @@
     "ownerUsername": "yasinreturns",
     "createdAt": "2026-06-30T17:30:19.537Z",
     "updatedAt": "2026-06-30T17:30:19.537Z"
+  },
+  "ude.common": {
+    "script": "{ihtx:vflip,avflip}",
+    "ownerId": "1298900047458729984",
+    "ownerUsername": "dazdisc0rd",
+    "createdAt": "2026-07-03T14:42:54.568Z",
+    "updatedAt": "2026-07-03T14:42:54.568Z"
+  },
+  "ude.traditional": {
+    "script": "{ihtx:grayscale,invert,vflip,avflip}",
+    "ownerId": "1298900047458729984",
+    "ownerUsername": "dazdisc0rd",
+    "createdAt": "2026-07-03T14:44:44.113Z",
+    "updatedAt": "2026-07-03T14:44:44.113Z"
+  },
+  "ikx": {
+    "script": "{imagescript:\nload {iv} i\nhueshifthsv i -140\nexplode i\naudiopitch=-8\n}",
+    "ownerId": "1398694515363024986",
+    "ownerUsername": "qrs0767_56497",
+    "createdAt": "2026-07-03T14:51:50.267Z",
+    "updatedAt": "2026-07-03T14:51:50.267Z"
   }
 }

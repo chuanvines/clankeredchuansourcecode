@@ -2632,11 +2632,11 @@
     "updatedAt": "2026-06-20T16:11:41.950Z"
   },
   "ihtx_custom_ffmpeg+": {
-    "script": "⚠️ Warning: Make sure you use `&t sync` afterwards to make sure the video is synced to the audio\n{sh:\nload {iv}\n\npower={arg:0}\nduration_arg={arg:1}\noutputformat={arg:3}\nif [ -z \"$outputformat\" ] || [ \"$outputformat\" = \"default\" ]; then outputformat=\"mp4\"; fi\n\ninputformat={arg:4}\nif [ -z \"$inputformat\" ] || [ \"$inputformat\" = \"default\" ]; then inputformat=\"mkv\"; fi\nif [ \"$inputformat\" = \"mkv\" ]; then fmtflag=\"matroska\"; else fmtflag=\"$inputformat\"; fi\n\nffmpeg -y -i $FILE_1 -c:v libx264 -c:a aac 1.${inputformat}\n\nsr=$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of default=nokey=1:noprint_wrappers=1 1.${inputformat})\nfr=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nokey=1:noprint_wrappers=1 1.${inputformat})\nd=$(ffprobe -i 1.${inputformat} -show_entries format=duration -v quiet -of csv=\"p=0\")\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 1.${inputformat})\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 1.${inputformat})\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 1.${inputformat})\nif [ \"$duration_arg\" = \"vidlen\" ]; then duration=$d; else duration=$duration_arg; fi\n\nfor i in $(seq 2 $((power + 1))); do\n  prev=$((i-1))\n  ffmpeg -y -i ${prev}.${inputformat} {arg:5+} -c:v libx264 -c:a aac -r ${fr} -t ${duration} -f ${fmtflag} _iter_${i}.${inputformat}\n  ffmpeg -y -i _iter_${i}.${inputformat} -map 0:v:0 -map 0:a:0? -c copy ${i}.${inputformat}\n  rm -f _iter_${i}.${inputformat}\ndone\n\n# {arg:2}\n\nfor i in $(seq 2 $((power + 1))); do\n  echo \"file '${i}.${inputformat}'\" >> list.txt\ndone\nffmpeg -y -f concat -safe 0 -i list.txt -c:v libx264 -preset ultrafast -crf 23 -c:a aac -ar 44100 -ac 2 -movflags +faststart ./output/ihtx.${outputformat}\n}",
+    "script": "⚠️ Warning: Make sure you use `&t sync` afterwards to make sure the video is synced to the audio\n{sh:\nload {iv}\n\npower={arg:0}\nduration_arg={arg:1}\noutputformat={arg:3}\nif [ -z \"$outputformat\" ] || [ \"$outputformat\" = \"default\" ]; then outputformat=\"mp4\"; fi\n\ninputformat={arg:4}\nif [ -z \"$inputformat\" ] || [ \"$inputformat\" = \"default\" ]; then inputformat=\"mkv\"; fi\nif [ \"$inputformat\" = \"mkv\" ]; then fmtflag=\"matroska\"; else fmtflag=\"$inputformat\"; fi\n\nffmpeg -y -i $FILE_1 -c:v libx264 -c:a aac 1.${inputformat}\n\nsr=$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of default=nokey=1:noprint_wrappers=1 1.${inputformat})\nfr=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nokey=1:noprint_wrappers=1 1.${inputformat})\nd=$(ffprobe -i 1.${inputformat} -show_entries format=duration -v quiet -of csv=\"p=0\")\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 1.${inputformat})\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 1.${inputformat})\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 1.${inputformat})\nif [ \"$duration_arg\" = \"vidlen\" ]; then duration=$d; else duration=$duration_arg; fi\n\nfor i in $(seq 2 $((power + 1))); do\n  prev=$((i-1))\n  ffmpeg -y -i ${prev}.${inputformat} -c:v libx264 -c:a aac -r ${fr} -t ${duration} -f ${fmtflag} {arg:5+} _iter_${i}.${inputformat}\n  ffmpeg -y -i _iter_${i}.${inputformat} -map 0:v:0 -map 0:a:0? -c copy ${i}.${inputformat}\n  rm -f _iter_${i}.${inputformat}\ndone\n\n# {arg:2}\n\nfor i in $(seq 2 $((power + 1))); do\n  echo \"file '${i}.${inputformat}'\" >> list.txt\ndone\nffmpeg -y -f concat -safe 0 -i list.txt -c:v libx264 -preset ultrafast -crf 23 -c:a aac -ar 44100 -ac 2 -movflags +faststart ./output/ihtx.${outputformat}\n}",
     "ownerId": "1431176242614501538",
     "ownerUsername": "btve436",
     "createdAt": "2026-06-20T16:36:39.234Z",
-    "updatedAt": "2026-06-20T19:24:29.017Z"
+    "updatedAt": "2026-06-30T17:10:00.000Z"
   },
   "icf+": {
     "script": "{tag:ihtx_custom_ffmpeg+}",
@@ -3421,5 +3421,19 @@
     "ownerUsername": "yasinreturns",
     "createdAt": "2026-06-30T17:30:19.537Z",
     "updatedAt": "2026-06-30T17:30:19.537Z"
+  },
+  "ude.common": {
+    "script": "{ihtx:vflip,avflip}",
+    "ownerId": "1298900047458729984",
+    "ownerUsername": "dazdisc0rd",
+    "createdAt": "2026-07-03T14:42:54.568Z",
+    "updatedAt": "2026-07-03T14:42:54.568Z"
+  },
+  "ude.traditional": {
+    "script": "{ihtx:grayscale,invert,vflip,avflip}",
+    "ownerId": "1298900047458729984",
+    "ownerUsername": "dazdisc0rd",
+    "createdAt": "2026-07-03T14:44:44.113Z",
+    "updatedAt": "2026-07-03T14:44:44.113Z"
   }
 }
