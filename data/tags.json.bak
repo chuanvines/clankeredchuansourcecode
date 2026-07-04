@@ -3435,5 +3435,12 @@
     "ownerUsername": "dazdisc0rd",
     "createdAt": "2026-07-03T14:44:44.113Z",
     "updatedAt": "2026-07-03T14:44:44.113Z"
+  },
+  "ikx": {
+    "script": "{imagescript:\nload {iv} i\nhueshifthsv i -140\nexplode i\naudiopitch=-8\n}",
+    "ownerId": "1398694515363024986",
+    "ownerUsername": "qrs0767_56497",
+    "createdAt": "2026-07-03T14:51:50.267Z",
+    "updatedAt": "2026-07-03T14:51:50.267Z"
   }
 }
