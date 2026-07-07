@@ -265,17 +265,21 @@ async function sendChunked(
 
 export async function runAi(message: Message): Promise<void> {
   const raw = message.content.trim();
-  const prompt = raw.slice("&ai".length).trim();
+  let prompt = raw.slice("&ai".length).trim();
+
+  // Detect and strip -debug flag (anywhere in prompt)
+  const debugMode = /\s-debug\b/.test(prompt) || prompt.endsWith("-debug");
+  prompt = prompt.replace(/\s*-debug\b/g, "").trim();
 
   if (!prompt) {
-    await message.reply("Usage: `&ai <your question or prompt>`");
+    await message.reply("Usage: `&ai <your question or prompt>`\nAdd `-debug` to receive the raw AI response as a text file.");
     return;
   }
 
   const statusMsg = await message.reply("⏳ Thinking…");
 
   try {
-    logger.info({ prompt: prompt.slice(0, 100) }, "Running &ai command");
+    logger.info({ prompt: prompt.slice(0, 100), debugMode }, "Running &ai command");
 
     const response = await client.chat.completions.create({
       model: MODEL,
@@ -287,6 +291,15 @@ export async function runAi(message: Message): Promise<void> {
     });
 
     const rawText = response.choices[0]?.message?.content ?? "(no response)";
+
+    // -debug: send raw AI response as a .txt file and stop
+    if (debugMode) {
+      const file = new AttachmentBuilder(Buffer.from(rawText, "utf-8"), {
+        name: "ai_response.txt",
+      });
+      await statusMsg.edit({ content: "📄 Raw AI response:", files: [file] });
+      return;
+    }
 
     const { codes, stripped } = extractProcessBlocks(rawText);
 

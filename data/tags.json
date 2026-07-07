@@ -3547,5 +3547,12 @@
     "ownerUsername": "f0000r.",
     "createdAt": "2026-07-07T12:04:07.696Z",
     "updatedAt": "2026-07-07T12:04:07.696Z"
+  },
+  "gm348": {
+    "script": "{ihtx:invert,pitch=-6;3,volume=2}",
+    "ownerId": "1462941533593534517",
+    "ownerUsername": "nicholasm724_56126",
+    "createdAt": "2026-07-07T14:39:38.847Z",
+    "updatedAt": "2026-07-07T14:42:00.965Z"
   }
 }
