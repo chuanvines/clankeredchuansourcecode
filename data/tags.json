@@ -3500,10 +3500,52 @@
     "updatedAt": "2026-07-06T06:57:02.767Z"
   },
   "sn+": {
-    "script": "{eval:{text: https://pastebin.com/raw/EVkpqpXw }}",
+    "script": "{eval:{text:https://pastebin.com/raw/EVkpqpXw}}}",
     "ownerId": "1398694515363024986",
     "ownerUsername": "qrs0767_56497",
     "createdAt": "2026-07-07T11:06:59.006Z",
-    "updatedAt": "2026-07-07T11:06:59.006Z"
+    "updatedAt": "2026-07-07T11:20:20.485Z"
+  },
+  "create": {
+    "script": "are you idiot just replace \"create\" to \"add\"",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-07-07T11:12:14.953Z",
+    "updatedAt": "2026-07-07T11:12:14.953Z"
+  },
+  "gm9rj": {
+    "script": "{ihtx:invert,pitch=0;-2} fixed version for pen2026",
+    "ownerId": "1387479962323255306",
+    "ownerUsername": "yasinreturns",
+    "createdAt": "2026-07-07T11:14:41.534Z",
+    "updatedAt": "2026-07-07T11:14:41.534Z"
+  },
+  "example": {
+    "script": "{ihtx:invert,hue=50,pitch=-7 5 -6}",
+    "ownerId": "1241279698231885847",
+    "ownerUsername": "catnapstudios",
+    "createdAt": "2026-07-07T11:20:03.083Z",
+    "updatedAt": "2026-07-07T11:20:03.083Z"
+  },
+  "normalsplitpitchwhite": {
+    "script": "{ihtx:huehsv=-50,hflip,pitch=0;24}",
+    "ownerId": "1517551460601036831",
+    "ownerUsername": "f0000r.",
+    "createdAt": "2026-07-07T12:02:15.144Z",
+    "updatedAt": "2026-07-07T12:02:15.144Z"
+  },
+  "normalsplitpitchblack": {
+    "script": "{ihtx:huehsv=50,hflip,pitch=0;-24}",
+    "ownerId": "1517551460601036831",
+    "ownerUsername": "f0000r.",
+    "createdAt": "2026-07-07T12:03:16.472Z",
+    "updatedAt": "2026-07-07T12:03:16.472Z"
+  },
+  "normal": {
+    "script": "{ihtx:pitch=0;-79}",
+    "ownerId": "1517551460601036831",
+    "ownerUsername": "f0000r.",
+    "createdAt": "2026-07-07T12:04:07.696Z",
+    "updatedAt": "2026-07-07T12:04:07.696Z"
   }
 }
