@@ -3199,11 +3199,11 @@
     "updatedAt": "2026-06-29T20:02:44.057Z"
   },
   "randompranks": {
-    "script": "nsb is down\n {iscript:\nload {iv} a\nload https://youtu.be/gRcj6CAhe7s dirt\nsnip dirt {range:700|7200}/100\nsnip dirt 0 {range:1|500}/100\nspeed dirt {range:25|1000}/100\nvolume dirt {range:25|1000}/100\naudiopitch dirt {range:170|2000}/1000\naudiopitch dirt {range:170|2000}/1000\nget a width w\nget a height h\nget a duration d\nrepeatduration dirt d\n{choose:haah|hooh|waaw|woow} a\nwaves a {range:-10000|10000}/100 w/({range:-1000|1000}/100) {range:100|1000}/100\nrotate a 90\nwaves a {range:-10000|10000}/100 h/({range:-1000|1000}/100) {range:100|1000}/100\nrotate a -90\nhueshifthsv a {range:0|36000}/100 {range:0|300}/100 {range:-100|100}/100\n{choose:adestroy|haah|hooh|waaw|woow} a\n{choose:adestroy|flip|flop} a\ncover a w h\naudioputreplace a dirt\nrender a\n}",
+    "script": "this is in development, revision #21.6 (random multipitching works!!)\n {iscript:\nload {iv} a\nload https://youtu.be/gRcj6CAhe7s dirt\n{set:snip|{range:700|7200}/100}\n{set:snip2|{math:{get:snip}+{range:1|500}/100}\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\n\nffmpeg -i \"$FILE_1\" -vf trim=start={get:snip},trim=end={get:snip2} -af atrim=start={get:snip},atrim=end={get:snip2} output/snip.mp4\n\nspeed dirt {range:25|1000}/100\nvolume dirt {range:50|1000}/100\nget a width w\nget a height h\nget a duration d\ncopy dirt z\naudiopitch dirt {range:170|2000}/1000\naudiopitch dirt {range:170|2000}/1000\n{set:pitch|1}\n{foreach:{range:0|6}|copy z {get:pitch}\naudiopitch {get:pitch} {range:170|2000}/1000\naudiopitch {get:pitch} {range:170|2000}/1000\naudioputmix dirt {get:pitch}\n{set:pitch|{math:{get:pitch}+1}}}\nrepeatduration dirt d\n{choose:audiodestroy|haah|hooh|waaw|woow} a\n{choose:waves a {math:(({range:-10000|10000}/10000)^3)*100} w/({range:-1000|1000}/100) {range:100|1000}/100\nrotate a 90\nwaves a {math:(({range:-10000|10000}/10000)^3)*100} h/({range:-1000|1000}/100) {range:100|1000}/100\nrotate a -90|rotate a 90\nwaves a {math:(({range:-10000|10000}/10000)^3)*100} w/({range:-1000|1000}/100) {range:100|1000}/100\nrotate a -90\nwaves a {math:(({range:-10000|10000}/10000)^3)*100} h/({range:-1000|1000}/100) {range:100|1000}/100}\nhueshifthsv a {range:0|36000}/100 {range:-10000|10000}/100 {range:-10000|10000}/100\n{choose:audiodestroy|haah|hooh|waaw|woow} a\n{choose:audiodestroy|flip|flop} a\ncover a w h\nrepeatduration dirt d\naudioputreplace a dirt\nrender a\n}",
     "ownerId": "958167624133521488",
     "ownerUsername": "mr.media2k",
     "createdAt": "2026-06-30T06:30:35.043Z",
-    "updatedAt": "2026-06-30T06:30:35.043Z"
+    "updatedAt": "2026-07-07T05:17:33.877Z"
   },
   "k+": {
     "script": "https://files.catbox.moe/mi0xo5.mov",
@@ -3493,10 +3493,10 @@
     "updatedAt": "2026-07-06T06:54:43.218Z"
   },
   "angrynew": {
-    "script": "swapuv,huehsv=60,invert,mirror=90,fisheye=-0.875,adestroy,pitch=0;-2",
+    "script": "{imagescript: load {iv} i swapuv i huehsv=60 invert mirror=90 fisheye=-0.875 adestroy pitch=0;-2 }",
     "ownerId": "1496251769611616426",
     "ownerUsername": "fghfh55",
     "createdAt": "2026-07-06T06:55:30.687Z",
-    "updatedAt": "2026-07-06T06:55:30.687Z"
+    "updatedAt": "2026-07-06T06:57:02.767Z"
   }
 }

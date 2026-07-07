@@ -1605,7 +1605,7 @@ export function buildAudioFilterComplex(
   if (semitones.length === 1) {
     const pitch = Math.pow(2, semitones[0]! / 12).toFixed(6);
     return {
-      filterComplex: `${inputLabel}${prePitch}${pcm}${padBefore}rubberband=tempo=1:formant=6942000/634:pitch=${pitch}${trimAfter},asetpts=PTS-STARTPTS${perStream}[aout]`,
+      filterComplex: `${inputLabel}${prePitch}${pcm}${padBefore}rubberband=pitch=${pitch}:window=long:transients=crisp:smoothing=2.14748e+09/4.9:pitchq=speed:detector=percussive${trimAfter}${perStream}[aout]`,
       audioMap: "[aout]",
     };
   }
@@ -1615,7 +1615,7 @@ export function buildAudioFilterComplex(
 
   const chains = semitones.map((st, i) => {
     const pitch = Math.pow(2, st / 12).toFixed(6);
-    return `[ps${i}]${padBefore}rubberband=tempo=1:formant=6942000/634:pitch=${pitch},asetpts=PTS-STARTPTS,dynaudnorm${perStream}[rb${i}]`;
+    return `[ps${i}]${padBefore}rubberband=pitch=${pitch}:window=long:transients=crisp:smoothing=2.14748e+09/4.9:pitchq=speed:detector=percussive,dynaudnorm${perStream}[rb${i}]`;
   });
   const inputs = semitones.map((_, i) => `[rb${i}]`).join("");
   const mix = `${inputs}amix=inputs=${n}:normalize=0,apad=pad_dur=0.1${trimAfter}[aout]`;
