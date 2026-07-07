@@ -3442,5 +3442,61 @@
     "ownerUsername": "qrs0767_56497",
     "createdAt": "2026-07-03T14:51:50.267Z",
     "updatedAt": "2026-07-03T14:51:50.267Z"
+  },
+  "crazyheliumboothhalloween": {
+    "script": "{ihtx:avflip,huehsv=120,swirl=200}",
+    "ownerId": "1517551460601036831",
+    "ownerUsername": "f0000r.",
+    "createdAt": "2026-07-04T15:15:36.585Z",
+    "updatedAt": "2026-07-04T15:15:36.585Z"
+  },
+  "gm_74": {
+    "script": "{imagescript:\nload {iv} i\ncontrast i -1\nexplode i 0.5\naudiopitch=-10;9;14 i\n}",
+    "ownerId": "1398694515363024986",
+    "ownerUsername": "qrs0767_56497",
+    "createdAt": "2026-07-05T15:17:02.144Z",
+    "updatedAt": "2026-07-05T15:17:02.144Z"
+  },
+  "gm100l": {
+    "script": "{ihtx:lut=https://files.catbox.moe/pvi489.cube",
+    "ownerId": "1398694515363024986",
+    "ownerUsername": "qrs0767_56497",
+    "createdAt": "2026-07-05T17:51:10.792Z",
+    "updatedAt": "2026-07-05T17:51:10.792Z"
+  },
+  "gm/2!2!2": {
+    "script": "{ihtx:lut=https://files.catbox.moe/pvi489.cube}",
+    "ownerId": "1398694515363024986",
+    "ownerUsername": "qrs0767_56497",
+    "createdAt": "2026-07-05T17:52:50.079Z",
+    "updatedAt": "2026-07-05T17:52:50.079Z"
+  },
+  "gm74cc": {
+    "script": "{ihtx:invlum,fisheye=0.575,pitch=-10;9;14,volume=3 20 0.5}",
+    "ownerId": "1398694515363024986",
+    "ownerUsername": "qrs0767_56497",
+    "createdAt": "2026-07-06T06:45:50.862Z",
+    "updatedAt": "2026-07-06T06:45:50.862Z"
+  },
+  "gm74ccnew": {
+    "script": "{ihtx:invlum,fisheye=0.575,pitch=-10;9;14,volume=3 20 0.5}",
+    "ownerId": "1496251769611616426",
+    "ownerUsername": "fghfh55",
+    "createdAt": "2026-07-06T06:51:04.610Z",
+    "updatedAt": "2026-07-06T06:51:04.610Z"
+  },
+  "angryswapuv,huehsv=60,invert,mirror=90,fisheye=-0.875,adestroy,pitch=0;-2": {
+    "script": "10 0.456",
+    "ownerId": "1496251769611616426",
+    "ownerUsername": "fghfh55",
+    "createdAt": "2026-07-06T06:54:43.218Z",
+    "updatedAt": "2026-07-06T06:54:43.218Z"
+  },
+  "angrynew": {
+    "script": "swapuv,huehsv=60,invert,mirror=90,fisheye=-0.875,adestroy,pitch=0;-2",
+    "ownerId": "1496251769611616426",
+    "ownerUsername": "fghfh55",
+    "createdAt": "2026-07-06T06:55:30.687Z",
+    "updatedAt": "2026-07-06T06:55:30.687Z"
   }
 }
