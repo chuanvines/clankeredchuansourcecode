@@ -3540,5 +3540,12 @@
     "ownerUsername": "f0000r.",
     "createdAt": "2026-07-07T12:03:16.472Z",
     "updatedAt": "2026-07-07T12:03:16.472Z"
+  },
+  "normal": {
+    "script": "{ihtx:pitch=0;-79}",
+    "ownerId": "1517551460601036831",
+    "ownerUsername": "f0000r.",
+    "createdAt": "2026-07-07T12:04:07.696Z",
+    "updatedAt": "2026-07-07T12:04:07.696Z"
   }
 }

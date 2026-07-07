@@ -63,11 +63,11 @@
     "updatedAt": "2026-06-30T09:54:52.931Z"
   },
   "ffmpeg": {
-    "script": "{runcodetxt:https://pastebin.com/raw/3hxzDGBD}\n{sh:\nload {iv}\n\nsr=$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nfr=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $FILE_1)\n\nffmpeg -i \"$FILE_1\" {arg:*} -pix_fmt yuv420p output/input.mp4\n}",
+    "script": "{runcodetxt:https://pastebin.com/raw/3hxzDGBD}\n{sh:\nload {iv}\n\nsr=$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nfr=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $FILE_1)\n\nexport FREI0R_PATH=$(echo \"$REPLIT_LD_LIBRARY_PATH\" | tr ':' \"\n\" | grep frei0r | head -1)/frei0r-1\nffmpeg -i \"$FILE_1\" {arg:*} -pix_fmt yuv420p output/input.mp4\n}",
     "ownerId": "1431176242614501538",
     "ownerUsername": "btve436",
     "createdAt": "2026-06-11T08:04:33.767Z",
-    "updatedAt": "2026-06-15T18:46:55.987Z"
+    "updatedAt": "2026-07-07T14:31:47.738365Z"
   },
   "math": {
     "script": "{math:{arg:0}}",
