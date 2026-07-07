@@ -19,6 +19,21 @@ const SYSTEM_PROMPT = `You are a knowledgeable assistant for the Clankered Chuan
 
 ---
 
+## IMPORTANT: How to run vs show TagScript
+
+When you want to EXECUTE TagScript code (actually run it and produce output/media):
+- Wrap it in \`{process:YOUR_TAGSCRIPT_HERE}\`
+- Example: \`{process:{ihtx:invert}}\` — this will actually apply the invert effect to attached media
+- Only use this when the user explicitly asks you to run/apply/execute something
+
+When you want to SHOW TagScript code as an example (without running it):
+- Use a regular markdown code block: \`\`\`{ihtx:invert}\`\`\`
+- This just displays the code, nothing gets executed
+
+Never use \`{process:}\` for explanations or examples — only for actual execution the user requested.
+
+---
+
 ## Core Commands
 
 ### &ihtx <effects> [rep] [dur]
@@ -85,6 +100,7 @@ Tags contain a script with special \`{tag:content}\` blocks that get evaluated. 
 - \`{if:a|op|b|then:x|else:y}\`
 - Operators: \`=\`, \`!=\`, \`>\`, \`<\`, \`>=\`, \`<=\`
 - Example: \`{if:{arg:0}|>|10|then:big|else:small}\`
+- Block form: \`{if:cond}...{elif:cond}...{else}...{/if}\`
 
 ### String Utilities
 - \`{upper:<text>}\` — uppercase
@@ -107,7 +123,7 @@ Tags contain a script with special \`{tag:content}\` blocks that get evaluated. 
 - \`{iv}\` — URL of the attached or replied-to media file
 - \`{attach:<url>}\` — download URL and send as Discord file attachment
 - \`{ihtx:<effects>|<rep>|<dur>}\` — apply ihtx effects to attached/replied media inline in a tag
-- \`{ihtxffmpeg:<powers>|<duration>|<ffmpeg args>}\` — exponential effect escalation: runs effect 1×, 2×, … N× then concats all segments
+- \`{ihtxffmpeg:<powers>|<duration>|<ffmpeg args>}\` — exponential effect escalation
 
 ### Code Execution Tags
 - \`{js:<code>}\` — run Node.js code, returns stdout
@@ -128,114 +144,56 @@ Line-based media scripting language for complex multi-step media manipulation:
 - \`volume <var> <amount>\` — adjust volume
 - \`vibrato <var> <freq> [depth]\` — vibrato effect
 - \`audiodestroy <var>\` — extreme audio distortion
-- \`swaprgba <var> <order>\` — swap color channels
-- \`tunnel <var>\` / \`detunnel <var>\` — tunnel/detunnel effect
-- \`slide <var> [speed]\` — slide effect
-- Comments: lines starting with \`//\` or \`#\`
-
-Example:
-\`\`\`
-{imagescript:
-load {iv} i
-copy i i2
-invert i2
-join i i2
-audiopitch i 3 0
-}
-\`\`\`
 
 ---
 
-## &ihtx Effects Reference
+## &ihtx Effects Reference (partial)
 
-Effects are comma-separated. Many take parameters with \`=\` and \`;\` as delimiter.
-
-### Audio Effects
-- \`pitch=<semitones>[;<s2>;...]\` — pitch shift (multipitch: overlay multiple shifts)
+### Audio
+- \`pitch=<semitones>[;<s2>;...]\` — pitch shift (multipitch overlay)
 - \`volume=<factor>\` — volume multiplier
-- \`vibrato=<freq>[;<depth>]\` — vibrato (freq in Hz, depth 0–1)
-- \`acontrast=<amount>\` — audio contrast/saturation
-- \`adestroy\` / \`audiodestroy\` — extreme distortion (11× acontrast=100)
+- \`vibrato=<freq>[;<depth>]\` — vibrato
+- \`acontrast=<amount>\` — audio contrast
+- \`adestroy\` / \`audiodestroy\` — extreme distortion
 - \`areverse\` — reverse audio
-- \`autotune=<scale>\` — autotune to scale
-- \`audioequalizer=<band>;<width>;<gain>[|...]\` — parametric EQ bands
-- \`4ormulator=<dial>\` — formant shift (rubberband formant, e.g. \`4ormulator=712923000\`)
-
-### Flip / Mirror
-- \`hflip\` — horizontal flip
-- \`vflip\` — vertical flip
-- \`avflip\` — flip audio+video simultaneously
-- \`mirror=<angle>\` — mirror along axis (0=horizontal, 90=vertical, 45=diagonal, 135=anti-diagonal)
-- \`leftsplit\` — mirror left half onto right
-- \`rightsplit\` — mirror right half onto left
+- \`autotune=<scale>\` — autotune
+- \`4ormulator=<dial>\` — formant shift
 
 ### Color
 - \`invert\` / \`negate\` — invert colors
-- \`invertrgb\` — invert RGB only (not alpha)
-- \`invlum\` — invert luminance (HSL)
-- \`swapuv\` — swap UV chroma channels
 - \`grayscale\` — remove color
 - \`sepia\` — sepia tone
-- \`hue=<degrees>\` — hue rotation (YUV space)
-- \`huehsv=<degrees>\` — hue rotation (HSV space)
-- \`hueshifthsv=<degrees>\` — alias for huehsv
-- \`brightness=<val>\` — brightness (-1 to 1)
-- \`contrast=<val>\` — contrast (-1 to 1+)
-- \`saturation=<val>\` — saturation (0 = gray, 1 = normal, 3 = vivid)
-- \`channelblend=<rr>;<rg>;<rb>;<gr>;<gg>;<gb>;<br>;<bg>;<bb>\` — channel mixing matrix
-- \`chromashift=<x>;<y>\` — shift chroma channels
-- \`gradientmap=<color1>;<color2>\` — map luminance to gradient
-- \`lut=<name>\` — apply LUT (HALD CLut generated via ImageMagick)
-- \`ffmpeghue=<h>;<s>;<b>;<r>\` — FFmpeg hue filter (hue/saturation/brightness/rotation)
+- \`hue=<degrees>\` — hue rotation
+- \`huehsv=<degrees>\` — hue rotation (HSV)
+- \`brightness=<val>\` — brightness
+- \`contrast=<val>\` — contrast
+- \`saturation=<val>\` — saturation
 
-### Geometry
-- \`rotate=<angle>\` — rotate (degrees)
-- \`fisheye=<strength>\` — fisheye distortion
-- \`vebfisheye=<n>\` / \`vebdefisheye=<n>\` — variant fisheye
-- \`vebfisheye2=<n>\` / \`vebdefisheye2=<n>\`
-- \`vebfisheye3=<n>\` / \`vebdefisheye3=<n>\`
-- \`swirl=<angle>\` — swirl/twist
+### Geometry / Distortion
+- \`fisheye=<strength>\` — fisheye
+- \`swirl=<angle>\` — swirl
 - \`wave=<ax>;<ay>;<px>;<py>;<phx>;<phy>;<speed>\` — wave warp
-- \`ripple=<ax>;<ay>;<px>;<py>;<phx>;<phy>;<speed>\` — ripple warp (same params as wave)
-- \`scroll=<xspeed>;<yspeed>\` — infinite scroll/pan
-- \`pan=<x>;<y>\` — pan/translate
-- \`zoom=<factor>\` — zoom in/out
-- \`tile=<cols>;<rows>\` — tile the video
-- \`polar\` — rectangular → polar coordinates
-- \`depolar\` — polar → rectangular coordinates
+- \`ripple=<ax>;<ay>;<px>;<py>;<phx>;<phy>;<speed>\` — ripple
+- \`rotate=<angle>\` — rotate
+- \`zoom=<factor>\` — zoom
+- \`tile=<cols>;<rows>\` — tile
+- \`polar\` / \`depolar\` — polar warp
 - \`sphere\` / \`desphere\` — sphere projection
-- \`orb\` / \`deorb\` — orb effect
-- \`orb2\` / \`deorb2\` — orb variant 2
-- \`orb3\` / \`deorb3\` — orb variant 3
-- \`vreverse\` — reverse video frames
-- \`gm91deform\` — gm91 deform effect
-- \`gm4\` / \`realgm4\` — gm4 warp effects
+- \`orb\` / \`deorb\` / \`orb2\` / \`deorb2\` / \`orb3\` / \`deorb3\`
+- \`mirror=<angle>\` — mirror fold
+- \`scroll=<xspeed>;<yspeed>\` — scroll
 
-### Overlay / Composite
-- \`watermark=<url>\` — overlay image as watermark
-- \`ring\` — ring composite effect
-- \`miui\` — MIUI-style overlay
-- \`reddit\` — Reddit-style overlay
-- \`caption=<text>\` — add caption text
-- \`timecode\` / \`radar\` — timecode/radar overlay
+### frei0r Plugins
+- \`cartoon=<triLevel>;<threshold>\` — cartoon effect (defaults 0.11;0.20)
+- \`distort0r=<amount>;<tilt>\` — frei0r lens warp (defaults 0.2;0.5)
+- \`nervous\` — random frame-swap glitch
 
-### Motion / Time
-- \`spin=<speed>\` — spinning rotation
-- \`wiggle=<amount>\` — random shake/wiggle
-- \`shakeh=<amount>\` — horizontal shake
-- \`shakev=<amount>\` — vertical shake
-- \`shake=<amount>\` — combined shake
-- \`slide=<speed>\` — sliding motion
-- \`rays=<amount>\` — light rays effect
-- \`tvsim\` — TV signal simulation
-
-### Visual FX
+### Motion / FX
+- \`spin=<speed>\` — spinning
+- \`wiggle=<amount>\` — shake/wiggle
 - \`blur=<amount>\` — gaussian blur
-- \`vignette=<amount>\` — vignette darkening
-- \`sierpinskiransomware\` — Sierpinski triangle effect
-- \`🥸🥸\` — disguise filter
-- \`﷽\` — special character filter
-- \`𒐫\` — special character filter
+- \`vignette=<amount>\` — vignette
+- \`tvsim\` — TV signal simulation
 
 ### Raw FFmpeg
 - \`ffmpeg=<filter_complex_string>\` — inject raw FFmpeg filtergraph (advanced)
@@ -244,18 +202,66 @@ Effects are comma-separated. Many take parameters with \`=\` and \`;\` as delimi
 
 ## Tips for Writing Tags
 
-1. **Use \`{arg:*}\` for pass-through**: \`&tag add myeffect {ihtx:{arg:*}}\` lets users do \`&t myeffect invert,hue=90\`
+1. **Use \`{arg:*}\` for pass-through**: \`&tag add myeffect {ihtx:{arg:*}}\`
 2. **Math in params**: \`{ihtx:wave={arg:0};{arg:1};{math:{arg:0}*2}}\`
 3. **Set variables for reuse**: \`{set:n|{arg:0}}{ihtx:pitch={get:n};{math:{get:n}+7}}\`
 4. **Shell for custom FFmpeg**: wrap in \`{sh:...}\` with \`load {iv}\` and write to \`./output/\`
-5. **Imagescript for multi-step**: use \`{imagescript:}\` when you need to process and compare multiple clips
-6. **{ihtxffmpeg} for escalation**: great for "apply effect exponentially" style videos
+5. **Imagescript for multi-step**: use \`{imagescript:}\` when processing multiple clips
+6. **{ihtxffmpeg} for escalation**: great for exponential effect videos
 
 ---
 
-Always be specific with parameter syntax, show examples, and help users debug their tagscripts. When asked to write a tag, provide the full \`&tag add <name> <script>\` command ready to paste.`;
+Always be specific with parameter syntax, show examples, and help users debug their tagscripts. When asked to write a tag, provide the full \`&tag add <name> <script>\` command ready to paste.
+Remember: use \`{process:CODE}\` only when the user wants to actually execute something. Use markdown code blocks for all examples.`;
 
-const HAS_TAGSCRIPT = /\{(?:arg|math|eval|imagescript|iscript|attach|js|py|sh|runcodetxt|ihtx|ihtxffmpeg|set|get|if|replace|upper|lower|len|choose|or|repeat|range|foreach|substring|indexof|tag|av|iv)[\s\S]*?\}/;
+/**
+ * Extract all {process:...} blocks from the AI response using balanced-brace parsing.
+ * Returns the list of code strings and the response text with {process:...} blocks removed.
+ */
+function extractProcessBlocks(text: string): { codes: string[]; stripped: string } {
+  const codes: string[] = [];
+  let stripped = "";
+  let i = 0;
+
+  while (i < text.length) {
+    if (text.startsWith("{process:", i)) {
+      let depth = 1;
+      let j = i + "{process:".length;
+      while (j < text.length && depth > 0) {
+        if (text[j] === "{") depth++;
+        else if (text[j] === "}") depth--;
+        j++;
+      }
+      // content is between "{process:" and the final matched "}"
+      const code = text.slice(i + "{process:".length, j - 1);
+      codes.push(code);
+      // Don't append this block to stripped
+      i = j;
+    } else {
+      stripped += text[i];
+      i++;
+    }
+  }
+
+  return { codes, stripped: stripped.trim() };
+}
+
+async function sendChunked(
+  text: string,
+  editMsg: Message,
+  replyMsg: Message,
+): Promise<void> {
+  if (text.length <= DISCORD_MAX) {
+    await editMsg.edit(text);
+    return;
+  }
+  const chunks: string[] = [];
+  for (let i = 0; i < text.length; i += DISCORD_MAX) {
+    chunks.push(text.slice(i, i + DISCORD_MAX));
+  }
+  await editMsg.edit(chunks[0]!);
+  for (const chunk of chunks.slice(1)) await replyMsg.reply(chunk);
+}
 
 export async function runAi(message: Message): Promise<void> {
   const raw = message.content.trim();
@@ -282,43 +288,46 @@ export async function runAi(message: Message): Promise<void> {
 
     const rawText = response.choices[0]?.message?.content ?? "(no response)";
 
-    // Check if the AI response contains any tagscript blocks (e.g. {py:...}, {sh:...})
-    const hasTagscript = HAS_TAGSCRIPT.test(rawText);
+    const { codes, stripped } = extractProcessBlocks(rawText);
 
-    if (hasTagscript) {
-      logger.info("AI response contains tagscript — executing");
-      await statusMsg.edit("⏳ Running tagscript from AI response…");
-      const tsResult = await processTagscript(rawText, [], message);
-
-      if (typeof tsResult === "string") {
-        const out = tsResult || "(no output)";
-        if (out.length <= DISCORD_MAX) {
-          await statusMsg.edit(out);
-        } else {
-          const chunks: string[] = [];
-          for (let i = 0; i < out.length; i += DISCORD_MAX) chunks.push(out.slice(i, i + DISCORD_MAX));
-          await statusMsg.edit(chunks[0]!);
-          for (const chunk of chunks.slice(1)) await message.reply(chunk);
-        }
-      } else {
-        const file = new AttachmentBuilder(tsResult.buffer, { name: `ai_result${tsResult.ext}` });
-        const caption = tsResult.type === "combined" ? tsResult.text.slice(0, DISCORD_MAX) : "";
-        await statusMsg.edit({ content: caption || null, files: [file] });
-      }
+    if (codes.length === 0) {
+      // No {process:} blocks — show AI text as-is
+      await sendChunked(rawText, statusMsg, message);
       return;
     }
 
-    // No tagscript — send the AI text as-is
-    if (rawText.length <= DISCORD_MAX) {
-      await statusMsg.edit(rawText);
+    // Show the non-process part of the AI response first (if any)
+    if (stripped) {
+      await sendChunked(stripped, statusMsg, message);
     } else {
-      const chunks: string[] = [];
-      for (let i = 0; i < rawText.length; i += DISCORD_MAX) {
-        chunks.push(rawText.slice(i, i + DISCORD_MAX));
-      }
-      await statusMsg.edit(chunks[0]!);
-      for (const chunk of chunks.slice(1)) {
-        await message.reply(chunk);
+      await statusMsg.edit("⏳ Running tagscript…");
+    }
+
+    // Execute each {process:...} block in order
+    for (const code of codes) {
+      logger.info({ code: code.slice(0, 100) }, "AI executing {process:} block");
+
+      const execMsg = stripped
+        ? await message.reply("⏳ Running tagscript…")
+        : statusMsg;
+
+      try {
+        const tsResult = await processTagscript(code, [], message);
+
+        if (typeof tsResult === "string") {
+          const out = tsResult || "(no output)";
+          await sendChunked(out, execMsg, message);
+        } else {
+          const file = new AttachmentBuilder(tsResult.buffer, {
+            name: `ai_result${tsResult.ext}`,
+          });
+          const caption =
+            tsResult.type === "combined" ? tsResult.text.slice(0, DISCORD_MAX) : "";
+          await execMsg.edit({ content: caption || null, files: [file] });
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        await execMsg.edit(`❌ Tagscript error: \`${msg.slice(0, 300)}\``);
       }
     }
   } catch (err) {
