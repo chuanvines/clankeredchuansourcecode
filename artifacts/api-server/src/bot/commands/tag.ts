@@ -1292,14 +1292,43 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       }
     }
 
-    // Apply ImageMagick args to a variable in-place (image → new file; gif/video → each frame).
+    // Apply ImageMagick args to a variable in-place.
+    //   image  → new output file
+    //   gif    → reassemble into temp GIF, apply effect to full GIF, re-extract frames
+    //            (matches the bash approach: magick gif.gif -effect frame_%05d.png)
+    //   video  → apply per-frame
     async function applyIM(effVar: string, imArgs: string[]): Promise<void> {
       const t = vars[effVar]!;
       if (t.kind === "image") {
         const outPath = join(tmpDir, `out${opCounter++}${extname(t.path)}`);
         await execFileAsync("magick", [t.path, ...imArgs, outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
         vars[effVar] = { kind: "image", path: outPath };
+      } else if (t.kind === "gif") {
+        // 1. Reassemble current frames → temp GIF (preserves per-frame delays)
+        const tempGif = join(tmpDir, `gifop${opCounter++}.gif`);
+        const reArgs: string[] = [];
+        for (let i = 1; i <= t.frameCount; i++) {
+          reArgs.push("-delay", String(t.delays[i - 1] ?? 4), mediascriptFramePath(t.dir, i));
+        }
+        reArgs.push("-loop", String(t.loop), tempGif);
+        await execFileAsync("magick", reArgs, { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
+
+        // 2. Apply effect to full GIF → re-extract numbered frames (1-indexed via -scene 1)
+        //    Coalesce first so every frame is a complete image before the effect is applied.
+        await execFileAsync(
+          "magick",
+          [tempGif, "-coalesce", ...imArgs, "-scene", "1", join(t.dir, "frame_%05d.png")],
+          { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 },
+        );
+
+        // 3. Recount frames and sync delays
+        const written = (await readdir(t.dir)).filter((f) => /^frame_\d{5}\.png$/.test(f));
+        const newCount = Math.max(1, Math.min(written.length, MEDIASCRIPT_MAX_GIF_FRAMES));
+        const delays = t.delays.slice();
+        while (delays.length < newCount) delays.push(delays[delays.length - 1] ?? 4);
+        vars[effVar] = { kind: "gif", dir: t.dir, frameCount: newCount, delays: delays.slice(0, newCount), loop: t.loop };
       } else {
+        // video: apply per-frame
         await mediascriptMapLimit(t.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
           const fp = mediascriptFramePath(t.dir, i);
           await execFileAsync("magick", [fp, ...imArgs, fp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
