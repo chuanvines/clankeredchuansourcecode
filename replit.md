@@ -1,36 +1,43 @@
-# [Project name]
+# ChuanEditBot (Discord bot)
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A Discord bot providing media/editing commands (audio/video effects, AI chat, image/canvas tools, tag system, meme downloads) built on Discord.js.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- The "Discord Bot" workflow runs `pnpm --filter @workspace/api-server run dev` (builds then starts the bot + health server on port 8080)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env/secrets: `DATABASE_URL` (auto-provided by Replit's Postgres), `BOT_TOKEN` (Discord bot token), `CLIENT_ID` (Discord application ID, used to register slash commands), `GROQ_API_KEY` (powers the `/ai` command), `CATBOX_USERHASH` (used for uploading large files via catbox.moe)
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - API: Express 5
+- Discord bot: discord.js 14, slash commands in `artifacts/api-server/src/bot/commands`
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
+- Some effects (`artifacts/api-server/src/bot/effects/*.py`) are Python scripts invoked as subprocesses for audio/video processing
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/api-server/src/bot/index.ts` — bot startup/login
+- `artifacts/api-server/src/bot/register.ts` — slash command registration
+- `artifacts/api-server/src/bot/commands/` — one file per slash command
+- `artifacts/api-server/src/bot/effects/` — Python-based audio/video/image effect scripts
+- `lib/db/src/schema` — Drizzle schema (source of truth for DB tables)
+- `data/tags.json`, `data/blocks.json` — bot's tag system and blocklist data
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Imported project; kept its existing pnpm-workspace/Express/Discord.js structure as-is rather than restructuring.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Discord bot ("ChuanEditBot") offering slash commands for AI chat, audio/video/image effects, a custom tag system, and file uploads via catbox.moe.
 
 ## User preferences
 
