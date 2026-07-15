@@ -3575,5 +3575,12 @@
     "ownerUsername": "gucci_17__75369",
     "createdAt": "2026-07-15T17:55:56.070Z",
     "updatedAt": "2026-07-15T18:01:58.735Z"
+  },
+  "g-major-4": {
+    "script": "{imagescript:\nload {iv} i\nrealgm4 i\naudiopitch=0;5\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-15T18:06:02.797Z",
+    "updatedAt": "2026-07-15T18:06:02.797Z"
   }
 }
