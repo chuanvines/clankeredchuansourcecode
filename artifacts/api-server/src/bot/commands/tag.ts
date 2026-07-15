@@ -1211,7 +1211,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       if (!v) return `[mediascript: undefined variable "${name}" — use "load <url> <var>" first]`;
       if (v.kind === "image") {
         const buffer = await readFile(v.path);
-        return { type: "media", buffer, ext: extname(v.path) || ".png" };
+        return { type: "media", buffer, ext: extname(v.path).slice(1) || "png" };
       }
       try {
         const outPath = join(tmpDir, `render${opCounter++}.gif`);
