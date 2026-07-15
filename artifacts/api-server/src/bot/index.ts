@@ -1335,7 +1335,7 @@ export async function startBot(): Promise<void> {
     const fakeMessage = new Proxy(message, {
       get(target, prop) {
         if (prop === "content") return `&veb ${rest}`;
-        const val = (target as Record<string | symbol, unknown>)[prop as string];
+        const val = (target as unknown as Record<string | symbol, unknown>)[prop as string];
         return typeof val === "function" ? val.bind(target) : val;
       },
     });

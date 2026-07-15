@@ -177,7 +177,8 @@ export async function runTts(message: Message): Promise<void> {
     } else {
       const tmpFile = join(tmpDir, "tts.mp3");
       await writeFile(tmpFile, audioBuf);
-      const catboxUrl = await uploadToCatbox(tmpFile);
+      const audioBufFromFile = await readFile(tmpFile);
+      const catboxUrl = await uploadToCatbox(audioBufFromFile, "tts.mp3");
       await statusMsg.edit(`${label}\n📦 Too large for Discord → ${catboxUrl}`);
     }
   } finally {
