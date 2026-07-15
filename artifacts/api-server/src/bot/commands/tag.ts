@@ -8,7 +8,7 @@ import {
   ComponentType,
 } from "discord.js";
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from "node:fs";
-import { readdir, readFile, writeFile, rm, mkdir, mkdtemp } from "node:fs/promises";
+import { readdir, readFile, writeFile, rm, mkdir, mkdtemp, copyFile } from "node:fs/promises";
 import { join, extname, basename, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFile, spawn } from "node:child_process";
@@ -1087,7 +1087,8 @@ const MEDIASCRIPT_FRAME_CONCURRENCY = 6;
 
 type MediascriptVar =
   | { kind: "image"; path: string }
-  | { kind: "gif"; dir: string; frameCount: number; delays: number[]; loop: number };
+  | { kind: "gif"; dir: string; frameCount: number; delays: number[]; loop: number }
+  | { kind: "video"; dir: string; frameCount: number; fps: number; audio?: string };
 
 /** Zero-padded frame path, e.g. frame_00001.png, frame_00002.png, … */
 function mediascriptFramePath(dir: string, idx: number): string {
@@ -1170,6 +1171,62 @@ function mediascriptErrorDetail(err: unknown): string {
   return msg.slice(-500);
 }
 
+/** Get pixel dimensions of a mediascript variable (first frame for gif/video). */
+async function mediascriptGetDims(v: MediascriptVar): Promise<{ w: number; h: number }> {
+  const probePath = v.kind === "image" ? v.path : mediascriptFramePath(v.dir, 1);
+  try {
+    const { stdout } = await execFileAsync("magick", ["identify", "-format", "%w %h", probePath]);
+    const parts = stdout.trim().split(/\s+/);
+    return { w: parseInt(parts[0] ?? "0", 10) || 0, h: parseInt(parts[1] ?? "0", 10) || 0 };
+  } catch {
+    return { w: 0, h: 0 };
+  }
+}
+
+/**
+ * Evaluate a numeric expression that may reference variable dimensions as varnw / varnh.
+ * e.g. "(i2w/2)", "i2h", "2**(-1/12)", "512"
+ */
+async function mediascriptEvalNum(
+  expr: string,
+  vars: Record<string, MediascriptVar>,
+  dimCache: Map<string, { w: number; h: number }>,
+): Promise<number> {
+  let resolved = expr;
+  // Replace varnamew / varnameh longest-first to avoid partial matches (e.g. "i2" before "i")
+  const sortedNames = Object.keys(vars).sort((a, b) => b.length - a.length);
+  for (const name of sortedNames) {
+    if (!resolved.includes(name)) continue;
+    if (!dimCache.has(name)) dimCache.set(name, await mediascriptGetDims(vars[name]!));
+    const { w, h } = dimCache.get(name)!;
+    const we = new RegExp(`(?<![a-zA-Z0-9_])${name}w(?![a-zA-Z0-9_])`, "g");
+    const he = new RegExp(`(?<![a-zA-Z0-9_])${name}h(?![a-zA-Z0-9_])`, "g");
+    resolved = resolved.replace(we, String(w)).replace(he, String(h));
+  }
+  try {
+    const val = vm.runInNewContext(resolved, { Math });
+    const n = Number(val);
+    return isFinite(n) ? n : 0;
+  } catch {
+    const n = parseFloat(resolved);
+    return isFinite(n) ? n : 0;
+  }
+}
+
+/** Reassemble a video var's frames into an mp4, muxing in audio if present. */
+async function mediascriptReassembleVideo(
+  v: Extract<MediascriptVar, { kind: "video" }>,
+  outPath: string,
+): Promise<void> {
+  const inputArgs = ["-framerate", String(v.fps), "-i", join(v.dir, "frame_%05d.png")];
+  const audioArgs: string[] = v.audio ? ["-i", v.audio, "-c:a", "aac", "-shortest"] : [];
+  await execFileAsync(
+    "ffmpeg",
+    ["-y", ...inputArgs, ...audioArgs, "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart", outPath],
+    { timeout: 180_000, maxBuffer: 100 * 1024 * 1024 },
+  );
+}
+
 /**
  * Line-based ImageMagick scripting language for {mediascript:...} tagscript.
  *
@@ -1205,6 +1262,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
     const vars: Record<string, MediascriptVar> = {};
     let lastVar: string | null = null;
     let opCounter = 0;
+    const dimCache = new Map<string, { w: number; h: number }>();
 
     async function renderVar(name: string): Promise<MediaResult | string> {
       const v = vars[name];
@@ -1213,15 +1271,44 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const buffer = await readFile(v.path);
         return { type: "media", buffer, ext: extname(v.path).slice(1) || "png" };
       }
+      if (v.kind === "video") {
+        try {
+          const outPath = join(tmpDir, `render${opCounter++}.mp4`);
+          await mediascriptReassembleVideo(v, outPath);
+          const buffer = await readFile(outPath);
+          return { type: "media", buffer, ext: "mp4" };
+        } catch (err) {
+          return `[mediascript: failed to render video "${name}": ${mediascriptErrorDetail(err)}]`;
+        }
+      }
+      // gif
       try {
         const outPath = join(tmpDir, `render${opCounter++}.gif`);
         await mediascriptReassembleGif(v.dir, v.frameCount, v.delays, v.loop, outPath);
         const buffer = await readFile(outPath);
-        return { type: "media", buffer, ext: ".gif" };
+        return { type: "media", buffer, ext: "gif" };
       } catch (err) {
         return `[mediascript: failed to render gif "${name}": ${mediascriptErrorDetail(err)}]`;
       }
     }
+
+    // Apply ImageMagick args to a variable in-place (image → new file; gif/video → each frame).
+    async function applyIM(effVar: string, imArgs: string[]): Promise<void> {
+      const t = vars[effVar]!;
+      if (t.kind === "image") {
+        const outPath = join(tmpDir, `out${opCounter++}${extname(t.path)}`);
+        await execFileAsync("magick", [t.path, ...imArgs, outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+        vars[effVar] = { kind: "image", path: outPath };
+      } else {
+        await mediascriptMapLimit(t.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
+          const fp = mediascriptFramePath(t.dir, i);
+          await execFileAsync("magick", [fp, ...imArgs, fp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+        });
+      }
+      dimCache.delete(effVar);
+    }
+
+    const VIDEO_EXTS = new Set([".mp4", ".webm", ".mov", ".avi", ".mkv"]);
 
     const lines = code
       .split("\n")
@@ -1244,14 +1331,65 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           const rawName = (url.split("?")[0] ?? "").split("/").pop() ?? "";
           let ext = extname(rawName);
           if (!ext) {
-            if (ct.includes("png")) ext = ".png";
-            else if (ct.includes("gif")) ext = ".gif";
+            if (ct.includes("gif")) ext = ".gif";
+            else if (ct.includes("png")) ext = ".png";
             else if (ct.includes("webp")) ext = ".webp";
             else if (ct.includes("jpeg") || ct.includes("jpg")) ext = ".jpg";
+            else if (ct.includes("mp4")) ext = ".mp4";
+            else if (ct.includes("webm")) ext = ".webm";
+            else if (ct.includes("quicktime")) ext = ".mov";
             else ext = ".png";
           }
 
-          if (ext.toLowerCase() === ".gif") {
+          const isVideo = VIDEO_EXTS.has(ext.toLowerCase()) || ct.startsWith("video/");
+
+          if (isVideo) {
+            const srcPath = join(tmpDir, `${varName}_src${ext}`);
+            await writeFile(srcPath, Buffer.from(resp.data));
+
+            // Detect FPS
+            let fps = 30;
+            try {
+              const { stdout: fpsOut } = await execFileAsync("ffprobe", [
+                "-v", "error", "-select_streams", "v:0",
+                "-show_entries", "stream=r_frame_rate",
+                "-of", "default=nk=1:noprint_wrappers=1", srcPath,
+              ]);
+              const parts = fpsOut.trim().split("/");
+              const num = Number(parts[0]), den = Number(parts[1] ?? "1");
+              if (num > 0 && den > 0) fps = Math.round((num / den) * 100) / 100;
+            } catch { /* use default 30 fps */ }
+
+            // Extract frames
+            const frameDir = join(tmpDir, `${varName}_frames`);
+            await mkdir(frameDir, { recursive: true });
+            await execFileAsync("ffmpeg", [
+              "-y", "-i", srcPath, "-vf", `fps=${fps}`, "-q:v", "2",
+              join(frameDir, "frame_%05d.png"),
+            ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
+
+            const written = (await readdir(frameDir)).filter((f) => /^frame_\d{5}\.png$/.test(f));
+            const frameCount = Math.max(1, Math.min(written.length, MEDIASCRIPT_MAX_GIF_FRAMES));
+
+            // Extract audio if present
+            let audio: string | undefined;
+            try {
+              const { stdout: hasAudio } = await execFileAsync("ffprobe", [
+                "-v", "error", "-select_streams", "a:0",
+                "-show_entries", "stream=codec_type",
+                "-of", "default=nk=1:noprint_wrappers=1", srcPath,
+              ]);
+              if (hasAudio.trim() === "audio") {
+                const audioPath = join(tmpDir, `${varName}_audio.mp3`);
+                await execFileAsync("ffmpeg", [
+                  "-y", "-i", srcPath, "-vn", "-acodec", "libmp3lame", "-q:a", "2", audioPath,
+                ], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+                audio = audioPath;
+              }
+            } catch { /* no audio or extraction failed */ }
+
+            vars[varName] = { kind: "video", dir: frameDir, frameCount, fps, audio };
+          } else if (ext.toLowerCase() === ".gif") {
             const srcPath = join(tmpDir, `${varName}_src.gif`);
             await writeFile(srcPath, Buffer.from(resp.data));
             const frameDir = join(tmpDir, `${varName}_frames`);
@@ -1264,6 +1402,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             vars[varName] = { kind: "image", path: filePath };
           }
           lastVar = varName;
+          dimCache.delete(varName);
         } catch (err) {
           return `[mediascript: failed to load "${url}": ${mediascriptErrorDetail(err)}]`;
         }
@@ -1276,7 +1415,186 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         return renderVar(renderVarName);
       }
 
-      // ── effect commands: <effect> <var> [<args...>] ─────────────────────
+      // ── copy <src> <dst> ──────────────────────────────────────────────────
+      if (cmd === "copy") {
+        const srcName = tokens[1] ?? lastVar ?? "";
+        const dstName = tokens[2] ?? "";
+        if (!dstName) return `[mediascript: "copy" requires two variable names: copy <src> <dst>]`;
+        const src = vars[srcName];
+        if (!src) return `[mediascript: undefined variable "${srcName}" — use "load <url> <var>" first]`;
+        try {
+          if (src.kind === "image") {
+            const newPath = join(tmpDir, `${dstName}_copy${opCounter++}${extname(src.path)}`);
+            await copyFile(src.path, newPath);
+            vars[dstName] = { kind: "image", path: newPath };
+          } else if (src.kind === "gif") {
+            const newDir = join(tmpDir, `${dstName}_frames${opCounter++}`);
+            await mkdir(newDir, { recursive: true });
+            await mediascriptMapLimit(src.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
+              await copyFile(mediascriptFramePath(src.dir, i), mediascriptFramePath(newDir, i));
+            });
+            vars[dstName] = { kind: "gif", dir: newDir, frameCount: src.frameCount, delays: [...src.delays], loop: src.loop };
+          } else {
+            // video
+            const newDir = join(tmpDir, `${dstName}_frames${opCounter++}`);
+            await mkdir(newDir, { recursive: true });
+            await mediascriptMapLimit(src.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
+              await copyFile(mediascriptFramePath(src.dir, i), mediascriptFramePath(newDir, i));
+            });
+            let newAudio: string | undefined;
+            if (src.audio) {
+              newAudio = join(tmpDir, `${dstName}_audio${opCounter++}.mp3`);
+              await copyFile(src.audio, newAudio);
+            }
+            vars[dstName] = { kind: "video", dir: newDir, frameCount: src.frameCount, fps: src.fps, audio: newAudio };
+          }
+          lastVar = dstName;
+          dimCache.delete(dstName);
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── overlay <base> <top> ─────────────────────────────────────────────
+      if (cmd === "overlay") {
+        const baseName = tokens[1] ?? lastVar ?? "";
+        const topName = tokens[2] ?? "";
+        if (!topName) return `[mediascript: "overlay" requires two variable names: overlay <base> <top>]`;
+        const base = vars[baseName];
+        const top = vars[topName];
+        if (!base) return `[mediascript: undefined variable "${baseName}" — use "load <url> <var>" first]`;
+        if (!top) return `[mediascript: undefined variable "${topName}" — use "load <url> <var>" first]`;
+        const topFlatPath = top.kind === "image" ? top.path : mediascriptFramePath(top.dir, 1);
+        try {
+          if (base.kind === "image") {
+            const outPath = join(tmpDir, `out${opCounter++}${extname(base.path)}`);
+            await execFileAsync("magick", [base.path, topFlatPath, "-gravity", "Center", "-composite", outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+            vars[baseName] = { kind: "image", path: outPath };
+          } else {
+            await mediascriptMapLimit(base.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
+              const fp = mediascriptFramePath(base.dir, i);
+              const topFrame = top.kind === "image"
+                ? topFlatPath
+                : mediascriptFramePath(top.dir, Math.min(i, top.frameCount));
+              await execFileAsync("magick", [fp, topFrame, "-gravity", "Center", "-composite", fp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+            });
+          }
+          lastVar = baseName;
+          dimCache.delete(baseName);
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── audiopitch <var> <factor-expr> ────────────────────────────────────
+      // factor is a multiplier: e.g. 2**(-1/12) = one semitone down
+      if (cmd === "audiopitch") {
+        const varName = tokens[1] ?? lastVar ?? "";
+        const factorExpr = tokens[2] ?? "1";
+        const v = vars[varName];
+        if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
+        if (v.kind !== "video") return `[mediascript: "audiopitch" requires a video variable (loaded from mp4/webm/mov/etc.)]`;
+        if (!v.audio) return `[mediascript: "audiopitch": variable "${varName}" has no audio track]`;
+        const factor = await mediascriptEvalNum(factorExpr, vars, dimCache);
+        if (!isFinite(factor) || factor <= 0) return `[mediascript: "audiopitch" factor must be a positive number, got "${factorExpr}"]`;
+        const cents = Math.round(1200 * Math.log2(factor));
+        const newAudioPath = join(tmpDir, `${varName}_pitched${opCounter++}.mp3`);
+        try {
+          await execFileAsync("sox", [v.audio, newAudioPath, "pitch", String(cents)], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+          vars[varName] = { ...v, audio: newAudioPath };
+          lastVar = varName;
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── distort polar|depolar <var> ────────────────────────────────────────
+      if (cmd === "distort") {
+        const subtype = tokens[1]?.toLowerCase() ?? "";
+        const effVar2 = tokens[2] ?? lastVar ?? "";
+        if (!vars[effVar2]) return `[mediascript: undefined variable "${effVar2}" — use "load <url> <var>" first]`;
+        let imArgs2: string[];
+        if (subtype === "polar") {
+          imArgs2 = ["-background", "black", "-virtual-pixel", "black", "-distort", "Polar", "0"];
+        } else if (subtype === "depolar") {
+          imArgs2 = ["-distort", "DePolar", "0"];
+        } else {
+          return `[mediascript: unknown distort type "${subtype}" — use "polar" or "depolar"]`;
+        }
+        try {
+          await applyIM(effVar2, imArgs2);
+          lastVar = effVar2;
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── rotate <var> <angle> ──────────────────────────────────────────────
+      if (cmd === "rotate") {
+        const effVar2 = tokens[1] ?? lastVar ?? "";
+        if (!vars[effVar2]) return `[mediascript: undefined variable "${effVar2}" — use "load <url> <var>" first]`;
+        const angle = await mediascriptEvalNum(tokens[2] ?? "90", vars, dimCache);
+        try {
+          await applyIM(effVar2, ["-background", "black", "-rotate", String(angle)]);
+          lastVar = effVar2;
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── resize <var> <w> <h> ──────────────────────────────────────────────
+      if (cmd === "resize") {
+        const effVar2 = tokens[1] ?? lastVar ?? "";
+        if (!vars[effVar2]) return `[mediascript: undefined variable "${effVar2}" — use "load <url> <var>" first]`;
+        const w = Math.round(await mediascriptEvalNum(tokens[2] ?? "0", vars, dimCache));
+        const h = Math.round(await mediascriptEvalNum(tokens[3] ?? "0", vars, dimCache));
+        if (!w || !h) return `[mediascript: "resize" requires width and height, e.g. resize i 256 256]`;
+        try {
+          await applyIM(effVar2, ["-resize", `${w}x${h}!`]);
+          lastVar = effVar2;
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── wave <var> <amplitude> <wavelength> ───────────────────────────────
+      if (cmd === "wave") {
+        const effVar2 = tokens[1] ?? lastVar ?? "";
+        if (!vars[effVar2]) return `[mediascript: undefined variable "${effVar2}" — use "load <url> <var>" first]`;
+        const amp = await mediascriptEvalNum(tokens[2] ?? "10", vars, dimCache);
+        const wlen = await mediascriptEvalNum(tokens[3] ?? "64", vars, dimCache);
+        try {
+          await applyIM(effVar2, ["-background", "black", "-wave", `${amp}x${wlen}`]);
+          lastVar = effVar2;
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── cover <var> <w> <h> ───────────────────────────────────────────────
+      if (cmd === "cover") {
+        const effVar2 = tokens[1] ?? lastVar ?? "";
+        if (!vars[effVar2]) return `[mediascript: undefined variable "${effVar2}" — use "load <url> <var>" first]`;
+        const w = Math.round(await mediascriptEvalNum(tokens[2] ?? "0", vars, dimCache));
+        const h = Math.round(await mediascriptEvalNum(tokens[3] ?? "0", vars, dimCache));
+        if (!w || !h) return `[mediascript: "cover" requires width and height, e.g. cover i 512 512]`;
+        try {
+          await applyIM(effVar2, ["-resize", `${w}x${h}^`, "-gravity", "Center", "-extent", `${w}x${h}`]);
+          lastVar = effVar2;
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── effect commands (ImageMagick): <effect> <var> [<args...>] ─────────
       const effVar: string = tokens[1] ?? lastVar ?? "";
       const target = vars[effVar];
       if (!target) return `[mediascript: undefined variable "${effVar}" — use "load <url> <var>" first]`;
@@ -1314,17 +1632,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       }
 
       try {
-        if (target.kind === "image") {
-          const outPath = join(tmpDir, `out${opCounter++}${extname(target.path)}`);
-          await execFileAsync("magick", [target.path, ...imArgs, outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
-          vars[effVar] = { kind: "image", path: outPath };
-        } else {
-          // Apply the effect frame by frame across the whole gif sequence.
-          await mediascriptMapLimit(target.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
-            const fp = mediascriptFramePath(target.dir, i);
-            await execFileAsync("magick", [fp, ...imArgs, fp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
-          });
-        }
+        await applyIM(effVar, imArgs);
         lastVar = effVar;
       } catch (err) {
         return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
