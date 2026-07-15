@@ -6,6 +6,7 @@ import axios from "axios";
 import FormData from "form-data";
 import { basename } from "node:path";
 import { logger } from "../lib/logger.js";
+import { interactionError } from "../lib/embeds.js";
 
 /**
  * Convert a media.discordapp.net proxy URL to a cdn.discordapp.com URL.
@@ -78,7 +79,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   const attachment = interaction.options.getAttachment("attachment");
 
   if (!url && !attachment) {
-    await interaction.editReply("❌ Provide either a `url` or an `attachment`.");
+    await interactionError(interaction, "Provide either a `url` or an `attachment`.");
     return;
   }
 
@@ -109,6 +110,6 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   } catch (err) {
     logger.error({ err }, "Catbox upload failed");
     const msg = err instanceof Error ? err.message : "Unknown error";
-    await interaction.editReply(`❌ Upload failed: \`${msg.slice(0, 300)}\``);
+    await interactionError(interaction, `Upload failed: \`${msg.slice(0, 300)}\``);
   }
 }

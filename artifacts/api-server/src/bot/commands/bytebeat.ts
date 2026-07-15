@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import vm from "node:vm";
 import { logger } from "../lib/logger.js";
+import { replyError, editError } from "../lib/embeds.js";
 import { uploadToCatbox } from "./catboxupload.js";
 
 const DISCORD_MAX_BYTES = 8 * 1024 * 1024;
@@ -172,8 +173,8 @@ export async function runBytebeat(message: Message): Promise<void> {
   const rest = raw.slice(raw.toLowerCase().indexOf("&bytebeat") + 9).trim();
 
   if (!rest) {
-    await message.reply(
-      "❌ Usage: `&bytebeat <mode> <samplerate> <duration> <code>`\n" +
+    await replyError(message,
+      "Usage: `&bytebeat <mode> <samplerate> <duration> <code>`\n" +
       "**Modes:** `u8` (classic unsigned) · `s8` (signed) · `float` (floatbeat, values -1..1)\n" +
       "**Examples:**\n" +
       "• `&bytebeat u8 8000 10 t*(t>>5|t>>8)`\n" +
@@ -186,8 +187,8 @@ export async function runBytebeat(message: Message): Promise<void> {
 
   const parts = rest.split(/\s+/);
   if (parts.length < 4) {
-    await message.reply(
-      "❌ Not enough arguments.\n" +
+    await replyError(message,
+      "Not enough arguments.\n" +
       "Usage: `&bytebeat <mode> <samplerate> <duration> <code>`\n" +
       "Example: `&bytebeat u8 8000 10 t*(t>>5|t>>8)`",
     );
@@ -197,8 +198,8 @@ export async function runBytebeat(message: Message): Promise<void> {
   const rawMode = parts[0]!.toLowerCase();
   const mode = MODE_ALIASES[rawMode];
   if (!mode) {
-    await message.reply(
-      `❌ Unknown mode \`${parts[0]}\`.\n` +
+    await replyError(message,
+      `Unknown mode \`${parts[0]}\`.\n` +
       "Valid: `u8` / `mono` / `classic` · `s8` / `signed` · `float` / `floatbeat`",
     );
     return;
@@ -206,17 +207,13 @@ export async function runBytebeat(message: Message): Promise<void> {
 
   const sampleRate = Math.round(parseFloat(parts[1]!));
   if (isNaN(sampleRate) || sampleRate < MIN_SAMPLERATE || sampleRate > MAX_SAMPLERATE) {
-    await message.reply(
-      `❌ Sample rate must be between **${MIN_SAMPLERATE}** and **${MAX_SAMPLERATE}** Hz.`,
-    );
+    await replyError(message, `Sample rate must be between **${MIN_SAMPLERATE}** and **${MAX_SAMPLERATE}** Hz.`);
     return;
   }
 
   const duration = parseFloat(parts[2]!);
   if (isNaN(duration) || duration < MIN_DURATION || duration > MAX_DURATION) {
-    await message.reply(
-      `❌ Duration must be between **${MIN_DURATION}s** and **${MAX_DURATION}s**.`,
-    );
+    await replyError(message, `Duration must be between **${MIN_DURATION}s** and **${MAX_DURATION}s**.`);
     return;
   }
 
@@ -228,7 +225,7 @@ export async function runBytebeat(message: Message): Promise<void> {
     evaluator(0);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    await message.reply(`❌ Invalid expression: \`${msg.slice(0, 200)}\``);
+    await replyError(message, `Invalid expression: \`${msg.slice(0, 200)}\``);
     return;
   }
 
@@ -263,7 +260,7 @@ export async function runBytebeat(message: Message): Promise<void> {
   } catch (err) {
     logger.error({ err }, "&bytebeat failed");
     const msg = err instanceof Error ? err.message : "Unknown error";
-    await statusMsg.edit({ content: `❌ Bytebeat failed: \`${msg.slice(0, 300)}\`` });
+    await editError(statusMsg, `Bytebeat failed: \`${msg.slice(0, 300)}\``);
   } finally {
     await rm(tmpDir, { recursive: true, force: true });
   }

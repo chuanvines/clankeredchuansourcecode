@@ -38,6 +38,7 @@ import { parseEffectsString } from "./effects/parser.js";
 import { processMedia, detectMediaType, probeMediaMeta } from "./effects/processor.js";
 import { extname } from "node:path";
 import { logger } from "./lib/logger.js";
+import { replyError, editError } from "./lib/embeds.js";
 
 const PREFIX = "&ihtx";
 
@@ -123,7 +124,7 @@ export async function startBot(): Promise<void> {
       blockedMessages.add(message.id);
       const info = getBlockInfo(message.author.id);
       const until = info ? `until <t:${Math.floor(info.until / 1000)}:F>` : "";
-      message.reply(`❌ You are blocked from using this bot ${until}.`).catch(() => {});
+      replyError(message, `You are blocked from using this bot ${until}.`);
     }
   });
 
@@ -142,7 +143,7 @@ export async function startBot(): Promise<void> {
       await runPing(message);
     } catch (err) {
       logger.error({ err }, "&ping failed");
-      await message.reply("❌ Something went wrong.").catch(() => {});
+      await replyError(message, "Something went wrong.");
     }
   });
 
@@ -209,7 +210,7 @@ export async function startBot(): Promise<void> {
     const inputCT   = attachment?.contentType ?? "";
 
     if (!inputUrl) {
-      await message.reply(`❌ Attach an image/video/audio file, reply to a message that has one, or include a direct URL after your effects.`);
+      await replyError(message, "Attach an image/video/audio file, reply to a message that has one, or include a direct URL after your effects.");
       return;
     }
 
@@ -269,7 +270,7 @@ export async function startBot(): Promise<void> {
       clearInterval(ticker);
       logger.error({ err }, "Prefix &ihtx failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await replyMsg.edit({ content: `❌ Processing failed: \`${msg.slice(0, 300)}\`` });
+      await editError(replyMsg, `Processing failed: \`${msg.slice(0, 300)}\``);
       console.clear();
     }
   }
@@ -298,8 +299,8 @@ export async function startBot(): Promise<void> {
     // Collect semitone values (numbers, including negatives)
     const semitones = semitoneTokens.filter((t) => /^-?\d+(\.\d+)?$/.test(t));
     if (semitones.length === 0) {
-      await message.reply(
-        "❌ Usage: `&pitch [i] <semitone1> [semitone2] ...`\n" +
+      await replyError(message,
+        "Usage: `&pitch [i] <semitone1> [semitone2] ...`\n" +
         "• `i` flag = inharmonic mode (chorus-like detuned pairs)\n" +
         "Examples: `&pitch 5` · `&pitch 5 -5` · `&pitch i 5 -5`",
       );
@@ -321,7 +322,7 @@ export async function startBot(): Promise<void> {
 
     const inputUrl = attachment?.url ?? inlineUrl ?? null;
     if (!inputUrl) {
-      await message.reply("❌ Attach an audio or video file, or reply to a message that has one.");
+      await replyError(message, "Attach an audio or video file, or reply to a message that has one.");
       return;
     }
 
@@ -349,7 +350,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "Prefix &pitch failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit({ content: `❌ Pitch failed: \`${msg.slice(0, 300)}\`` });
+      await editError(statusMsg, `Pitch failed: \`${msg.slice(0, 300)}\``);
     }
   });
 
@@ -368,8 +369,8 @@ export async function startBot(): Promise<void> {
 
     const depthNum = parseFloat(depth);
     if (parseFloat(freq) <= 0 || depthNum < 0 || depthNum > 1) {
-      await message.reply(
-        "❌ Usage: `&vibrato [freq] [depth]`\n" +
+      await replyError(message,
+        "Usage: `&vibrato [freq] [depth]`\n" +
         "• `freq` — vibrato rate in Hz (default `5`, range 0.1–20000)\n" +
         "• `depth` — depth/intensity (default `0.5`, range `0`–`1`)\n" +
         "Example: `&vibrato 6 0.8`",
@@ -389,7 +390,7 @@ export async function startBot(): Promise<void> {
 
     const inputUrl = attachment?.url ?? inlineUrl ?? null;
     if (!inputUrl) {
-      await message.reply("❌ Attach an audio or video file, or reply to a message that has one.");
+      await replyError(message, "Attach an audio or video file, or reply to a message that has one.");
       return;
     }
 
@@ -413,7 +414,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "Prefix &vibrato failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit({ content: `❌ Vibrato failed: \`${msg.slice(0, 300)}\`` });
+      await editError(statusMsg, `Vibrato failed: \`${msg.slice(0, 300)}\``);
     }
   });
 
@@ -440,13 +441,13 @@ export async function startBot(): Promise<void> {
     }
 
     if (!attachment) {
-      await message.reply("❌ Attach an image or video, or reply to a message that has one.");
+      await replyError(message, "Attach an image or video, or reply to a message that has one.");
       return;
     }
 
     const mediaType = detectMediaType(attachment.name ?? "", attachment.contentType ?? "");
     if (mediaType === "audio") {
-      await message.reply("❌ `&effectsgif` only works with images and videos.");
+      await replyError(message, "`&effectsgif` only works with images and videos.");
       return;
     }
 
@@ -481,7 +482,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "Prefix &effectsgif failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit({ content: `❌ Processing failed: \`${msg.slice(0, 300)}\`` });
+      await editError(statusMsg, `Processing failed: \`${msg.slice(0, 300)}\``);
     }
   });
 
@@ -687,7 +688,7 @@ export async function startBot(): Promise<void> {
     }
 
     if (!fileUrl) {
-      await message.reply("❌ Attach an audio/video file, reply to a message that has one, or include a direct URL.");
+      await replyError(message, "Attach an audio/video file, reply to a message that has one, or include a direct URL.");
       return;
     }
 
@@ -704,7 +705,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "Prefix &cqt failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit({ content: `❌ CQT failed: \`${msg.slice(0, 300)}\`` });
+      await editError(statusMsg, `CQT failed: \`${msg.slice(0, 300)}\``);
     }
   });
 
@@ -733,7 +734,7 @@ export async function startBot(): Promise<void> {
       } catch { /* fall through */ }
     }
     if (!fileUrl && inlineUrl) { fileUrl = inlineUrl; fileName = inlineUrl.split("/").pop()?.split("?")[0] ?? "file"; }
-    if (!fileUrl) { await message.reply("❌ Attach an audio/video file, reply to one, or include a direct URL."); return; }
+    if (!fileUrl) { await replyError(message, "Attach an audio/video file, reply to one, or include a direct URL."); return; }
 
     const inputExt = extname(fileName) || ".mp4";
     let statusMsg: Message;
@@ -744,7 +745,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "Prefix &cwt failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit({ content: `❌ CWT failed: \`${msg.slice(0, 300)}\`` });
+      await editError(statusMsg, `CWT failed: \`${msg.slice(0, 300)}\``);
     }
   });
 
@@ -773,7 +774,7 @@ export async function startBot(): Promise<void> {
       } catch { /* fall through */ }
     }
     if (!fileUrl && inlineUrl) { fileUrl = inlineUrl; fileName = inlineUrl.split("/").pop()?.split("?")[0] ?? "file"; }
-    if (!fileUrl) { await message.reply("❌ Attach an audio/video file, reply to one, or include a direct URL."); return; }
+    if (!fileUrl) { await replyError(message, "Attach an audio/video file, reply to one, or include a direct URL."); return; }
 
     const inputExt = extname(fileName) || ".mp4";
     let statusMsg: Message;
@@ -784,7 +785,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "Prefix &cq failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit({ content: `❌ CQ failed: \`${msg.slice(0, 300)}\`` });
+      await editError(statusMsg, `CQ failed: \`${msg.slice(0, 300)}\``);
     }
   });
 
@@ -813,7 +814,7 @@ export async function startBot(): Promise<void> {
       } catch { /* fall through */ }
     }
     if (!fileUrl && inlineUrl) { fileUrl = inlineUrl; fileName = inlineUrl.split("/").pop()?.split("?")[0] ?? "file"; }
-    if (!fileUrl) { await message.reply("❌ Attach an audio/video file, reply to one, or include a direct URL."); return; }
+    if (!fileUrl) { await replyError(message, "Attach an audio/video file, reply to one, or include a direct URL."); return; }
 
     const inputExt = extname(fileName) || ".mp4";
     let statusMsg: Message;
@@ -824,7 +825,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "Prefix &fft failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit({ content: `❌ FFT failed: \`${msg.slice(0, 300)}\`` });
+      await editError(statusMsg, `FFT failed: \`${msg.slice(0, 300)}\``);
     }
   });
 
@@ -853,7 +854,7 @@ export async function startBot(): Promise<void> {
       } catch { /* fall through */ }
     }
     if (!fileUrl && inlineUrl) { fileUrl = inlineUrl; fileName = inlineUrl.split("/").pop()?.split("?")[0] ?? "file"; }
-    if (!fileUrl) { await message.reply("❌ Attach an audio/video file, reply to one, or include a direct URL."); return; }
+    if (!fileUrl) { await replyError(message, "Attach an audio/video file, reply to one, or include a direct URL."); return; }
 
     const inputExt = extname(fileName) || ".mp4";
     let statusMsg: Message;
@@ -864,7 +865,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "Prefix &viz failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit({ content: `❌ Viz failed: \`${msg.slice(0, 300)}\`` });
+      await editError(statusMsg, `Viz failed: \`${msg.slice(0, 300)}\``);
     }
   });
 
@@ -897,7 +898,7 @@ export async function startBot(): Promise<void> {
       } catch { /* fall through */ }
     }
     if (!fileUrl && inlineUrl) { fileUrl = inlineUrl; fileName = inlineUrl.split("/").pop()?.split("?")[0] ?? "file"; }
-    if (!fileUrl) { await message.reply("❌ Attach an audio/video file, reply to one, or include a direct URL."); return; }
+    if (!fileUrl) { await replyError(message, "Attach an audio/video file, reply to one, or include a direct URL."); return; }
 
     const inputExt = extname(fileName) || ".mp4";
     let statusMsg: Message;
@@ -908,7 +909,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "Prefix &waveform failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit({ content: `❌ Waveform failed: \`${msg.slice(0, 300)}\`` });
+      await editError(statusMsg, `Waveform failed: \`${msg.slice(0, 300)}\``);
     }
   });
 
@@ -937,7 +938,7 @@ export async function startBot(): Promise<void> {
       } catch { /* fall through */ }
     }
     if (!fileUrl && inlineUrl) { fileUrl = inlineUrl; fileName = inlineUrl.split("/").pop()?.split("?")[0] ?? "file"; }
-    if (!fileUrl) { await message.reply("❌ Attach an audio/video file, reply to one, or include a direct URL."); return; }
+    if (!fileUrl) { await replyError(message, "Attach an audio/video file, reply to one, or include a direct URL."); return; }
 
     const inputExt = extname(fileName) || ".mp4";
     let statusMsg: Message;
@@ -949,7 +950,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "Prefix &audiotoimage failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit({ content: `❌ audiotoimage failed: \`${msg.slice(0, 300)}\`` });
+      await editError(statusMsg, `audiotoimage failed: \`${msg.slice(0, 300)}\``);
     }
   });
 
@@ -978,7 +979,7 @@ export async function startBot(): Promise<void> {
       } catch { /* fall through */ }
     }
     if (!fileUrl && inlineUrl) { fileUrl = inlineUrl; fileName = inlineUrl.split("/").pop()?.split("?")[0] ?? "file"; }
-    if (!fileUrl) { await message.reply("❌ Attach an image file, reply to one, or include a direct URL."); return; }
+    if (!fileUrl) { await replyError(message, "Attach an image file, reply to one, or include a direct URL."); return; }
 
     const inputExt = extname(fileName) || ".png";
     let statusMsg: Message;
@@ -989,7 +990,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "Prefix &imagetoaudio failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit({ content: `❌ imagetoaudio failed: \`${msg.slice(0, 300)}\`` });
+      await editError(statusMsg, `imagetoaudio failed: \`${msg.slice(0, 300)}\``);
     }
   });
 
@@ -1007,7 +1008,7 @@ export async function startBot(): Promise<void> {
     // First URL in rest is the source video; remaining tokens are rows/xpos/ypos
     const urlMatch = /https?:\/\/\S+/.exec(rest);
     if (!urlMatch) {
-      await message.reply("❌ Provide a source video URL after `&addsource`. Usage: `&addsource <src_url> [rows] [xpos] [ypos]`");
+      await replyError(message, "Provide a source video URL after `&addsource`. Usage: `&addsource <src_url> [rows] [xpos] [ypos]`");
       return;
     }
     const sourceUrl = urlMatch[0]!;
@@ -1043,7 +1044,7 @@ export async function startBot(): Promise<void> {
     }
 
     if (!mainUrl) {
-      await message.reply("❌ Attach a base video, reply to one, or include it before the source URL.");
+      await replyError(message, "Attach a base video, reply to one, or include it before the source URL.");
       return;
     }
 
@@ -1057,7 +1058,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "Prefix &addsource failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit({ content: `❌ addsource failed: \`${msg.slice(0, 300)}\`` });
+      await editError(statusMsg, `addsource failed: \`${msg.slice(0, 300)}\``);
     }
   });
 
@@ -1075,7 +1076,7 @@ export async function startBot(): Promise<void> {
     const duration = parseFloat(durRaw) || null;
 
     if (!duration || duration <= 0) {
-      await message.reply("❌ Provide a duration in seconds. Usage: `&lastexport <seconds>` or `&le <seconds>`");
+      await replyError(message, "Provide a duration in seconds. Usage: `&lastexport <seconds>` or `&le <seconds>`");
       return;
     }
 
@@ -1103,7 +1104,7 @@ export async function startBot(): Promise<void> {
     }
 
     if (!fileUrl) {
-      await message.reply("❌ Attach a video file, reply to a message that has one, or include a direct URL.");
+      await replyError(message, "Attach a video file, reply to a message that has one, or include a direct URL.");
       return;
     }
 
@@ -1120,7 +1121,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "Prefix &lastexport failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit({ content: `❌ lastexport failed: \`${msg.slice(0, 300)}\`` });
+      await editError(statusMsg, `lastexport failed: \`${msg.slice(0, 300)}\``);
     }
   });
 
@@ -1152,7 +1153,7 @@ export async function startBot(): Promise<void> {
     }
 
     if (!fileUrl) {
-      await message.reply("❌ Attach a file, reply to a message with an attachment, or include a direct URL after `&catbox`.");
+      await replyError(message, "Attach a file, reply to a message with an attachment, or include a direct URL after `&catbox`.");
       return;
     }
 
@@ -1170,7 +1171,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "Catbox prefix upload failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit(`❌ Upload failed: \`${msg.slice(0, 300)}\``);
+      await editError(statusMsg, `Upload failed: \`${msg.slice(0, 300)}\``);
     }
   });
 
@@ -1185,7 +1186,7 @@ export async function startBot(): Promise<void> {
 
     const effectsStr = parts[0] ?? "";
     if (!effectsStr) {
-      await message.reply(`❌ Usage: \`&nparison <effects> [n]\`  (e.g. \`&nparison invert 3\`)`);
+      await replyError(message, "Usage: `&nparison <effects> [n]`  (e.g. `&nparison invert 3`)");
       return;
     }
 
@@ -1214,7 +1215,7 @@ export async function startBot(): Promise<void> {
     }
 
     if (!inputUrl) {
-      await message.reply("❌ Attach an image/video, reply to a message with one, or include a direct URL.");
+      await replyError(message, "Attach an image/video, reply to a message with one, or include a direct URL.");
       return;
     }
 
@@ -1262,7 +1263,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "Nparison failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit(`❌ Nparison failed: \`${msg.slice(0, 300)}\``);
+      await editError(statusMsg, `Nparison failed: \`${msg.slice(0, 300)}\``);
     }
   });
 
@@ -1370,24 +1371,24 @@ export async function startBot(): Promise<void> {
     if (message.author.bot) return;
     if (!message.content.trim().toLowerCase().startsWith("&undo")) return;
     if (!message.reference?.messageId) {
-      await message.reply("❌ Reply to a bot message with `&undo` to delete it.").catch(() => {});
+      await replyError(message, "Reply to a bot message with `&undo` to delete it.");
       return;
     }
     try {
       const target = await message.channel.messages.fetch(message.reference.messageId);
       if (!target.author.bot) {
-        await message.reply("❌ You can only `&undo` a bot message.").catch(() => {});
+        await replyError(message, "You can only `&undo` a bot message.");
         return;
       }
       if (target.author.id !== client.user?.id) {
-        await message.reply("❌ That message is from a different bot.").catch(() => {});
+        await replyError(message, "That message is from a different bot.");
         return;
       }
       await target.delete();
       await message.delete().catch(() => {});
     } catch (err) {
       logger.error({ err }, "&undo failed");
-      await message.reply("❌ Could not delete that message (missing permissions?).").catch(() => {});
+      await replyError(message, "Could not delete that message (missing permissions?)");
     }
   });
 
@@ -1399,8 +1400,8 @@ export async function startBot(): Promise<void> {
 
     const expr = message.content.slice(message.content.indexOf("&worldnumbers") + 13).trim();
     if (!expr) {
-      await message.reply(
-        "❌ Usage: `&worldnumbers <expression>`\n" +
+      await replyError(message,
+        "Usage: `&worldnumbers <expression>`\n" +
         "Example: `&worldnumbers x^2` · `&worldnumbers 2*x` · `&worldnumbers x*(x+1)/2`\n" +
         "Numbers matching your expression are highlighted in red on a spiral grid.",
       );
@@ -1420,7 +1421,7 @@ export async function startBot(): Promise<void> {
     } catch (err) {
       logger.error({ err }, "&worldnumbers failed");
       const msg = err instanceof Error ? err.message : "Unknown error";
-      await statusMsg.edit({ content: `❌ Failed: \`${msg.slice(0, 300)}\`` });
+      await editError(statusMsg, `Failed: \`${msg.slice(0, 300)}\``);
     }
   });
 

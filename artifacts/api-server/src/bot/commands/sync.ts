@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { join, extname } from "node:path";
 import axios from "axios";
 import { logger } from "../lib/logger.js";
+import { interactionError } from "../lib/embeds.js";
 
 export const data = new SlashCommandBuilder()
   .setName("sync")
@@ -224,6 +225,6 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   } catch (err) {
     logger.error({ err }, "ihtxsync slash failed");
     const msg = err instanceof Error ? err.message : "Unknown error";
-    await interaction.editReply({ content: `❌ Sync failed: \`${msg.slice(0, 300)}\`` });
+    await interactionError(interaction, `Sync failed: \`${msg.slice(0, 300)}\``);
   }
 }

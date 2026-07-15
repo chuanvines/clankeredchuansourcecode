@@ -23,6 +23,7 @@ import { parseEffectsString } from "../effects/parser.js";
 import { processMedia, detectMediaType } from "../effects/processor.js";
 import { toCdnUrl } from "./catboxupload.js";
 import { logger } from "../lib/logger.js";
+import { replyError } from "../lib/embeds.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -2165,18 +2166,18 @@ export async function handleTagCommand(
     const addRest = rest.slice(4).trim();
     const spaceIdx = addRest.search(/\s/);
     if (spaceIdx === -1) {
-      await message.reply("❌ Usage: `&tag add <name> <script>`\nExample: `&tag add testcode {eval:{arg:0}}`");
+      await replyError(message, "Usage: `&tag add <name> <script>`\nExample: `&tag add testcode {eval:{arg:0}}`");
       return;
     }
     const name = addRest.slice(0, spaceIdx).toLowerCase().trim();
     const script = addRest.slice(spaceIdx + 1).trim();
 
     if (!name || !script) {
-      await message.reply("❌ Usage: `&tag add <name> <script>`");
+      await replyError(message, "Usage: `&tag add <name> <script>`");
       return;
     }
     if (RESERVED.has(name)) {
-      await message.reply(`❌ \`${name}\` is a reserved keyword and cannot be used as a tag name.`);
+      await replyError(message, `\`${name}\` is a reserved keyword and cannot be used as a tag name.`);
       return;
     }
 
@@ -2194,9 +2195,10 @@ export async function handleTagCommand(
     if (existing) {
       const isOwner = existing.ownerId === message.author.id;
       if (!isOwner && !isPrivileged(message)) {
-        await mirrorStatus.edit(
-          `❌ Tag \`${name}\` already exists and is owned by **${existing.ownerUsername}**.\nOnly the owner or a server moderator can edit it.`,
-        );
+        await mirrorStatus.edit({
+          content: "",
+          embeds: [{ color: 0xfee75c, description: `⚠️ **Command Error**\nTag \`${name}\` already exists and is owned by **${existing.ownerUsername}**.\nOnly the owner or a server moderator can edit it.` }],
+        });
         return;
       }
       tags[name] = { ...existing, script: finalScript, updatedAt: now };
@@ -2223,25 +2225,23 @@ export async function handleTagCommand(
     const srcName = parts[2]?.toLowerCase();
 
     if (!newName || !srcName) {
-      await message.reply("❌ Usage: `&tag alias <newname> <existingname>`\nExample: `&tag alias inv invert`");
+      await replyError(message, "Usage: `&tag alias <newname> <existingname>`\nExample: `&tag alias inv invert`");
       return;
     }
     if (RESERVED.has(newName)) {
-      await message.reply(`❌ \`${newName}\` is a reserved keyword and cannot be used as a tag name.`);
+      await replyError(message, `\`${newName}\` is a reserved keyword and cannot be used as a tag name.`);
       return;
     }
     const srcEntry = tags[srcName];
     if (!srcEntry) {
-      await message.reply(`❌ Source tag \`${srcName}\` not found. Use \`&tag list\` to see all tags.`);
+      await replyError(message, `Source tag \`${srcName}\` not found. Use \`&tag list\` to see all tags.`);
       return;
     }
     const existing = tags[newName];
     if (existing) {
       const isOwner = existing.ownerId === message.author.id;
       if (!isOwner && !isPrivileged(message)) {
-        await message.reply(
-          `❌ Tag \`${newName}\` already exists and is owned by **${existing.ownerUsername}**.\nOnly the owner or a server moderator can overwrite it.`,
-        );
+        await replyError(message, `Tag \`${newName}\` already exists and is owned by **${existing.ownerUsername}**.\nOnly the owner or a server moderator can overwrite it.`);
         return;
       }
     }
@@ -2264,15 +2264,13 @@ export async function handleTagCommand(
     const existing = name ? tags[name] : undefined;
 
     if (!name || !existing) {
-      await message.reply(`❌ Tag \`${name ?? "(none)"}\` not found. Use \`&tag list\` to see all tags.`);
+      await replyError(message, `Tag \`${name ?? "(none)"}\` not found. Use \`&tag list\` to see all tags.`);
       return;
     }
 
     const isOwner = existing.ownerId === message.author.id;
     if (!isOwner && !isPrivileged(message)) {
-      await message.reply(
-        `❌ Tag \`${name}\` is owned by **${existing.ownerUsername}**.\nOnly the owner or a server moderator can delete it.`,
-      );
+      await replyError(message, `Tag \`${name}\` is owned by **${existing.ownerUsername}**.\nOnly the owner or a server moderator can delete it.`);
       return;
     }
 
@@ -2285,13 +2283,13 @@ export async function handleTagCommand(
   // ── &tag forceremove <name> (bot owner only) ──────────────────────────────
   if (/^forceremove\s/i.test(rest)) {
     if (message.author.username !== BOT_OWNER_USERNAME) {
-      await message.reply("❌ Only the bot owner can use `forceremove`.");
+      await replyError(message, "Only the bot owner can use `forceremove`.");
       return;
     }
     const name = rest.split(/\s+/)[1]?.toLowerCase();
     const existing = name ? tags[name] : undefined;
     if (!name || !existing) {
-      await message.reply(`❌ Tag \`${name ?? "(none)"}\` not found.`);
+      await replyError(message, `Tag \`${name ?? "(none)"}\` not found.`);
       return;
     }
     delete tags[name];
@@ -2391,7 +2389,7 @@ export async function handleTagCommand(
   if (/^search(\s|$)/i.test(rest)) {
     const query = rest.replace(/^search\s*/i, "").toLowerCase().trim();
     if (!query) {
-      await message.reply("❌ Provide a search query: `&tag search <query>`");
+      await replyError(message, "Provide a search query: `&tag search <query>`");
       return;
     }
 
@@ -2467,7 +2465,7 @@ export async function handleTagCommand(
     const entry = name ? tags[name] : undefined;
 
     if (!name || !entry) {
-      await message.reply(`❌ Tag \`${name ?? "(none)"}\` not found.`);
+      await replyError(message, `Tag \`${name ?? "(none)"}\` not found.`);
       return;
     }
 
@@ -2592,7 +2590,7 @@ export async function handleTagCommand(
   const entry = name ? tags[name] : undefined;
 
   if (!name || !entry) {
-    await message.reply(`❌ Tag \`${name ?? "(none)"}\` not found. Use \`&tag list\` to see all tags.`);
+    await replyError(message, `Tag \`${name ?? "(none)"}\` not found. Use \`&tag list\` to see all tags.`);
     return;
   }
   // Scripts that start with &ihtx (after arg/math substitution they become ihtx commands)
@@ -2637,10 +2635,10 @@ export async function handleTagCommand(
 
       if (!inputUrl || !effectsStr) {
         const errText = inputUrl
-          ? `❌ Tag \`${name}\` produced an empty effects string.`
-          : `❌ Tag \`${name}\`: no media attached — attach a file to your message or reply to one.`;
-        if (statusMsg) await statusMsg.edit(errText);
-        else await message.reply(errText);
+          ? `Tag \`${name}\` produced an empty effects string.`
+          : `Tag \`${name}\`: no media attached — attach a file to your message or reply to one.`;
+        if (statusMsg) await statusMsg.edit({ content: "", embeds: [{ color: 0xfee75c, description: `⚠️ **Command Error**\n${errText}` }] });
+        else await replyError(message, errText);
         return;
       }
 
@@ -2695,11 +2693,11 @@ export async function handleTagCommand(
   } catch (err) {
     logger.error({ err }, "Tag execution failed");
     const msg = err instanceof Error ? err.message : "Unknown error";
-    const errText = `❌ Tag \`${name}\` failed: \`${msg.slice(0, 300)}\``;
+    const errText = `Tag \`${name}\` failed: \`${msg.slice(0, 300)}\``;
     if (statusMsg) {
-      await statusMsg.edit(errText);
+      await statusMsg.edit({ content: "", embeds: [{ color: 0xfee75c, description: `⚠️ **Command Error**\n${errText}` }] });
     } else {
-      await message.reply(errText);
+      await replyError(message, errText);
     }
   }
 }

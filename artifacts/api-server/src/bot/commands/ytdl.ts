@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { uploadToCatbox } from "./catboxupload.js";
 import { logger } from "../lib/logger.js";
+import { replyError, editError } from "../lib/embeds.js";
 
 const DISCORD_MAX_BYTES = 8 * 1024 * 1024;
 const MAX_FILESIZE_BYTES = 200 * 1024 * 1024;
@@ -36,8 +37,8 @@ export async function runYtdl(message: Message): Promise<void> {
   const query = trimmed.slice(matchedPrefix.length).trim();
 
   if (!query) {
-    await message.reply(
-      "❌ **Usage:** `&youtubedownload <URL or search query>` / `&ytdl <URL or search query>`\n" +
+    await replyError(message,
+      "**Usage:** `&youtubedownload <URL or search query>` / `&ytdl <URL or search query>`\n" +
       "Examples:\n" +
       "• `&ytdl https://youtube.com/watch?v=...`\n" +
       "• `&ytdl never gonna give you up`",
@@ -78,7 +79,7 @@ export async function runYtdl(message: Message): Promise<void> {
     const dlFile = files[0];
 
     if (!dlFile) {
-      await statusMsg.edit("❌ Download completed but no output file was found.");
+      await editError(statusMsg, "Download completed but no output file was found.");
       return;
     }
 
@@ -86,7 +87,7 @@ export async function runYtdl(message: Message): Promise<void> {
     const fileBuffer = await readFile(filePath);
 
     if (fileBuffer.length > MAX_FILESIZE_BYTES) {
-      await statusMsg.edit(`❌ File is too large (${(fileBuffer.length / 1024 / 1024).toFixed(1)} MB). Max is 200 MB.`);
+      await editError(statusMsg, `File is too large (${(fileBuffer.length / 1024 / 1024).toFixed(1)} MB). Max is 200 MB.`);
       return;
     }
 
@@ -110,7 +111,7 @@ export async function runYtdl(message: Message): Promise<void> {
   } catch (err) {
     logger.error({ err }, "&ytdl failed");
     const msg = err instanceof Error ? err.message : "Unknown error";
-    await statusMsg.edit(`❌ Download failed: \`${msg.slice(0, 400)}\``);
+    await editError(statusMsg, `Download failed: \`${msg.slice(0, 400)}\``);
   } finally {
     await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
   }

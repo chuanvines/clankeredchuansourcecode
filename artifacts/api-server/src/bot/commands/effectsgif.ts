@@ -8,6 +8,7 @@ import { processMedia, detectMediaType } from "../effects/processor.js";
 import { toCdnUrl } from "./catboxupload.js";
 import { extname } from "node:path";
 import { logger } from "../lib/logger.js";
+import { interactionError } from "../lib/embeds.js";
 
 export const data = new SlashCommandBuilder()
   .setName("effectsgif")
@@ -54,7 +55,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   const mediaType = detectMediaType(attachment.name ?? "", contentType);
 
   if (mediaType === "audio") {
-    await interaction.editReply("❌ `effectsgif` only works with images and videos, not audio files.");
+    await interactionError(interaction, "`effectsgif` only works with images and videos, not audio files.");
     return;
   }
 
@@ -86,8 +87,6 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   } catch (err) {
     logger.error({ err }, "Failed to process effectsgif");
     const message = err instanceof Error ? err.message : "Unknown error";
-    await interaction.editReply({
-      content: `❌ Processing failed: \`${message.slice(0, 300)}\``,
-    });
+    await interactionError(interaction, `Processing failed: \`${message.slice(0, 300)}\``);
   }
 }

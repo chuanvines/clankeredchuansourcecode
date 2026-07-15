@@ -8,6 +8,7 @@ import { processMedia, detectMediaType } from "../effects/processor.js";
 import { toCdnUrl } from "./catboxupload.js";
 import { extname } from "node:path";
 import { logger } from "../lib/logger.js";
+import { interactionError } from "../lib/embeds.js";
 
 export const data = new SlashCommandBuilder()
   .setName("ihtxgen")
@@ -93,8 +94,6 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     logger.error({ err }, "Failed to process media");
     const message =
       err instanceof Error ? err.message : "Unknown error";
-    await interaction.editReply({
-      content: `❌ Processing failed: \`${message.slice(0, 300)}\``,
-    });
+    await interactionError(interaction, `Processing failed: \`${message.slice(0, 300)}\``);
   }
 }
