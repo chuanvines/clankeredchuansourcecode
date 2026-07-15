@@ -423,7 +423,7 @@ function evalCondition(condition: string): boolean {
 }
 
 /** Matches the innermost tag — content must not contain { or }. */
-const INNERMOST_TAG_RE = /\{(arg|math|imagescript|iscript|attach|js|ts|py|sh|runcodetxt|ihtx|ihtxffmpeg|veb|set|get|if|replace|upper|lower|len|choose|or|repeat|range|foreach|substring|indexof|tag):([^{}]*)\}/;
+const INNERMOST_TAG_RE = /\{(arg|math|imagescript|iscript|mediascript|attach|js|ts|py|sh|runcodetxt|ihtx|ihtxffmpeg|veb|set|get|if|replace|upper|lower|len|choose|or|repeat|range|foreach|substring|indexof|tag):([^{}]*)\}/;
 
 /**
  * Expand block-style {if:cond}...{elif:cond}...{else}...{/if} constructs.
@@ -520,7 +520,7 @@ function expandBlockIf(text: string): { text: string; changed: boolean } {
  * For these we use balanced-brace extraction instead of INNERMOST_TAG_RE so that
  * inner braces (e.g. ${var}, awk BEGIN{...}, JS objects) don't break parsing.
  */
-const CODE_BLOCK_TAGS = new Set(["sh", "js", "ts", "py", "eval", "ignore", "imagescript", "iscript", "ihtxffmpeg", "runcodetxt", "attach"]);
+const CODE_BLOCK_TAGS = new Set(["sh", "js", "ts", "py", "eval", "ignore", "imagescript", "iscript", "mediascript", "ihtxffmpeg", "runcodetxt", "attach"]);
 
 /**
  * Find the first {tagName:...} block in `text` using balanced-brace counting.
@@ -1082,6 +1082,140 @@ export async function runImagescript(code: string): Promise<ScriptResult> {
   return lastMedia ?? "";
 }
 
+/**
+ * Line-based ImageMagick scripting language for {mediascript:...} tagscript.
+ *
+ * Syntax:
+ *   load <url> <var>              — download URL into variable (use {iv} for attached media)
+ *   <effect> <var> [<args...>]    — apply an effect to the variable in place, e.g. `explode image 1`
+ *   render <var>                  — output the variable's current file as the final attachment
+ *
+ * Supported effects:
+ *   invert                        → -negate
+ *   swirl <deg>                   → -swirl <deg>
+ *   explode <n>                   → -implode -<n>
+ *   implode <n>                   → -implode <n>
+ *   magik                         → -liquid-rescale 50%x50%
+ *   hueshifthsv <h> <s> <l>       → -modulate <100+l>,<100+s>,<100+h*200/360>
+ *
+ * Example:
+ *   load {iv} image
+ *   explode image 1
+ *   hueshifthsv image -130 0 0
+ *   render image
+ */
+export async function runMediascript(code: string): Promise<ScriptResult> {
+  const tmpDir = await mkdtemp(join(tmpdir(), "mediascript-"));
+  try {
+    const vars: Record<string, string> = {};
+    let lastVar: string | null = null;
+    let opCounter = 0;
+
+    const lines = code
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith("//") && !l.startsWith("#"));
+
+    for (const line of lines) {
+      const tokens = line.match(/\S+/g) ?? [];
+      if (tokens.length === 0) continue;
+      const cmd = tokens[0]!.toLowerCase();
+
+      // ── load <url> <var> ─────────────────────────────────────────────────
+      if (cmd === "load") {
+        const url = tokens[1] ?? "";
+        const varName = tokens[2] ?? "image";
+        if (!/^https?:\/\//.test(url)) return `[mediascript: "load" requires a URL, e.g. "load {iv} ${varName}"]`;
+        try {
+          const resp = await axios.get<ArrayBuffer>(url, { responseType: "arraybuffer", timeout: 30_000, headers: { "User-Agent": BROWSER_UA } });
+          const ct = String(resp.headers["content-type"] ?? "");
+          const rawName = (url.split("?")[0] ?? "").split("/").pop() ?? "";
+          let ext = extname(rawName);
+          if (!ext) {
+            if (ct.includes("png")) ext = ".png";
+            else if (ct.includes("gif")) ext = ".gif";
+            else if (ct.includes("webp")) ext = ".webp";
+            else if (ct.includes("jpeg") || ct.includes("jpg")) ext = ".jpg";
+            else ext = ".png";
+          }
+          const filePath = join(tmpDir, `${varName}${ext}`);
+          await writeFile(filePath, Buffer.from(resp.data));
+          vars[varName] = filePath;
+          lastVar = varName;
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return `[mediascript: failed to load "${url}": ${msg.slice(0, 200)}]`;
+        }
+        continue;
+      }
+
+      // ── render <var> ──────────────────────────────────────────────────────
+      if (cmd === "render") {
+        const renderVar = tokens[1] ?? lastVar ?? "";
+        const renderPath = vars[renderVar];
+        if (!renderPath) return `[mediascript: undefined variable "${renderVar}" — use "load <url> <var>" first]`;
+        const buffer = await readFile(renderPath);
+        return { type: "media", buffer, ext: extname(renderPath).slice(1) || "png" };
+      }
+
+      // ── effect commands: <effect> <var> [<args...>] ─────────────────────
+      const effVar: string = tokens[1] ?? lastVar ?? "";
+      const filePath = vars[effVar];
+      if (!filePath) return `[mediascript: undefined variable "${effVar}" — use "load <url> <var>" first]`;
+      const args = tokens.slice(2);
+
+      let imArgs: string[];
+      switch (cmd) {
+        case "invert":
+          imArgs = ["-negate"];
+          break;
+        case "swirl":
+          imArgs = ["-swirl", args[0] ?? "50"];
+          break;
+        case "explode": {
+          const n = parseFloat(args[0] ?? "1");
+          imArgs = ["-implode", String(-(Number.isFinite(n) ? n : 1))];
+          break;
+        }
+        case "implode":
+          imArgs = ["-implode", args[0] ?? "0.5"];
+          break;
+        case "magik":
+          imArgs = ["-liquid-rescale", "50%x50%"];
+          break;
+        case "hueshifthsv": {
+          const h = parseFloat(args[0] ?? "0") || 0;
+          const s = parseFloat(args[1] ?? "0") || 0;
+          const l = parseFloat(args[2] ?? "0") || 0;
+          const hue = Math.trunc(100 + (h * 200) / 360);
+          imArgs = ["-modulate", `${100 + l},${100 + s},${hue}`];
+          break;
+        }
+        default:
+          return `[mediascript: unknown command "${cmd}"]`;
+      }
+
+      try {
+        const outPath = join(tmpDir, `out${opCounter++}${extname(filePath)}`);
+        await execFileAsync("magick", [filePath, ...imArgs, outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+        vars[effVar] = outPath;
+        lastVar = effVar;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return `[mediascript error on "${line}": ${msg.slice(0, 400)}]`;
+      }
+    }
+
+    if (lastVar && vars[lastVar]) {
+      const buffer = await readFile(vars[lastVar]);
+      return { type: "media", buffer, ext: extname(vars[lastVar]).slice(1) || "png" };
+    }
+    return `[mediascript: nothing to render — add a "render <var>" line]`;
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 // ── Tagscript engine ──────────────────────────────────────────────────────────
 
 export async function processTagscript(
@@ -1343,6 +1477,12 @@ export async function processTagscript(
           else replacement = result;
           break;
         }
+        case "mediascript": {
+          const msResult = await runMediascript(content);
+          if (typeof msResult !== "string") { mediaResult = msResult; replacement = ""; }
+          else replacement = msResult;
+          break;
+        }
         case "attach": {
           const url = content.trim();
           if (/^https?:\/\//.test(url)) {
@@ -1550,6 +1690,12 @@ export async function processTagscript(
           const r = await runImagescript(cbContent);
           if (typeof r !== "string") { mediaResult = r; cbReplacement = ""; }
           else cbReplacement = r;
+          break;
+        }
+        case "mediascript": {
+          const msResult = await runMediascript(cbContent);
+          if (typeof msResult !== "string") { mediaResult = msResult; cbReplacement = ""; }
+          else cbReplacement = msResult;
           break;
         }
         case "attach": {
@@ -2146,6 +2292,16 @@ export async function handleTagCommand(
       "  tunnel/detunnel <var>",
       "  slide <var> [speed]",
       "  e.g.  load {iv} i / copy i i2 / invert i2 / join i i2 / audiopitch i 3 0",
+      "{mediascript:<code>}      — ImageMagick scripting language: load + apply effects + render",
+      "  load <url> <var>        — download URL into variable",
+      "  render <var>            — output the variable as the final attachment",
+      "  invert <var>            — negate colors (-negate)",
+      "  swirl <var> <deg>       — swirl distortion (-swirl deg)",
+      "  explode <var> <n>       — outward implode (-implode -n)",
+      "  implode <var> <n>       — inward implode (-implode n)",
+      "  magik <var>             — content-aware liquid rescale (-liquid-rescale 50%x50%)",
+      "  hueshifthsv <var> <h> <s> <l> — hue/sat/brightness shift (-modulate)",
+      "  e.g.  load {iv} image / explode image 1 / hueshifthsv image -130 0 0 / render image",
       "{tag:<name>}              — inline-run another tag and insert its output  e.g. {tag:invert}",
       "{tagname}                 — shorthand for {tag:tagname}  e.g. {invert}",
       "{attach:<url>}            — download a URL and send it as a Discord file attachment",
@@ -2199,7 +2355,7 @@ export async function handleTagCommand(
   // are also slow — show the ⏳ status message for them.
   // Also check rawArgs in case slow tags are passed as arguments (e.g. &t testcode {imagescript:...}).
   const combinedForSlowCheck = entry.script + " " + rawArgs;
-  const hasSlowTag = /\{(imagescript|ihtx|py|js|sh):/.test(combinedForSlowCheck)
+  const hasSlowTag = /\{(imagescript|mediascript|ihtx|py|js|sh):/.test(combinedForSlowCheck)
     || /^&ihtx\b/i.test(entry.script.trim());
   let statusMsg: Message | null = null;
 
