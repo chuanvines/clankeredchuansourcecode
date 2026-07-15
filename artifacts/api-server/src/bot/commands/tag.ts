@@ -22,8 +22,7 @@ const RUN_TS_SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "run-ts.mjs"
 import { parseEffectsString } from "../effects/parser.js";
 import { processMedia, detectMediaType } from "../effects/processor.js";
 import { toCdnUrl } from "./catboxupload.js";
-import { logger } from "../lib/logger.js";
-import { replyError } from "../lib/embeds.js";
+import { logger } from "../lib/logger.js";import { replyError } from "../lib/embeds.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -1231,7 +1230,9 @@ async function mediascriptDecomposeVideo(
   return { frameCount, fps, audioPath };
 }
 
-/** Reassembles a numbered PNG frame sequence back into an MP4 at the original frame rate. */
+/** Reassembles a numbered PNG frame sequence back into an MP4 at the original frame rate.
+ *  Uses the ffmpeg concat demuxer (an explicit frame list) to avoid image2 glob/start_number
+ *  issues that differ across ffmpeg versions. */
 async function mediascriptReassembleVideo(
   dir: string,
   frameCount: number,
@@ -1239,23 +1240,38 @@ async function mediascriptReassembleVideo(
   audioPath: string | null,
   outPath: string,
 ): Promise<void> {
-  // Verify frames exist
+  // Build an explicit concat list — each line: "file '/absolute/path/frame_00001.png'"
+  // duration is 1/fps so ffmpeg knows how long each frame lasts.
+  const frameDuration = 1 / fps;
+  const lines: string[] = [];
   for (let i = 1; i <= frameCount; i++) {
     const fp = mediascriptFramePath(dir, i);
     if (!existsSync(fp)) {
       throw new Error(`missing frame ${basename(fp)} — expected ${frameCount} frames but not all were written/survived processing`);
     }
+    // Single-quote paths, escaping any embedded single quotes.
+    lines.push(`file '${fp.replace(/\\/g, "\\\\").replace(/'/g, "'\\''")}'`);
+    lines.push(`duration ${frameDuration}`);
   }
+  // Repeat the last frame entry without a duration so ffmpeg flushes the last packet.
+  if (frameCount > 0) {
+    const lastFp = mediascriptFramePath(dir, frameCount);
+    lines.push(`file '${lastFp.replace(/\\/g, "\\\\").replace(/'/g, "'\\''")}'`);
+  }
+
+  const concatPath = join(dir, "_concat.txt");
+  await writeFile(concatPath, lines.join("\n") + "\n");
+
   const args: string[] = [
     "-y",
-    "-f", "image2",
-    "-framerate", String(fps),
-    "-start_number", "1",
-    "-i", join(dir, "frame_%05d.png"),
+    "-f", "concat",
+    "-safe", "0",
+    "-i", concatPath,
   ];
   if (audioPath) args.push("-i", audioPath);
   args.push(
     "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p",
+    "-r", String(fps),
     "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
     "-movflags", "+faststart",
   );
