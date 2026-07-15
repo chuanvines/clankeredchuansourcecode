@@ -32,6 +32,7 @@ import { runVeb } from "./commands/veb.js";
 import { runYtdl } from "./commands/ytdl.js";
 import { runTts } from "./commands/tts.js";
 import { runBytebeat } from "./commands/bytebeat.js";
+import { runPing } from "./commands/ping.js";
 import { registerCommands } from "./register.js";
 import { parseEffectsString } from "./effects/parser.js";
 import { processMedia, detectMediaType, probeMediaMeta } from "./effects/processor.js";
@@ -129,6 +130,20 @@ export async function startBot(): Promise<void> {
   client.once(Events.ClientReady, (c) => {
     logger.info({ tag: c.user.tag }, "Discord bot ready");
     c.user.setActivity("Making Videos And Misc...", { type: 0 });
+  });
+
+  // ── prefix command: &ping ───────────────────────────────────────────────
+  client.on(Events.MessageCreate, async (message: Message) => {
+    if (message.author.bot) return;
+    if (blockedMessages.has(message.id)) return;
+    if (!message.content.trim().startsWith("&ping")) return;
+
+    try {
+      await runPing(message);
+    } catch (err) {
+      logger.error({ err }, "&ping failed");
+      await message.reply("❌ Something went wrong.").catch(() => {});
+    }
   });
 
   // ── slash commands ────────────────────────────────────────────────────────
