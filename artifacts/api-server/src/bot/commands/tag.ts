@@ -1218,7 +1218,7 @@ async function mediascriptReassembleVideo(
   v: Extract<MediascriptVar, { kind: "video" }>,
   outPath: string,
 ): Promise<void> {
-  const inputArgs = ["-framerate", String(v.fps), "-i", join(v.dir, "frame_%05d.png")];
+  const inputArgs = ["-framerate", String(v.fps), "-i", join(v.dir, "frame_%05d.png"), "-frames:v", String(v.frameCount)];
   const audioArgs: string[] = v.audio ? ["-i", v.audio, "-c:a", "aac", "-shortest"] : [];
   await execFileAsync(
     "ffmpeg",
@@ -1269,14 +1269,14 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       if (!v) return `[mediascript: undefined variable "${name}" — use "load <url> <var>" first]`;
       if (v.kind === "image") {
         const buffer = await readFile(v.path);
-        return { type: "media", buffer, ext: extname(v.path).slice(1) || "png" };
+        return { type: "media", buffer, ext: extname(v.path) || ".png" };
       }
       if (v.kind === "video") {
         try {
           const outPath = join(tmpDir, `render${opCounter++}.mp4`);
           await mediascriptReassembleVideo(v, outPath);
           const buffer = await readFile(outPath);
-          return { type: "media", buffer, ext: "mp4" };
+          return { type: "media", buffer, ext: ".mp4" };
         } catch (err) {
           return `[mediascript: failed to render video "${name}": ${mediascriptErrorDetail(err)}]`;
         }
@@ -1286,7 +1286,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const outPath = join(tmpDir, `render${opCounter++}.gif`);
         await mediascriptReassembleGif(v.dir, v.frameCount, v.delays, v.loop, outPath);
         const buffer = await readFile(outPath);
-        return { type: "media", buffer, ext: "gif" };
+        return { type: "media", buffer, ext: ".gif" };
       } catch (err) {
         return `[mediascript: failed to render gif "${name}": ${mediascriptErrorDetail(err)}]`;
       }
@@ -1360,11 +1360,17 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               if (num > 0 && den > 0) fps = Math.round((num / den) * 100) / 100;
             } catch { /* use default 30 fps */ }
 
-            // Extract frames
+            // Cap fps to avoid extracting thousands of frames from high-fps sources
+            const clampedFps = Math.min(fps, 60);
+
+            // Extract frames (capped at MEDIASCRIPT_MAX_GIF_FRAMES)
             const frameDir = join(tmpDir, `${varName}_frames`);
             await mkdir(frameDir, { recursive: true });
             await execFileAsync("ffmpeg", [
-              "-y", "-i", srcPath, "-vf", `fps=${fps}`, "-q:v", "2",
+              "-y", "-i", srcPath,
+              "-vf", `fps=${clampedFps}`,
+              "-frames:v", String(MEDIASCRIPT_MAX_GIF_FRAMES),
+              "-q:v", "2",
               join(frameDir, "frame_%05d.png"),
             ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
 
@@ -1388,7 +1394,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               }
             } catch { /* no audio or extraction failed */ }
 
-            vars[varName] = { kind: "video", dir: frameDir, frameCount, fps, audio };
+            vars[varName] = { kind: "video", dir: frameDir, frameCount, fps: clampedFps, audio };
           } else if (ext.toLowerCase() === ".gif") {
             const srcPath = join(tmpDir, `${varName}_src.gif`);
             await writeFile(srcPath, Buffer.from(resp.data));
