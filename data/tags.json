@@ -116,7 +116,7 @@
     "ownerId": "1387479962323255306",
     "ownerUsername": "yasinreturns",
     "createdAt": "2026-06-11T13:06:54.106Z",
-    "updatedAt": "2026-06-11T13:07:27.337Z"
+    "updatedAt": "2026-07-15T17:23:51.787Z"
   },
   "gm0": {
     "script": "{imagescript:\nload {iv} i\nhuehsv i 180\nrealgm4 i\naudiopitch=-10;0;10\n}",
@@ -3554,5 +3554,19 @@
     "ownerUsername": "nicholasm724_56126",
     "createdAt": "2026-07-07T14:39:38.847Z",
     "updatedAt": "2026-07-07T14:42:00.965Z"
+  },
+  "g-major-1": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nhueshifthsv i 180\naudiopitch=8\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-15T17:25:41.285Z",
+    "updatedAt": "2026-07-15T17:29:29.952Z"
+  },
+  "g-major-2": {
+    "script": "{imagescript:\nload {iv} i \ninvertrgb i 1 1 0\naudiopitch=0;-5;4\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-15T17:29:42.327Z",
+    "updatedAt": "2026-07-15T17:48:53.006Z"
   }
 }
