@@ -1155,7 +1155,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const renderPath = vars[renderVar];
         if (!renderPath) return `[mediascript: undefined variable "${renderVar}" — use "load <url> <var>" first]`;
         const buffer = await readFile(renderPath);
-        return { type: "media", buffer, ext: extname(renderPath).slice(1) || "png" };
+        return { type: "media", buffer, ext: extname(renderPath) || ".png" };
       }
 
       // ── effect commands: <effect> <var> [<args...>] ─────────────────────
@@ -1208,7 +1208,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
 
     if (lastVar && vars[lastVar]) {
       const buffer = await readFile(vars[lastVar]);
-      return { type: "media", buffer, ext: extname(vars[lastVar]).slice(1) || "png" };
+      return { type: "media", buffer, ext: extname(vars[lastVar]) || ".png" };
     }
     return `[mediascript: nothing to render — add a "render <var>" line]`;
   } finally {
