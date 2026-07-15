@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.imagemagick
     pkgs.frei0r
     pkgs.ffmpeg
     pkgs.sox

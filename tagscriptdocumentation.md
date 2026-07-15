@@ -360,6 +360,15 @@ ffmpeg -y -i "$FILE_1" -vf "hflip" output/flipped.mp4
 }
 ```
 
+**Available CLI tools:** `ffmpeg`/`ffprobe`, `sox`, `python3`, and `magick`/`convert` (ImageMagick 7) are all on `$PATH` inside `{sh:}` scripts. Write output to the `output/` folder using a relative path (the script's cwd is a per-run temp directory, not a fixed path — don't hardcode `/tmp/...`).
+
+```
+{sh:
+load {iv}
+magick "$FILE_1" -implode -1 output/output.png
+}
+```
+
 ---
 
 ## Video Effect Tags
