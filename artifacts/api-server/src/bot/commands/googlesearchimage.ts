@@ -8,7 +8,6 @@ import {
   EmbedBuilder,
   ButtonInteraction,
 } from "discord.js";
-import { interactionError } from "../lib/embeds.js";
 import axios from "axios";
 import { logger } from "../lib/logger.js";
 
@@ -96,12 +95,12 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   } catch (err) {
     logger.error({ err }, "Google Image Search failed");
     const msg = err instanceof Error ? err.message : String(err);
-    await interactionError(interaction, `Search failed: \`${msg.slice(0, 300)}\``);
+    await interaction.editReply(`❌ Search failed: \`${msg.slice(0, 300)}\``);
     return;
   }
 
   if (results.length === 0) {
-    await interactionError(interaction, `No image results found for **${query}**`);
+    await interaction.editReply(`❌ No image results found for **${query}**`);
     return;
   }
 
@@ -156,7 +155,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     } catch (err) {
       logger.error({ err }, "Google Image Search button handler failed");
       const msg = err instanceof Error ? err.message : String(err);
-      await btn.followUp({ embeds: [{ color: 0xfee75c, description: `⚠️ **Command Error**\nError: \`${msg.slice(0, 200)}\`` }], ephemeral: true });
+      await btn.followUp({ content: `❌ Error: \`${msg.slice(0, 200)}\``, ephemeral: true });
     }
   });
 

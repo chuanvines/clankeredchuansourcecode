@@ -1,7 +1,6 @@
 import Groq from "groq-sdk";
 import { Message, AttachmentBuilder } from "discord.js";
 import { logger } from "../lib/logger.js";
-import { editError } from "../lib/embeds.js";
 import { processTagscript } from "./tag.js";
 
 const client = new Groq({
@@ -341,12 +340,12 @@ export async function runAi(message: Message): Promise<void> {
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        await editError(execMsg, `Tagscript error: \`${msg.slice(0, 300)}\``);
+        await execMsg.edit(`❌ Tagscript error: \`${msg.slice(0, 300)}\``);
       }
     }
   } catch (err) {
     logger.error({ err }, "&ai command failed");
     const msg = err instanceof Error ? err.message : "Unknown error";
-    await editError(statusMsg, `AI error: \`${msg.slice(0, 300)}\``);
+    await statusMsg.edit(`❌ AI error: \`${msg.slice(0, 300)}\``);
   }
 }

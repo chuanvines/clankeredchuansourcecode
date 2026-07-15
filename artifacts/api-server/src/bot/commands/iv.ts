@@ -1,7 +1,6 @@
 import { Message, AttachmentBuilder, TextChannel, NewsChannel, ThreadChannel, DMChannel, PartialDMChannel } from "discord.js";
 import axios from "axios";
 import { logger } from "../lib/logger.js";
-import { replyError, editError } from "../lib/embeds.js";
 
 type SupportedChannel =
   | TextChannel
@@ -93,7 +92,7 @@ export async function handleIv(message: Message): Promise<void> {
   }
 
   if (!info) {
-    await replyError(message, "No attachment found — attach a file, reply to one, or make sure something was sent in this channel recently.");
+    await message.reply("❌ No attachment found — attach a file, reply to one, or make sure something was sent in this channel recently.");
     return;
   }
 
@@ -111,6 +110,6 @@ export async function handleIv(message: Message): Promise<void> {
   } catch (err) {
     logger.error({ err }, "&iv failed");
     const msg = err instanceof Error ? err.message : "Unknown error";
-    await editError(statusMsg, `Failed: \`${msg.slice(0, 300)}\``);
+    await statusMsg.edit({ content: `❌ Failed: \`${msg.slice(0, 300)}\`` });
   }
 }

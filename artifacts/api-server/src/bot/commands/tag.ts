@@ -22,7 +22,7 @@ const RUN_TS_SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "run-ts.mjs"
 import { parseEffectsString } from "../effects/parser.js";
 import { processMedia, detectMediaType } from "../effects/processor.js";
 import { toCdnUrl } from "./catboxupload.js";
-import { logger } from "../lib/logger.js";import { replyError } from "../lib/embeds.js";
+import { logger } from "../lib/logger.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -1083,14 +1083,11 @@ export async function runImagescript(code: string): Promise<ScriptResult> {
 }
 
 const MEDIASCRIPT_MAX_GIF_FRAMES = 240;
-const MEDIASCRIPT_MAX_VIDEO_FRAMES = 240;
 const MEDIASCRIPT_FRAME_CONCURRENCY = 6;
-const MEDIASCRIPT_VIDEO_EXTS = new Set([".mp4", ".webm", ".mov", ".mkv", ".avi"]);
 
 type MediascriptVar =
   | { kind: "image"; path: string }
-  | { kind: "gif"; dir: string; frameCount: number; delays: number[]; loop: number }
-  | { kind: "video"; dir: string; frameCount: number; fps: number; audioPath: string | null };
+  | { kind: "gif"; dir: string; frameCount: number; delays: number[]; loop: number };
 
 /** Zero-padded frame path, e.g. frame_00001.png, frame_00002.png, … */
 function mediascriptFramePath(dir: string, idx: number): string {
@@ -1162,124 +1159,6 @@ async function mediascriptReassembleGif(dir: string, frameCount: number, delays:
   await execFileAsync("magick", args, { timeout: 180_000, maxBuffer: 100 * 1024 * 1024 });
 }
 
-/**
- * Splits a video file into numbered PNG frames (frame_00001.png, …) using ffmpeg
- * and optionally extracts the audio stream to a separate AAC file.
- * Returns the actual frame count written and the original frame rate.
- */
-async function mediascriptDecomposeVideo(
-  srcPath: string,
-  destDir: string,
-  audioOutPath: string,
-): Promise<{ frameCount: number; fps: number; audioPath: string | null }> {
-  // Probe frame rate
-  let fps = 30;
-  try {
-    const { stdout } = await execFileAsync(
-      "ffprobe",
-      ["-v", "error", "-select_streams", "v:0",
-        "-show_entries", "stream=r_frame_rate",
-        "-of", "default=noprint_wrappers=1:nokey=1", srcPath],
-      { timeout: 10_000 },
-    );
-    const raw = stdout.trim();
-    if (raw.includes("/")) {
-      const [num, den] = raw.split("/").map(Number);
-      if (num && den) fps = Math.round((num / den) * 100) / 100;
-    } else {
-      const n = parseFloat(raw);
-      if (Number.isFinite(n) && n > 0) fps = n;
-    }
-  } catch { /* keep default */ }
-
-  // Extract frames — cap at MEDIASCRIPT_MAX_VIDEO_FRAMES via -frames:v
-  await execFileAsync(
-    "ffmpeg",
-    ["-y", "-i", srcPath,
-      "-frames:v", String(MEDIASCRIPT_MAX_VIDEO_FRAMES),
-      "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=rgba",
-      "-vsync", "0",
-      join(destDir, "frame_%05d.png")],
-    { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 },
-  );
-
-  const written = (await readdir(destDir)).filter((f) => /^frame_\d{5}\.png$/.test(f));
-  const frameCount = Math.max(1, written.length);
-
-  // Extract audio (best-effort)
-  let audioPath: string | null = null;
-  try {
-    const { stdout: astreams } = await execFileAsync(
-      "ffprobe",
-      ["-v", "error", "-select_streams", "a",
-        "-show_entries", "stream=index", "-of", "csv=p=0", srcPath],
-      { timeout: 10_000 },
-    );
-    if (astreams.trim().length > 0) {
-      // Limit audio duration to match extracted frame count
-      const durSecs = frameCount / fps;
-      await execFileAsync(
-        "ffmpeg",
-        ["-y", "-i", srcPath, "-t", String(durSecs), "-vn", "-c:a", "aac", "-ar", "44100", "-ac", "2", audioOutPath],
-        { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 },
-      );
-      audioPath = audioOutPath;
-    }
-  } catch { /* no audio is fine */ }
-
-  return { frameCount, fps, audioPath };
-}
-
-/** Reassembles a numbered PNG frame sequence back into an MP4 at the original frame rate.
- *  Uses the ffmpeg concat demuxer (an explicit frame list) to avoid image2 glob/start_number
- *  issues that differ across ffmpeg versions. */
-async function mediascriptReassembleVideo(
-  dir: string,
-  frameCount: number,
-  fps: number,
-  audioPath: string | null,
-  outPath: string,
-): Promise<void> {
-  // Build an explicit concat list — each line: "file '/absolute/path/frame_00001.png'"
-  // duration is 1/fps so ffmpeg knows how long each frame lasts.
-  const frameDuration = 1 / fps;
-  const lines: string[] = [];
-  for (let i = 1; i <= frameCount; i++) {
-    const fp = mediascriptFramePath(dir, i);
-    if (!existsSync(fp)) {
-      throw new Error(`missing frame ${basename(fp)} — expected ${frameCount} frames but not all were written/survived processing`);
-    }
-    // Single-quote paths, escaping any embedded single quotes.
-    lines.push(`file '${fp.replace(/\\/g, "\\\\").replace(/'/g, "'\\''")}'`);
-    lines.push(`duration ${frameDuration}`);
-  }
-  // Repeat the last frame entry without a duration so ffmpeg flushes the last packet.
-  if (frameCount > 0) {
-    const lastFp = mediascriptFramePath(dir, frameCount);
-    lines.push(`file '${lastFp.replace(/\\/g, "\\\\").replace(/'/g, "'\\''")}'`);
-  }
-
-  const concatPath = join(dir, "_concat.txt");
-  await writeFile(concatPath, lines.join("\n") + "\n");
-
-  const args: string[] = [
-    "-y",
-    "-f", "concat",
-    "-safe", "0",
-    "-i", concatPath,
-  ];
-  if (audioPath) args.push("-i", audioPath);
-  args.push(
-    "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p",
-    "-r", String(fps),
-    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
-    "-movflags", "+faststart",
-  );
-  if (audioPath) args.push("-c:a", "aac", "-ar", "44100", "-ac", "2", "-shortest");
-  args.push(outPath);
-  await execFileAsync("ffmpeg", args, { timeout: 180_000, maxBuffer: 100 * 1024 * 1024 });
-}
-
 /** Extracts a concise, actionable message from a failed execFileAsync call — prefers stderr over the
  *  (often huge, argv-laden) top-level error message so failures on long frame-list commands stay readable. */
 function mediascriptErrorDetail(err: unknown): string {
@@ -1334,16 +1213,6 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const buffer = await readFile(v.path);
         return { type: "media", buffer, ext: extname(v.path) || ".png" };
       }
-      if (v.kind === "video") {
-        try {
-          const outPath = join(tmpDir, `render${opCounter++}.mp4`);
-          await mediascriptReassembleVideo(v.dir, v.frameCount, v.fps, v.audioPath, outPath);
-          const buffer = await readFile(outPath);
-          return { type: "media", buffer, ext: ".mp4" };
-        } catch (err) {
-          return `[mediascript: failed to render video "${name}": ${mediascriptErrorDetail(err)}]`;
-        }
-      }
       try {
         const outPath = join(tmpDir, `render${opCounter++}.gif`);
         await mediascriptReassembleGif(v.dir, v.frameCount, v.delays, v.loop, outPath);
@@ -1389,14 +1258,6 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             await mkdir(frameDir, { recursive: true });
             const { frameCount, delays, loop } = await mediascriptDecomposeGif(srcPath, frameDir);
             vars[varName] = { kind: "gif", dir: frameDir, frameCount, delays, loop };
-          } else if (MEDIASCRIPT_VIDEO_EXTS.has(ext.toLowerCase())) {
-            const srcPath = join(tmpDir, `${varName}_src${ext}`);
-            await writeFile(srcPath, Buffer.from(resp.data));
-            const frameDir = join(tmpDir, `${varName}_frames`);
-            await mkdir(frameDir, { recursive: true });
-            const audioOutPath = join(tmpDir, `${varName}_audio.aac`);
-            const { frameCount, fps, audioPath } = await mediascriptDecomposeVideo(srcPath, frameDir, audioOutPath);
-            vars[varName] = { kind: "video", dir: frameDir, frameCount, fps, audioPath };
           } else {
             const filePath = join(tmpDir, `${varName}${ext}`);
             await writeFile(filePath, Buffer.from(resp.data));
@@ -1458,7 +1319,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           await execFileAsync("magick", [target.path, ...imArgs, outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
           vars[effVar] = { kind: "image", path: outPath };
         } else {
-          // Apply the effect frame by frame across the whole gif/video sequence.
+          // Apply the effect frame by frame across the whole gif sequence.
           await mediascriptMapLimit(target.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
             const fp = mediascriptFramePath(target.dir, i);
             await execFileAsync("magick", [fp, ...imArgs, fp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
@@ -2184,18 +2045,18 @@ export async function handleTagCommand(
     const addRest = rest.slice(4).trim();
     const spaceIdx = addRest.search(/\s/);
     if (spaceIdx === -1) {
-      await replyError(message, "Usage: `&tag add <name> <script>`\nExample: `&tag add testcode {eval:{arg:0}}`");
+      await message.reply("❌ Usage: `&tag add <name> <script>`\nExample: `&tag add testcode {eval:{arg:0}}`");
       return;
     }
     const name = addRest.slice(0, spaceIdx).toLowerCase().trim();
     const script = addRest.slice(spaceIdx + 1).trim();
 
     if (!name || !script) {
-      await replyError(message, "Usage: `&tag add <name> <script>`");
+      await message.reply("❌ Usage: `&tag add <name> <script>`");
       return;
     }
     if (RESERVED.has(name)) {
-      await replyError(message, `\`${name}\` is a reserved keyword and cannot be used as a tag name.`);
+      await message.reply(`❌ \`${name}\` is a reserved keyword and cannot be used as a tag name.`);
       return;
     }
 
@@ -2213,10 +2074,9 @@ export async function handleTagCommand(
     if (existing) {
       const isOwner = existing.ownerId === message.author.id;
       if (!isOwner && !isPrivileged(message)) {
-        await mirrorStatus.edit({
-          content: "",
-          embeds: [{ color: 0xfee75c, description: `⚠️ **Command Error**\nTag \`${name}\` already exists and is owned by **${existing.ownerUsername}**.\nOnly the owner or a server moderator can edit it.` }],
-        });
+        await mirrorStatus.edit(
+          `❌ Tag \`${name}\` already exists and is owned by **${existing.ownerUsername}**.\nOnly the owner or a server moderator can edit it.`,
+        );
         return;
       }
       tags[name] = { ...existing, script: finalScript, updatedAt: now };
@@ -2243,23 +2103,25 @@ export async function handleTagCommand(
     const srcName = parts[2]?.toLowerCase();
 
     if (!newName || !srcName) {
-      await replyError(message, "Usage: `&tag alias <newname> <existingname>`\nExample: `&tag alias inv invert`");
+      await message.reply("❌ Usage: `&tag alias <newname> <existingname>`\nExample: `&tag alias inv invert`");
       return;
     }
     if (RESERVED.has(newName)) {
-      await replyError(message, `\`${newName}\` is a reserved keyword and cannot be used as a tag name.`);
+      await message.reply(`❌ \`${newName}\` is a reserved keyword and cannot be used as a tag name.`);
       return;
     }
     const srcEntry = tags[srcName];
     if (!srcEntry) {
-      await replyError(message, `Source tag \`${srcName}\` not found. Use \`&tag list\` to see all tags.`);
+      await message.reply(`❌ Source tag \`${srcName}\` not found. Use \`&tag list\` to see all tags.`);
       return;
     }
     const existing = tags[newName];
     if (existing) {
       const isOwner = existing.ownerId === message.author.id;
       if (!isOwner && !isPrivileged(message)) {
-        await replyError(message, `Tag \`${newName}\` already exists and is owned by **${existing.ownerUsername}**.\nOnly the owner or a server moderator can overwrite it.`);
+        await message.reply(
+          `❌ Tag \`${newName}\` already exists and is owned by **${existing.ownerUsername}**.\nOnly the owner or a server moderator can overwrite it.`,
+        );
         return;
       }
     }
@@ -2282,13 +2144,15 @@ export async function handleTagCommand(
     const existing = name ? tags[name] : undefined;
 
     if (!name || !existing) {
-      await replyError(message, `Tag \`${name ?? "(none)"}\` not found. Use \`&tag list\` to see all tags.`);
+      await message.reply(`❌ Tag \`${name ?? "(none)"}\` not found. Use \`&tag list\` to see all tags.`);
       return;
     }
 
     const isOwner = existing.ownerId === message.author.id;
     if (!isOwner && !isPrivileged(message)) {
-      await replyError(message, `Tag \`${name}\` is owned by **${existing.ownerUsername}**.\nOnly the owner or a server moderator can delete it.`);
+      await message.reply(
+        `❌ Tag \`${name}\` is owned by **${existing.ownerUsername}**.\nOnly the owner or a server moderator can delete it.`,
+      );
       return;
     }
 
@@ -2301,13 +2165,13 @@ export async function handleTagCommand(
   // ── &tag forceremove <name> (bot owner only) ──────────────────────────────
   if (/^forceremove\s/i.test(rest)) {
     if (message.author.username !== BOT_OWNER_USERNAME) {
-      await replyError(message, "Only the bot owner can use `forceremove`.");
+      await message.reply("❌ Only the bot owner can use `forceremove`.");
       return;
     }
     const name = rest.split(/\s+/)[1]?.toLowerCase();
     const existing = name ? tags[name] : undefined;
     if (!name || !existing) {
-      await replyError(message, `Tag \`${name ?? "(none)"}\` not found.`);
+      await message.reply(`❌ Tag \`${name ?? "(none)"}\` not found.`);
       return;
     }
     delete tags[name];
@@ -2407,7 +2271,7 @@ export async function handleTagCommand(
   if (/^search(\s|$)/i.test(rest)) {
     const query = rest.replace(/^search\s*/i, "").toLowerCase().trim();
     if (!query) {
-      await replyError(message, "Provide a search query: `&tag search <query>`");
+      await message.reply("❌ Provide a search query: `&tag search <query>`");
       return;
     }
 
@@ -2483,7 +2347,7 @@ export async function handleTagCommand(
     const entry = name ? tags[name] : undefined;
 
     if (!name || !entry) {
-      await replyError(message, `Tag \`${name ?? "(none)"}\` not found.`);
+      await message.reply(`❌ Tag \`${name ?? "(none)"}\` not found.`);
       return;
     }
 
@@ -2608,7 +2472,7 @@ export async function handleTagCommand(
   const entry = name ? tags[name] : undefined;
 
   if (!name || !entry) {
-    await replyError(message, `Tag \`${name ?? "(none)"}\` not found. Use \`&tag list\` to see all tags.`);
+    await message.reply(`❌ Tag \`${name ?? "(none)"}\` not found. Use \`&tag list\` to see all tags.`);
     return;
   }
   // Scripts that start with &ihtx (after arg/math substitution they become ihtx commands)
@@ -2653,10 +2517,10 @@ export async function handleTagCommand(
 
       if (!inputUrl || !effectsStr) {
         const errText = inputUrl
-          ? `Tag \`${name}\` produced an empty effects string.`
-          : `Tag \`${name}\`: no media attached — attach a file to your message or reply to one.`;
-        if (statusMsg) await statusMsg.edit({ content: "", embeds: [{ color: 0xfee75c, description: `⚠️ **Command Error**\n${errText}` }] });
-        else await replyError(message, errText);
+          ? `❌ Tag \`${name}\` produced an empty effects string.`
+          : `❌ Tag \`${name}\`: no media attached — attach a file to your message or reply to one.`;
+        if (statusMsg) await statusMsg.edit(errText);
+        else await message.reply(errText);
         return;
       }
 
@@ -2711,11 +2575,11 @@ export async function handleTagCommand(
   } catch (err) {
     logger.error({ err }, "Tag execution failed");
     const msg = err instanceof Error ? err.message : "Unknown error";
-    const errText = `Tag \`${name}\` failed: \`${msg.slice(0, 300)}\``;
+    const errText = `❌ Tag \`${name}\` failed: \`${msg.slice(0, 300)}\``;
     if (statusMsg) {
-      await statusMsg.edit({ content: "", embeds: [{ color: 0xfee75c, description: `⚠️ **Command Error**\n${errText}` }] });
+      await statusMsg.edit(errText);
     } else {
-      await replyError(message, errText);
+      await message.reply(errText);
     }
   }
 }

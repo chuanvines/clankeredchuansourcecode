@@ -16,7 +16,6 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import axios from "axios";
 import { logger } from "../lib/logger.js";
-import { replyError, editError } from "../lib/embeds.js";
 import { uploadToCatbox } from "./catboxupload.js";
 
 const execFileAsync = promisify(execFile);
@@ -114,8 +113,8 @@ export async function runTts(message: Message): Promise<void> {
   const rest = raw.slice(raw.toLowerCase().indexOf("&tts") + 4).trim();
 
   if (!rest) {
-    await replyError(message,
-      "Usage: `&tts <voice> <text>`\n" +
+    await message.reply(
+      "❌ Usage: `&tts <voice> <text>`\n" +
       "**Voices:** `male` `female` `sam` (Microsoft Sam) `mike` (Microsoft Mike)\n" +
       "**Example:** `&tts female Hello, this is TikTok voice!`"
     );
@@ -124,7 +123,7 @@ export async function runTts(message: Message): Promise<void> {
 
   const firstSpace = rest.indexOf(" ");
   if (firstSpace === -1) {
-    await replyError(message, "Provide both a voice and some text. E.g. `&tts sam Hello world`");
+    await message.reply("❌ Provide both a voice and some text. E.g. `&tts sam Hello world`");
     return;
   }
 
@@ -133,17 +132,19 @@ export async function runTts(message: Message): Promise<void> {
   const voice    = VOICE_ALIASES[rawVoice] ?? null;
 
   if (!voice) {
-    await replyError(message, `Unknown voice \`${rawVoice}\`. Available: \`male\`, \`female\`, \`sam\`, \`mike\``);
+    await message.reply(
+      `❌ Unknown voice \`${rawVoice}\`. Available: \`male\`, \`female\`, \`sam\`, \`mike\``
+    );
     return;
   }
 
   if (!text) {
-    await replyError(message, "No text to speak.");
+    await message.reply("❌ No text to speak.");
     return;
   }
 
   if (text.length > 300) {
-    await replyError(message, "Text is too long (max 300 characters).");
+    await message.reply("❌ Text is too long (max 300 characters).");
     return;
   }
 
@@ -164,7 +165,7 @@ export async function runTts(message: Message): Promise<void> {
     }
 
     if (!audioBuf || audioBuf.length === 0) {
-      await editError(statusMsg, "TTS generation failed. Try again or use a different voice.");
+      await statusMsg.edit("❌ TTS generation failed. Try again or use a different voice.");
       return;
     }
 

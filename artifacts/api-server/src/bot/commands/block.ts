@@ -1,7 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { Message } from "discord.js";
-import { replyError } from "../lib/embeds.js";
 
 const DATA_DIR = "/home/runner/workspace/data";
 const BLOCKS_FILE = join(DATA_DIR, "blocks.json");
@@ -51,7 +50,7 @@ export function getBlockInfo(userId: string): BlockEntry | null {
 
 export async function handleBlockCommand(message: Message): Promise<void> {
   if (message.author.username !== OWNER_USERNAME) {
-    await replyError(message, "Only the bot owner can use this command.");
+    await message.reply("❌ Only the bot owner can use this command.");
     return;
   }
 
@@ -63,7 +62,7 @@ export async function handleBlockCommand(message: Message): Promise<void> {
   const hours = parseFloat(hoursRaw);
 
   if (!targetRaw || isNaN(hours) || hours <= 0) {
-    await replyError(message, "Usage: `&block <@mention|userId> <hours>`");
+    await message.reply("❌ Usage: `&block <@mention|userId> <hours>`");
     return;
   }
 
@@ -82,12 +81,12 @@ export async function handleBlockCommand(message: Message): Promise<void> {
       ?? await message.guild?.members.fetch(targetId).catch(() => null);
     targetUsername = member?.user.username ?? targetId;
   } else {
-    await replyError(message, "Please specify a user via `@mention` or numeric user ID.");
+    await message.reply("❌ Please specify a user via `@mention` or numeric user ID.");
     return;
   }
 
   if (targetId === message.author.id) {
-    await replyError(message, "You cannot block yourself.");
+    await message.reply("❌ You cannot block yourself.");
     return;
   }
 
@@ -104,7 +103,7 @@ export async function handleBlockCommand(message: Message): Promise<void> {
 
 export async function handleUnblockCommand(message: Message): Promise<void> {
   if (message.author.username !== OWNER_USERNAME) {
-    await replyError(message, "Only the bot owner can use this command.");
+    await message.reply("❌ Only the bot owner can use this command.");
     return;
   }
 
@@ -112,7 +111,7 @@ export async function handleUnblockCommand(message: Message): Promise<void> {
   const targetRaw = rest.trim();
 
   if (!targetRaw) {
-    await replyError(message, "Usage: `&unblock <@mention|userId>`");
+    await message.reply("❌ Usage: `&unblock <@mention|userId>`");
     return;
   }
 
@@ -124,7 +123,7 @@ export async function handleUnblockCommand(message: Message): Promise<void> {
   } else if (/^\d+$/.test(targetRaw)) {
     targetId = targetRaw;
   } else {
-    await replyError(message, "Please specify a user via `@mention` or numeric user ID.");
+    await message.reply("❌ Please specify a user via `@mention` or numeric user ID.");
     return;
   }
 

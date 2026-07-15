@@ -14,7 +14,6 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import axios from "axios";
 import { logger } from "../lib/logger.js";
-import { replyError, editError } from "../lib/embeds.js";
 import { toCdnUrl, uploadToCatbox } from "./catboxupload.js";
 import { resolveIv } from "./tag.js";
 import { runAutotune } from "../effects/processor.js";
@@ -35,8 +34,8 @@ export async function runVeb(message: Message): Promise<void> {
   const rest    = raw.slice(raw.toLowerCase().indexOf("&veb") + 4).trim();
 
   if (!rest) {
-    await replyError(message,
-      "Usage: `&veb <effects>`\n" +
+    await message.reply(
+      "❌ Usage: `&veb <effects>`\n" +
       "Effects are comma-separated. Examples:\n" +
       "• `&veb bass=50,speed=1.5`\n" +
       "• `&veb earrape=80`\n" +
@@ -76,7 +75,7 @@ export async function runVeb(message: Message): Promise<void> {
   const inputUrl = namedUrl ?? inlineUrl ?? ((await resolveIv(message)) || null);
 
   if (!inputUrl) {
-    await replyError(message, "Attach a video, image, or audio file, or reply to a message that has one.");
+    await message.reply("❌ Attach a video, image, or audio file, or reply to a message that has one.");
     return;
   }
 
@@ -159,7 +158,7 @@ export async function runVeb(message: Message): Promise<void> {
       stdout = (e.stdout ?? "").trim();
       stderr = (e.stderr ?? "").trim();
       const errMsg = stderr || stdout || (err instanceof Error ? err.message : String(err));
-      await editError(statusMsg, `veb failed:\n\`\`\`\n${errMsg.slice(0, 1800)}\n\`\`\``);
+      await statusMsg.edit({ content: `❌ veb failed:\n\`\`\`\n${errMsg.slice(0, 1800)}\n\`\`\`` });
       return;
     }
     clearInterval(ticker);
@@ -168,7 +167,7 @@ export async function runVeb(message: Message): Promise<void> {
     let outPath = stdout.split("\n").pop()?.trim() ?? "";
     if (!outPath) {
       const errMsg = stderr || "(no output path returned)";
-      await editError(statusMsg, `veb failed:\n\`\`\`\n${errMsg.slice(0, 1800)}\n\`\`\``);
+      await statusMsg.edit({ content: `❌ veb failed:\n\`\`\`\n${errMsg.slice(0, 1800)}\n\`\`\`` });
       return;
     }
 
@@ -192,7 +191,7 @@ export async function runVeb(message: Message): Promise<void> {
         outPath = atOutPath;
       } catch (atErr) {
         const msg = atErr instanceof Error ? atErr.message : String(atErr);
-        await editError(statusMsg, `veb autotune failed: \`${msg.slice(0, 300)}\``);
+        await statusMsg.edit({ content: `❌ veb autotune failed: \`${msg.slice(0, 300)}\`` });
         return;
       }
     }
@@ -216,7 +215,7 @@ export async function runVeb(message: Message): Promise<void> {
     clearInterval(ticker);
     logger.error({ err }, "&veb failed");
     const msg = err instanceof Error ? err.message : "Unknown error";
-    await editError(statusMsg, `veb failed: \`${msg.slice(0, 300)}\``);
+    await statusMsg.edit({ content: `❌ veb failed: \`${msg.slice(0, 300)}\`` });
   } finally {
     clearInterval(ticker);
     await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
