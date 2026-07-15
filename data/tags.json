@@ -224,11 +224,11 @@
     "updatedAt": "2026-06-11T14:07:01.417Z"
   },
   "gm6": {
-    "script": "{imagescript:\nload {iv} i\ninvert i\nthreshold i 90\ninvert i\npitch=0;-8\n}",
+    "script": "TESTING OUT THE TRESHOLD EFFECT {imagescript:\nload {iv} i\ninvert i\nthreshold i 90\ninvert i\npitch=0;-8\n}",
     "ownerId": "1387479962323255306",
     "ownerUsername": "yasinreturns",
     "createdAt": "2026-06-11T14:10:05.181Z",
-    "updatedAt": "2026-06-12T15:32:47.885Z"
+    "updatedAt": "2026-07-15T18:25:09.936Z"
   },
   "realgm4_supercubed": {
     "script": "{imagescript: \nload {iv} i \nrealgm4 i\nrealgm4 i\nrealgm4 i\nrealgm4 i\nrealgm4 i\naudiopitch=0;5;5;10;5;10;10;15;5;10;10;15;10;15;15;20;5;10;10;15;10;15;15;20;10;15;15;20;15;20;20;25\n}",
@@ -529,7 +529,7 @@
     "ownerId": "1431176242614501538",
     "ownerUsername": "btve436",
     "createdAt": "2026-06-12T15:43:17.319Z",
-    "updatedAt": "2026-06-17T09:33:05.135Z"
+    "updatedAt": "2026-07-15T18:21:57.104Z"
   },
   "gm18": {
     "script": "{imagescript:\nload {iv} i\nsaturation i 2\npitch=0;-8\n}",
@@ -3582,5 +3582,33 @@
     "ownerUsername": "gucci_17__75369",
     "createdAt": "2026-07-15T18:06:02.797Z",
     "updatedAt": "2026-07-15T18:06:02.797Z"
+  },
+  "g-major-5": {
+    "script": "{imagescript:\nload {iv} i \ninvertrgb i 0 1 1\naudiopitch=0;4\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-15T18:16:52.503Z",
+    "updatedAt": "2026-07-15T18:16:52.503Z"
+  },
+  "g-major-6": {
+    "script": "TESTING OUT THE TRESHOLD EFFECT {imagescript:\nload {iv} i\ninvert i\nthreshold i 90\ninvert i\npitch=0;-8\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-15T18:25:27.236Z",
+    "updatedAt": "2026-07-15T18:25:27.236Z"
+  },
+  "g-major-8": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\nthreshold i 90\nhueshifthsv i 180\npitch=0;-7\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-15T18:29:46.197Z",
+    "updatedAt": "2026-07-15T18:29:46.197Z"
+  },
+  "g-major-7": {
+    "script": "{imagescript:\nload {iv} i\ninvert i\npitch=0;3\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-15T18:31:07.318Z",
+    "updatedAt": "2026-07-15T18:31:07.318Z"
   }
 }
