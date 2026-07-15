@@ -1113,16 +1113,27 @@ async function mediascriptMapLimit(count: number, limit: number, fn: (idx: numbe
  * reassembled at the same frame rate later.
  */
 async function mediascriptDecomposeGif(srcPath: string, destDir: string): Promise<{ frameCount: number; delays: number[]; loop: number }> {
-  const { stdout: nStdout } = await execFileAsync("magick", ["identify", "-format", "%n\n", `${srcPath}[0]`]);
-  let frameCount = Math.max(1, parseInt(nStdout.trim().split(/\s+/)[0] ?? "1", 10) || 1);
-  if (frameCount > MEDIASCRIPT_MAX_GIF_FRAMES) frameCount = MEDIASCRIPT_MAX_GIF_FRAMES;
-
+  // NOTE: never append a `[0]` frame selector before counting — that reduces the
+  // sequence to a single image and makes ImageMagick report a frame count of 1
+  // regardless of the real number of frames in the GIF.
   let delays: number[] = [];
   try {
     const { stdout: delayStdout } = await execFileAsync("magick", ["identify", "-format", "%T\n", srcPath]);
     delays = delayStdout.split("\n").map((s) => parseInt(s.trim(), 10)).filter((n) => Number.isFinite(n));
   } catch { /* fall back to default delay below */ }
   if (delays.length === 0) delays = [4];
+
+  await execFileAsync(
+    "magick",
+    [srcPath, "-coalesce", "-scene", "1", join(destDir, "frame_%05d.png")],
+    { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 },
+  );
+
+  // Trust the frame files actually written to disk over any `identify` frame
+  // count, since that's what render will need to read back later.
+  const written = (await readdir(destDir)).filter((f) => /^frame_\d{5}\.png$/.test(f));
+  let frameCount = Math.max(1, Math.min(written.length, MEDIASCRIPT_MAX_GIF_FRAMES));
+
   while (delays.length < frameCount) delays.push(delays[delays.length - 1]!);
   delays = delays.slice(0, frameCount);
 
@@ -1130,12 +1141,6 @@ async function mediascriptDecomposeGif(srcPath: string, destDir: string): Promis
   // `identify -format`, so default to infinite looping (0), which matches the vast
   // majority of GIFs used for effects.
   const loop = 0;
-
-  await execFileAsync(
-    "magick",
-    [srcPath, "-coalesce", "-scene", "1", join(destDir, "frame_%05d.png")],
-    { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 },
-  );
 
   return { frameCount, delays, loop };
 }
