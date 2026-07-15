@@ -1082,13 +1082,81 @@ export async function runImagescript(code: string): Promise<ScriptResult> {
   return lastMedia ?? "";
 }
 
+const MEDIASCRIPT_MAX_GIF_FRAMES = 240;
+const MEDIASCRIPT_FRAME_CONCURRENCY = 6;
+
+type MediascriptVar =
+  | { kind: "image"; path: string }
+  | { kind: "gif"; dir: string; frameCount: number; delays: number[]; loop: number };
+
+/** Zero-padded frame path, e.g. frame_00001.png, frame_00002.png, … */
+function mediascriptFramePath(dir: string, idx: number): string {
+  return join(dir, `frame_${String(idx).padStart(5, "0")}.png`);
+}
+
+/** Run `fn` over 1..count with limited concurrency. */
+async function mediascriptMapLimit(count: number, limit: number, fn: (idx: number) => Promise<void>): Promise<void> {
+  let next = 1;
+  const workers = new Array(Math.min(limit, count)).fill(0).map(async () => {
+    while (next <= count) {
+      const i = next++;
+      await fn(i);
+    }
+  });
+  await Promise.all(workers);
+}
+
+/**
+ * Splits an animated GIF into a sequence of numbered frame PNGs
+ * (frame_00001.png, frame_00002.png, …) and reads back its per-frame
+ * delay (in 1/100s ticks) and loop count so the sequence can be
+ * reassembled at the same frame rate later.
+ */
+async function mediascriptDecomposeGif(srcPath: string, destDir: string): Promise<{ frameCount: number; delays: number[]; loop: number }> {
+  const { stdout: nStdout } = await execFileAsync("magick", ["identify", "-format", "%n\n", `${srcPath}[0]`]);
+  let frameCount = Math.max(1, parseInt(nStdout.trim().split(/\s+/)[0] ?? "1", 10) || 1);
+  if (frameCount > MEDIASCRIPT_MAX_GIF_FRAMES) frameCount = MEDIASCRIPT_MAX_GIF_FRAMES;
+
+  let delays: number[] = [];
+  try {
+    const { stdout: delayStdout } = await execFileAsync("magick", ["identify", "-format", "%T\n", srcPath]);
+    delays = delayStdout.split("\n").map((s) => parseInt(s.trim(), 10)).filter((n) => Number.isFinite(n));
+  } catch { /* fall back to default delay below */ }
+  if (delays.length === 0) delays = [4];
+  while (delays.length < frameCount) delays.push(delays[delays.length - 1]!);
+  delays = delays.slice(0, frameCount);
+
+  // ImageMagick has no reliable cross-version property for a GIF's loop count via
+  // `identify -format`, so default to infinite looping (0), which matches the vast
+  // majority of GIFs used for effects.
+  const loop = 0;
+
+  await execFileAsync(
+    "magick",
+    [srcPath, "-coalesce", "-scene", "1", join(destDir, "frame_%05d.png")],
+    { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 },
+  );
+
+  return { frameCount, delays, loop };
+}
+
+/** Reassembles a numbered frame sequence back into a GIF at the recorded frame rate. */
+async function mediascriptReassembleGif(dir: string, frameCount: number, delays: number[], loop: number, outPath: string): Promise<void> {
+  const args: string[] = [];
+  for (let i = 1; i <= frameCount; i++) {
+    args.push("-delay", String(delays[i - 1] ?? 4), mediascriptFramePath(dir, i));
+  }
+  args.push("-loop", String(loop), outPath);
+  await execFileAsync("magick", args, { timeout: 180_000, maxBuffer: 100 * 1024 * 1024 });
+}
+
 /**
  * Line-based ImageMagick scripting language for {mediascript:...} tagscript.
  *
  * Syntax:
  *   load <url> <var>              — download URL into variable (use {iv} for attached media)
  *   <effect> <var> [<args...>]    — apply an effect to the variable in place, e.g. `explode image 1`
- *   render <var>                  — output the variable's current file as the final attachment
+ *   render <var>                  — output the variable's current file/sequence as the final attachment
  *
  * Supported effects:
  *   invert                        → -negate
@@ -1097,6 +1165,13 @@ export async function runImagescript(code: string): Promise<ScriptResult> {
  *   implode <n>                   → -implode <n>
  *   magik                         → -liquid-rescale 50%x50%
  *   hueshifthsv <h> <s> <l>       → -modulate <100+l>,<100+s>,<100+h*200/360>
+ *
+ * GIF handling: when the loaded file is an animated GIF, it is exploded into
+ * a numbered frame sequence (frame_00001.png, frame_00002.png, frame_00003.png, …).
+ * Effects are then applied frame by frame across the whole sequence, and
+ * "render" re-assembles the frames back into a GIF using the original file's
+ * per-frame delay and loop count, so the output plays at the same frame rate
+ * as the input.
  *
  * Example:
  *   load {iv} image
@@ -1107,9 +1182,27 @@ export async function runImagescript(code: string): Promise<ScriptResult> {
 export async function runMediascript(code: string): Promise<ScriptResult> {
   const tmpDir = await mkdtemp(join(tmpdir(), "mediascript-"));
   try {
-    const vars: Record<string, string> = {};
+    const vars: Record<string, MediascriptVar> = {};
     let lastVar: string | null = null;
     let opCounter = 0;
+
+    async function renderVar(name: string): Promise<MediaResult | string> {
+      const v = vars[name];
+      if (!v) return `[mediascript: undefined variable "${name}" — use "load <url> <var>" first]`;
+      if (v.kind === "image") {
+        const buffer = await readFile(v.path);
+        return { type: "media", buffer, ext: extname(v.path) || ".png" };
+      }
+      try {
+        const outPath = join(tmpDir, `render${opCounter++}.gif`);
+        await mediascriptReassembleGif(v.dir, v.frameCount, v.delays, v.loop, outPath);
+        const buffer = await readFile(outPath);
+        return { type: "media", buffer, ext: ".gif" };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return `[mediascript: failed to render gif "${name}": ${msg.slice(0, 400)}]`;
+      }
+    }
 
     const lines = code
       .split("\n")
@@ -1138,9 +1231,19 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             else if (ct.includes("jpeg") || ct.includes("jpg")) ext = ".jpg";
             else ext = ".png";
           }
-          const filePath = join(tmpDir, `${varName}${ext}`);
-          await writeFile(filePath, Buffer.from(resp.data));
-          vars[varName] = filePath;
+
+          if (ext.toLowerCase() === ".gif") {
+            const srcPath = join(tmpDir, `${varName}_src.gif`);
+            await writeFile(srcPath, Buffer.from(resp.data));
+            const frameDir = join(tmpDir, `${varName}_frames`);
+            await mkdir(frameDir, { recursive: true });
+            const { frameCount, delays, loop } = await mediascriptDecomposeGif(srcPath, frameDir);
+            vars[varName] = { kind: "gif", dir: frameDir, frameCount, delays, loop };
+          } else {
+            const filePath = join(tmpDir, `${varName}${ext}`);
+            await writeFile(filePath, Buffer.from(resp.data));
+            vars[varName] = { kind: "image", path: filePath };
+          }
           lastVar = varName;
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
@@ -1151,17 +1254,14 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
 
       // ── render <var> ──────────────────────────────────────────────────────
       if (cmd === "render") {
-        const renderVar = tokens[1] ?? lastVar ?? "";
-        const renderPath = vars[renderVar];
-        if (!renderPath) return `[mediascript: undefined variable "${renderVar}" — use "load <url> <var>" first]`;
-        const buffer = await readFile(renderPath);
-        return { type: "media", buffer, ext: extname(renderPath) || ".png" };
+        const renderVarName = tokens[1] ?? lastVar ?? "";
+        return renderVar(renderVarName);
       }
 
       // ── effect commands: <effect> <var> [<args...>] ─────────────────────
       const effVar: string = tokens[1] ?? lastVar ?? "";
-      const filePath = vars[effVar];
-      if (!filePath) return `[mediascript: undefined variable "${effVar}" — use "load <url> <var>" first]`;
+      const target = vars[effVar];
+      if (!target) return `[mediascript: undefined variable "${effVar}" — use "load <url> <var>" first]`;
       const args = tokens.slice(2);
 
       let imArgs: string[];
@@ -1196,9 +1296,17 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       }
 
       try {
-        const outPath = join(tmpDir, `out${opCounter++}${extname(filePath)}`);
-        await execFileAsync("magick", [filePath, ...imArgs, outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
-        vars[effVar] = outPath;
+        if (target.kind === "image") {
+          const outPath = join(tmpDir, `out${opCounter++}${extname(target.path)}`);
+          await execFileAsync("magick", [target.path, ...imArgs, outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+          vars[effVar] = { kind: "image", path: outPath };
+        } else {
+          // Apply the effect frame by frame across the whole gif sequence.
+          await mediascriptMapLimit(target.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
+            const fp = mediascriptFramePath(target.dir, i);
+            await execFileAsync("magick", [fp, ...imArgs, fp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+          });
+        }
         lastVar = effVar;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -1206,10 +1314,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       }
     }
 
-    if (lastVar && vars[lastVar]) {
-      const buffer = await readFile(vars[lastVar]);
-      return { type: "media", buffer, ext: extname(vars[lastVar]) || ".png" };
-    }
+    if (lastVar && vars[lastVar]) return renderVar(lastVar);
     return `[mediascript: nothing to render — add a "render <var>" line]`;
   } finally {
     await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
@@ -2302,6 +2407,8 @@ export async function handleTagCommand(
       "  magik <var>             — content-aware liquid rescale (-liquid-rescale 50%x50%)",
       "  hueshifthsv <var> <h> <s> <l> — hue/sat/brightness shift (-modulate)",
       "  e.g.  load {iv} image / explode image 1 / hueshifthsv image -130 0 0 / render image",
+      "  animated GIFs are auto-split into frame_00001.png, frame_00002.png, … — effects",
+      "  apply frame by frame, and render re-encodes at the source GIF's frame rate",
       "{tag:<name>}              — inline-run another tag and insert its output  e.g. {tag:invert}",
       "{tagname}                 — shorthand for {tag:tagname}  e.g. {invert}",
       "{attach:<url>}            — download a URL and send it as a Discord file attachment",
