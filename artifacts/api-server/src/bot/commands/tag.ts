@@ -1149,10 +1149,25 @@ async function mediascriptDecomposeGif(srcPath: string, destDir: string): Promis
 async function mediascriptReassembleGif(dir: string, frameCount: number, delays: number[], loop: number, outPath: string): Promise<void> {
   const args: string[] = [];
   for (let i = 1; i <= frameCount; i++) {
-    args.push("-delay", String(delays[i - 1] ?? 4), mediascriptFramePath(dir, i));
+    const fp = mediascriptFramePath(dir, i);
+    if (!existsSync(fp)) {
+      throw new Error(`missing frame ${basename(fp)} — expected ${frameCount} frames but not all were written/survived processing`);
+    }
+    args.push("-delay", String(delays[i - 1] ?? 4), fp);
   }
   args.push("-loop", String(loop), outPath);
   await execFileAsync("magick", args, { timeout: 180_000, maxBuffer: 100 * 1024 * 1024 });
+}
+
+/** Extracts a concise, actionable message from a failed execFileAsync call — prefers stderr over the
+ *  (often huge, argv-laden) top-level error message so failures on long frame-list commands stay readable. */
+function mediascriptErrorDetail(err: unknown): string {
+  if (err && typeof err === "object" && "stderr" in err) {
+    const stderr = String((err as { stderr?: unknown }).stderr ?? "").trim();
+    if (stderr) return stderr.slice(-500);
+  }
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.slice(-500);
 }
 
 /**
@@ -1204,8 +1219,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const buffer = await readFile(outPath);
         return { type: "media", buffer, ext: ".gif" };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        return `[mediascript: failed to render gif "${name}": ${msg.slice(0, 400)}]`;
+        return `[mediascript: failed to render gif "${name}": ${mediascriptErrorDetail(err)}]`;
       }
     }
 
@@ -1251,8 +1265,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           }
           lastVar = varName;
         } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          return `[mediascript: failed to load "${url}": ${msg.slice(0, 200)}]`;
+          return `[mediascript: failed to load "${url}": ${mediascriptErrorDetail(err)}]`;
         }
         continue;
       }
@@ -1314,8 +1327,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         }
         lastVar = effVar;
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        return `[mediascript error on "${line}": ${msg.slice(0, 400)}]`;
+        return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
       }
     }
 
