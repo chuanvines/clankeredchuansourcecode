@@ -1248,7 +1248,9 @@ async function mediascriptReassembleVideo(
   }
   const args: string[] = [
     "-y",
+    "-f", "image2",
     "-framerate", String(fps),
+    "-start_number", "1",
     "-i", join(dir, "frame_%05d.png"),
   ];
   if (audioPath) args.push("-i", audioPath);
