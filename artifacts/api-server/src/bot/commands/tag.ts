@@ -1087,7 +1087,7 @@ const MEDIASCRIPT_FRAME_CONCURRENCY = 6;
 
 type MediascriptVar =
   | { kind: "image"; path: string }
-  | { kind: "gif"; path: string; originVideo?: boolean; audio?: string }
+  | { kind: "gif"; path: string; originVideo?: boolean; audio?: string; mp4Path?: string }
   | { kind: "video"; dir: string; frameCount: number; fps: number; audio?: string };
 
 /** Zero-padded frame path, e.g. frame_00001.png, frame_00002.png, … */
@@ -1243,26 +1243,11 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           return `[mediascript: failed to render video "${name}": ${mediascriptErrorDetail(err)}]`;
         }
       }
-      // gif — if it originated from a video, convert back to MP4 (mux audio if present);
-      // otherwise just read the GIF file back.
+      // gif — if it originated from a video, the MP4 was pre-converted at load time;
+      // just read it back. Otherwise return the GIF directly.
       try {
-        if (v.originVideo) {
-          const outPath = join(tmpDir, `render${opCounter++}.mp4`);
-          const audioArgs: string[] = v.audio
-            ? ["-i", v.audio, "-c:a", "aac", "-shortest"]
-            : [];
-          await execFileAsync(
-            "ffmpeg",
-            [
-              "-y", "-i", v.path,
-              ...audioArgs,
-              "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
-              "-pix_fmt", "yuv420p", "-movflags", "+faststart",
-              outPath,
-            ],
-            { timeout: 180_000, maxBuffer: 100 * 1024 * 1024 },
-          );
-          const buffer = await readFile(outPath);
+        if (v.originVideo && v.mp4Path) {
+          const buffer = await readFile(v.mp4Path);
           return { type: "media", buffer, ext: ".mp4" };
         }
         const buffer = await readFile(v.path);
@@ -1378,7 +1363,25 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               gifPath,
             ], { timeout: 120_000, maxBuffer: 200 * 1024 * 1024 });
 
-            vars[varName] = { kind: "gif", path: gifPath, originVideo: true, audio };
+            // Step 3: Convert GIF → MP4 immediately (mux audio if present).
+            // This pre-bakes the output so renderVar just reads the file.
+            const mp4Path = join(tmpDir, `${varName}_src.mp4`);
+            const audioMuxArgs: string[] = audio
+              ? ["-i", audio, "-c:a", "aac", "-shortest"]
+              : [];
+            await execFileAsync(
+              "ffmpeg",
+              [
+                "-y", "-i", gifPath,
+                ...audioMuxArgs,
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+                mp4Path,
+              ],
+              { timeout: 180_000, maxBuffer: 100 * 1024 * 1024 },
+            );
+
+            vars[varName] = { kind: "gif", path: gifPath, originVideo: true, audio, mp4Path };
           } else if (ext.toLowerCase() === ".gif") {
             const srcPath = join(tmpDir, `${varName}_src.gif`);
             await writeFile(srcPath, Buffer.from(resp.data));
@@ -1422,7 +1425,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               newGifAudio = join(tmpDir, `${dstName}_audio${opCounter++}.mp3`);
               await copyFile(src.audio, newGifAudio);
             }
-            vars[dstName] = { kind: "gif", path: newPath, originVideo: src.originVideo, audio: newGifAudio };
+            vars[dstName] = { kind: "gif", path: newPath, originVideo: src.originVideo, audio: newGifAudio, mp4Path: src.mp4Path };
           } else {
             // video
             const newDir = join(tmpDir, `${dstName}_frames${opCounter++}`);
