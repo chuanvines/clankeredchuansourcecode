@@ -2078,11 +2078,25 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           // e.g. bgr → out_R=in_B out_G=in_G out_B=in_R
           //      r00 → out_R=in_R out_G=0    out_B=0
           //      rrr → out_R=in_R out_G=in_R out_B=in_R
+          //
+          // Uses clone+fx to read all channels from the original before any are
+          // modified, making it safe for duplications (rrr, rrg, …) and zeroing.
+          // v.r / v.g / v.b always refer to the untouched clone (second image).
           const raw = (args[0] ?? "bgr").toLowerCase().replace(/[^rgb0]/g, "");
           if (raw.length < 3) return `[mediascript: "swaprgba" pattern must be 3 chars of r/g/b/0, got "${args[0]}"]`;
-          const SRC: Record<string, string> = { r: "1 0 0", g: "0 1 0", b: "0 0 1", "0": "0 0 0" };
-          const rows = [SRC[raw[0]!] ?? "1 0 0", SRC[raw[1]!] ?? "0 1 0", SRC[raw[2]!] ?? "0 0 1"];
-          imArgs = ["-color-matrix", rows.join(" ")];
+          const FX: Record<string, string> = { r: "v.r", g: "v.g", b: "v.b", "0": "0" };
+          const rFx = FX[raw[0]!] ?? "v.r";
+          const gFx = FX[raw[1]!] ?? "v.g";
+          const bFx = FX[raw[2]!] ?? "v.b";
+          // ( +clone ) creates image 1 = original; v always refers to image 1.
+          // -delete 1 removes the clone before writing output.
+          imArgs = [
+            "(", "+clone", ")",
+            "-channel", "R", "-fx", rFx,
+            "-channel", "G", "-fx", gFx,
+            "-channel", "B", "-fx", bFx,
+            "+channel", "-delete", "1",
+          ];
           break;
         }
         default:

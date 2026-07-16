@@ -1488,7 +1488,7 @@ export function buildFilters(effects: ParsedEffect[]): FilterResult {
 
       case "swaprgba": {
         // swaprgba=bgr → output R=B, G=G, B=R
-        const order = (effect.param ?? "rgb").toLowerCase().replace(/[^rgba]/g, "");
+        const order = (effect.param ?? "rgb").toLowerCase().replace(/[^rgba0]/g, "");
         const ch = ["r", "g", "b"];
         const src = [order[0] ?? "r", order[1] ?? "g", order[2] ?? "b"];
         const parts: string[] = [];
