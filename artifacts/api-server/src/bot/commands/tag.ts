@@ -1087,7 +1087,7 @@ const MEDIASCRIPT_FRAME_CONCURRENCY = 6;
 
 type MediascriptVar =
   | { kind: "image"; path: string }
-  | { kind: "gif"; path: string }
+  | { kind: "gif"; path: string; originVideo?: boolean; audio?: string }
   | { kind: "video"; dir: string; frameCount: number; fps: number; audio?: string };
 
 /** Zero-padded frame path, e.g. frame_00001.png, frame_00002.png, … */
@@ -1202,6 +1202,13 @@ async function mediascriptReassembleVideo(
  *   reverse <var>                 — reverse frames and audio
  *   audiopitch <var> <factor>     — shift audio pitch (2**(-1/12) = one semitone down); speed unchanged
  *
+ * Video handling: videos loaded via `load` are automatically converted to an
+ * animated GIF (capped at 15 fps / 16 s) so that all GIF-path effects (invert,
+ * swirl, explode, hueshifthsv, overlay, …) work on them unchanged. When the
+ * variable is rendered the GIF is converted back to MP4 and audio (if present
+ * in the original video) is muxed back in. The full pipeline is therefore:
+ *   load video → convert to GIF → apply effects as GIF → render as MP4
+ *
  * GIF handling: GIFs are stored and processed as GIF files. Effects apply to
  * all frames at once via ImageMagick's native animated GIF support (-coalesce).
  *
@@ -1236,8 +1243,28 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           return `[mediascript: failed to render video "${name}": ${mediascriptErrorDetail(err)}]`;
         }
       }
-      // gif — stored as a GIF file; just read it back
+      // gif — if it originated from a video, convert back to MP4 (mux audio if present);
+      // otherwise just read the GIF file back.
       try {
+        if (v.originVideo) {
+          const outPath = join(tmpDir, `render${opCounter++}.mp4`);
+          const audioArgs: string[] = v.audio
+            ? ["-i", v.audio, "-c:a", "aac", "-shortest"]
+            : [];
+          await execFileAsync(
+            "ffmpeg",
+            [
+              "-y", "-i", v.path,
+              ...audioArgs,
+              "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+              "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+              outPath,
+            ],
+            { timeout: 180_000, maxBuffer: 100 * 1024 * 1024 },
+          );
+          const buffer = await readFile(outPath);
+          return { type: "media", buffer, ext: ".mp4" };
+        }
         const buffer = await readFile(v.path);
         return { type: "media", buffer, ext: ".gif" };
       } catch (err) {
@@ -1315,38 +1342,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             const srcPath = join(tmpDir, `${varName}_src${ext}`);
             await writeFile(srcPath, Buffer.from(resp.data));
 
-            // Detect FPS
-            let fps = 30;
-            try {
-              const { stdout: fpsOut } = await execFileAsync("ffprobe", [
-                "-v", "error", "-select_streams", "v:0",
-                "-show_entries", "stream=r_frame_rate",
-                "-of", "default=nk=1:noprint_wrappers=1", srcPath,
-              ]);
-              const parts = fpsOut.trim().split("/");
-              const num = Number(parts[0]), den = Number(parts[1] ?? "1");
-              if (num > 0 && den > 0) fps = Math.round((num / den) * 100) / 100;
-            } catch { /* use default 30 fps */ }
-
-            // Cap fps to avoid extracting thousands of frames from high-fps sources
-            const clampedFps = Math.min(fps, 60);
-
-            // Extract frames (capped at MEDIASCRIPT_MAX_GIF_FRAMES)
-            const frameDir = join(tmpDir, `${varName}_frames`);
-            await mkdir(frameDir, { recursive: true });
-            await execFileAsync("ffmpeg", [
-              "-y", "-i", srcPath,
-              "-vf", `fps=${clampedFps}`,
-              "-frames:v", String(MEDIASCRIPT_MAX_GIF_FRAMES),
-              "-q:v", "2",
-              join(frameDir, "frame_%05d.png"),
-            ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
-
-            const written = (await readdir(frameDir)).filter((f) => /^frame_\d{5}\.png$/.test(f));
-            if (written.length === 0) throw new Error("ffmpeg extracted 0 frames — video may be corrupt, unsupported, or have no video stream");
-            const frameCount = Math.min(written.length, MEDIASCRIPT_MAX_GIF_FRAMES);
-
-            // Extract audio if present
+            // Step 1: Extract audio if present (preserved for final MP4 mux)
             let audio: string | undefined;
             try {
               const { stdout: hasAudio } = await execFileAsync("ffprobe", [
@@ -1363,7 +1359,26 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               }
             } catch { /* no audio or extraction failed */ }
 
-            vars[varName] = { kind: "video", dir: frameDir, frameCount, fps: clampedFps, audio };
+            // Step 2: Convert video → GIF so mediascript effects run on it as an
+            // animated GIF (ImageMagick -coalesce path). Cap at 15 fps and
+            // MEDIASCRIPT_MAX_GIF_FRAMES frames to keep GIF size manageable.
+            const gifFps = 15;
+            const maxDurSec = MEDIASCRIPT_MAX_GIF_FRAMES / gifFps; // 16 s @ 15 fps
+            const gifPath = join(tmpDir, `${varName}_src.gif`);
+            await execFileAsync("ffmpeg", [
+              "-y", "-i", srcPath,
+              "-t", String(maxDurSec),
+              "-vf", [
+                `fps=${gifFps}`,
+                "scale=min(480\\,iw):-2:flags=lanczos",
+                "split[s0][s1]",
+                "[s0]palettegen=max_colors=256[p]",
+                "[s1][p]paletteuse=dither=bayer",
+              ].join(","),
+              gifPath,
+            ], { timeout: 120_000, maxBuffer: 200 * 1024 * 1024 });
+
+            vars[varName] = { kind: "gif", path: gifPath, originVideo: true, audio };
           } else if (ext.toLowerCase() === ".gif") {
             const srcPath = join(tmpDir, `${varName}_src.gif`);
             await writeFile(srcPath, Buffer.from(resp.data));
@@ -1402,7 +1417,12 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           } else if (src.kind === "gif") {
             const newPath = join(tmpDir, `${dstName}_copy${opCounter++}.gif`);
             await copyFile(src.path, newPath);
-            vars[dstName] = { kind: "gif", path: newPath };
+            let newGifAudio: string | undefined;
+            if (src.audio) {
+              newGifAudio = join(tmpDir, `${dstName}_audio${opCounter++}.mp3`);
+              await copyFile(src.audio, newGifAudio);
+            }
+            vars[dstName] = { kind: "gif", path: newPath, originVideo: src.originVideo, audio: newGifAudio };
           } else {
             // video
             const newDir = join(tmpDir, `${dstName}_frames${opCounter++}`);
