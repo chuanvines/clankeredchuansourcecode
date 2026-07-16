@@ -1047,6 +1047,44 @@ export async function runImagescript(code: string): Promise<ScriptResult> {
       continue;
     }
 
+    // ── slide <var> [speed] ───────────────────────────────────────────────────
+    // Horizontally scrolls via ffmpeg scroll filter. speed = fraction of width
+    // per frame (e.g. 0.05). Positive = right-to-left, negative = left-to-right.
+    if (cmd === "slide") {
+      const srcVar = tokens[1] ?? "i";
+      const speed = isFinite(parseFloat(tokens[2] ?? "")) ? parseFloat(tokens[2]!) : 0.05;
+      const src = vars[srcVar];
+      if (!src) return `[imagescript: undefined variable "${srcVar}"]`;
+      try {
+        let buf: Buffer, ext: string;
+        if (src.kind === "buf") {
+          buf = src.buffer; ext = src.ext;
+        } else {
+          const resp = await axios.get<ArrayBuffer>(src.url, { responseType: "arraybuffer", timeout: 30_000, headers: { "User-Agent": BROWSER_UA } });
+          buf = Buffer.from(resp.data); ext = extname(src.name) || ".mp4";
+        }
+        const tmpIn = join(tmpdir(), `iscript_slide_in_${Date.now()}${ext}`);
+        const isVideo = [".mp4", ".mov", ".webm", ".mkv"].includes(ext);
+        const outExt = isVideo ? ".mp4" : ".gif";
+        const tmpOut = join(tmpdir(), `iscript_slide_out_${Date.now()}${outExt}`);
+        await writeFile(tmpIn, buf);
+        const ffArgs = ["-y", "-i", tmpIn, "-vf", `scroll=h=${speed}`];
+        if (isVideo) ffArgs.push("-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart");
+        ffArgs.push(tmpOut);
+        await execFileAsync("ffmpeg", ffArgs, { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
+        const outBuf = await readFile(tmpOut);
+        const mediaType: import("../effects/processor.js").MediaType = isVideo ? "video" : "image";
+        vars[srcVar] = { kind: "buf", buffer: outBuf, ext: outExt, mediaType };
+        lastMedia = { type: "media", buffer: outBuf, ext: outExt };
+        await rm(tmpIn).catch(() => {});
+        await rm(tmpOut).catch(() => {});
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return `[imagescript slide error: ${msg.slice(0, 400)}]`;
+      }
+      continue;
+    }
+
     // ── <effect>[=<params>] <var> [<numparams...>] [<dest>] ─────────────────
     // If the effect name already contains '=' it's the full effects string.
     // Otherwise, trailing numeric tokens become semicolon-joined subparams,
@@ -1088,7 +1126,7 @@ const MEDIASCRIPT_FRAME_CONCURRENCY = 6;
 
 type MediascriptVar =
   | { kind: "image"; path: string }
-  | { kind: "gif"; path: string; originVideo?: boolean; audio?: string }
+  | { kind: "gif"; path: string; originVideo?: boolean; srcVideo?: string; audio?: string }
   | { kind: "video"; dir: string; frameCount: number; fps: number; audio?: string };
 
 /** Zero-padded frame path, e.g. frame_00001.png, frame_00002.png, … */
@@ -1170,11 +1208,11 @@ async function mediascriptReassembleVideo(
   outPath: string,
 ): Promise<void> {
   // Frames are extracted 1-indexed (frame_00001.png…) via -scene 1, so tell ffmpeg to start at 1.
-  const inputArgs = ["-framerate", String(v.fps), "-start_number", "1", "-i", join(v.dir, "frame_%05d.png"), "-frames:v", String(v.frameCount)];
+  const inputArgs = ["-framerate", String(v.fps), "-start_number", "1", "-i", join(v.dir, "frame_%05d.png")];
   const audioArgs: string[] = v.audio ? ["-i", v.audio, "-c:a", "aac", "-shortest"] : [];
   await execFileAsync(
     "ffmpeg",
-    ["-y", ...inputArgs, ...audioArgs, "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart", outPath],
+    ["-y", ...inputArgs, ...audioArgs, "-frames:v", String(v.frameCount), "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart", outPath],
     { timeout: 180_000, maxBuffer: 100 * 1024 * 1024 },
   );
 }
@@ -1196,12 +1234,14 @@ async function mediascriptReassembleVideo(
  *   hueshifthsv <h> <s> <l>       → -modulate <100+l>,<100+s>,<100+h*200/360>
  *
  * Video-specific commands (require a variable loaded from mp4/webm/mov/etc.):
- *   trim <var> <start> [end]      — trim to time range in seconds (end defaults to clip length)
+ *   snip <var> <start> [end]      — trim to time range in seconds (end defaults to clip length)
+ *   convert <var> <format>        — convert variable to a different format (gif, mp4, png, jpg, webp)
  *   speed <var> <factor>          — change playback speed (2 = 2× faster, 0.5 = half speed); audio tempo adjusted to match
  *   volume <var> <factor>         — adjust audio volume (2 = double, 0.5 = half)
  *   mute <var>                    — remove audio track
  *   reverse <var>                 — reverse frames and audio
  *   audiopitch <var> <factor>     — shift audio pitch (2**(-1/12) = one semitone down); speed unchanged
+ *   slide <var> <speed>           — horizontally scroll via ffmpeg scroll filter (fraction of width/frame, e.g. 0.05)
  *
  * GIF handling: GIFs are stored and processed as GIF files. Effects apply to
  * all frames at once via ImageMagick's native animated GIF support (-coalesce).
@@ -1237,9 +1277,15 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           return `[mediascript: failed to render video "${name}": ${mediascriptErrorDetail(err)}]`;
         }
       }
-      // gif — if it originated from a video, convert back to MP4 (mux audio if present);
+      // gif — if a trimmed source video is present, output it directly (audio
+      // already embedded via stream copy); if it originated from a video but
+      // effects were applied (no srcVideo), convert the GIF back to MP4;
       // otherwise just read the GIF file back.
       try {
+        if (v.srcVideo) {
+          const buffer = await readFile(v.srcVideo);
+          return { type: "media", buffer, ext: ".mp4" };
+        }
         if (v.originVideo) {
           const outPath = join(tmpDir, `render${opCounter++}.mp4`);
           const audioArgs: string[] = v.audio
@@ -1278,15 +1324,67 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         await execFileAsync("magick", [t.path, ...imArgs, outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
         vars[effVar] = { kind: "image", path: outPath };
       } else if (t.kind === "gif") {
-        // Apply effect directly to the GIF file (no per-frame extraction).
-        // -coalesce ensures every frame is a complete image before the effect runs.
-        const outGif = join(tmpDir, `gifop${opCounter++}.gif`);
-        await execFileAsync(
-          "magick",
-          [t.path, "-coalesce", ...imArgs, outGif],
-          { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 },
-        );
-        vars[effVar] = { kind: "gif", path: outGif, originVideo: t.originVideo, audio: t.audio };
+        if (t.srcVideo) {
+          // Source video available — extract all frames at original fps, apply
+          // effect per-frame, then store as video kind so render reassembles at
+          // full duration (no GIF frame-count cap).
+          const framesDir = join(tmpDir, `${effVar}_frames${opCounter++}`);
+          await mkdir(framesDir, { recursive: true });
+
+          // Detect source fps
+          const { stdout: fpsOut } = await execFileAsync("ffprobe", [
+            "-v", "error", "-select_streams", "v:0",
+            "-show_entries", "stream=r_frame_rate",
+            "-of", "default=nk=1:noprint_wrappers=1", t.srcVideo,
+          ], { timeout: 15_000, maxBuffer: 1024 * 1024 });
+          const fpsParts = fpsOut.trim().split("/").map(Number);
+          const fps = (fpsParts[0] && fpsParts[1]) ? fpsParts[0] / fpsParts[1] : 30;
+
+          // Extract all frames (1-indexed to match mediascriptFramePath)
+          await execFileAsync("ffmpeg", [
+            "-y", "-i", t.srcVideo,
+            "-vf", `fps=${fps}`,
+            "-start_number", "1",
+            join(framesDir, "frame_%05d.png"),
+          ], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
+
+          const frameFiles = (await readdir(framesDir)).filter(f => f.endsWith(".png"));
+          const frameCount = frameFiles.length;
+
+          // Extract audio from srcVideo if present
+          let audio: string | undefined;
+          try {
+            const { stdout: hasAudio } = await execFileAsync("ffprobe", [
+              "-v", "error", "-select_streams", "a:0",
+              "-show_entries", "stream=codec_type",
+              "-of", "default=nk=1:noprint_wrappers=1", t.srcVideo,
+            ]);
+            if (hasAudio.trim() === "audio") {
+              audio = join(tmpDir, `${effVar}_audio${opCounter++}.mp3`);
+              await execFileAsync("ffmpeg", [
+                "-y", "-i", t.srcVideo, "-vn", "-acodec", "libmp3lame", "-q:a", "2", audio,
+              ], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+            }
+          } catch { /* no audio */ }
+
+          // Apply effect per-frame
+          await mediascriptMapLimit(frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
+            const fp = mediascriptFramePath(framesDir, i);
+            await execFileAsync("magick", [fp, ...imArgs, fp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+          });
+
+          vars[effVar] = { kind: "video", dir: framesDir, frameCount, fps, audio };
+        } else {
+          // Apply effect directly to the GIF file (no per-frame extraction).
+          // -coalesce ensures every frame is a complete image before the effect runs.
+          const outGif = join(tmpDir, `gifop${opCounter++}.gif`);
+          await execFileAsync(
+            "magick",
+            [t.path, "-coalesce", ...imArgs, outGif],
+            { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 },
+          );
+          vars[effVar] = { kind: "gif", path: outGif, originVideo: t.originVideo, audio: t.audio };
+        }
       } else {
         // video: apply per-frame
         await mediascriptMapLimit(t.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
@@ -1371,7 +1469,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               gifPath,
             ], { timeout: 120_000, maxBuffer: 200 * 1024 * 1024 });
 
-            vars[varName] = { kind: "gif", path: gifPath, originVideo: true, audio };
+            vars[varName] = { kind: "gif", path: gifPath, originVideo: true, srcVideo: srcPath, audio };
           } else if (ext.toLowerCase() === ".gif") {
             const srcPath = join(tmpDir, `${varName}_src.gif`);
             await writeFile(srcPath, Buffer.from(resp.data));
@@ -1558,35 +1656,156 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         continue;
       }
 
-      // ── trim <var> <start_secs> [end_secs] ───────────────────────────────
+      // ── snip <var> <start_secs> [end_secs] ───────────────────────────────
       // Trims a GIF/video to a time range (seconds). Omitting end keeps the rest.
-      if (cmd === "trim") {
+      // When the variable originated from a video, trims the source video before
+      // re-converting to GIF so the full input duration is available (not just
+      // the 8-second cap applied during load).
+      if (cmd === "snip") {
         const hasVar = tokens[1] !== undefined && vars[tokens[1]] !== undefined;
         const varName: string = hasVar ? tokens[1]! : (lastVar ?? "");
         const a = hasVar ? 2 : 1; // arg offset
         const v = vars[varName];
         if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
-        if (v.kind === "image") return `[mediascript: "trim" requires a video or GIF variable, not an image]`;
-        if (v.kind !== "gif") return `[mediascript: "trim" requires a GIF variable (videos are auto-converted on load)]`;
+        if (v.kind === "image") return `[mediascript: "snip" requires a video or GIF variable, not an image]`;
+        if (v.kind !== "gif") return `[mediascript: "snip" requires a GIF variable (videos are auto-converted on load)]`;
         const startSecs = await mediascriptEvalNum(tokens[a] ?? "0", vars, dimCache);
         const endSecs = tokens[a + 1] != null ? await mediascriptEvalNum(tokens[a + 1]!, vars, dimCache) : undefined;
-        if (!isFinite(startSecs) || startSecs < 0) return `[mediascript: "trim" start must be >= 0, got "${tokens[a]}"]`;
-        if (endSecs !== undefined && (!isFinite(endSecs) || endSecs <= startSecs)) return `[mediascript: "trim" end must be > start, got "${tokens[a + 1]}"]`;
+        if (!isFinite(startSecs) || startSecs < 0) return `[mediascript: "snip" start must be >= 0, got "${tokens[a]}"]`;
+        if (endSecs !== undefined && (!isFinite(endSecs) || endSecs <= startSecs)) return `[mediascript: "snip" end must be > start, got "${tokens[a + 1]}"]`;
         try {
-          const outGif = join(tmpDir, `${varName}_trim${opCounter++}.gif`);
-          const ffArgs = ["-y", "-i", v.path, "-ss", String(startSecs)];
-          if (endSecs !== undefined) ffArgs.push("-to", String(endSecs));
-          ffArgs.push(outGif);
-          await execFileAsync("ffmpeg", ffArgs, { timeout: 120_000, maxBuffer: 200 * 1024 * 1024 });
-          let newAudio: string | undefined;
-          if (v.audio) {
-            newAudio = join(tmpDir, `${varName}_trim${opCounter++}_audio.mp3`);
-            const ffAudioArgs = ["-y", "-i", v.audio, "-ss", String(startSecs)];
-            if (endSecs !== undefined) ffAudioArgs.push("-t", String(endSecs - startSecs));
-            ffAudioArgs.push("-c:a", "libmp3lame", "-q:a", "2", newAudio);
-            await execFileAsync("ffmpeg", ffAudioArgs, { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+          const durSecs = endSecs !== undefined ? endSecs - startSecs : undefined;
+
+          if (v.srcVideo) {
+            // Trim the raw source video with stream copy — no re-encode, no GIF
+            // conversion, no duration cap. render will output this MP4 directly.
+            const snippedMp4 = join(tmpDir, `${varName}_snip${opCounter++}.mp4`);
+            // Use -t (duration) not -to (output timestamp) so the cut length is
+            // correct when combined with input-side seeking (-ss before -i).
+            const ffArgs = ["-y", "-ss", String(startSecs), "-i", v.srcVideo];
+            if (durSecs !== undefined) ffArgs.push("-t", String(durSecs));
+            ffArgs.push("-c", "copy", snippedMp4);
+            await execFileAsync("ffmpeg", ffArgs, { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
+            // Keep the existing GIF path for any ImageMagick effects that follow,
+            // but point srcVideo at the freshly snipped file so render uses it.
+            vars[varName] = { kind: "gif", path: v.path, originVideo: true, srcVideo: snippedMp4 };
+          } else {
+            // GIF-only path: trim the already-converted GIF by time
+            const outGif = join(tmpDir, `${varName}_snip${opCounter++}.gif`);
+            const ffArgs = ["-y", "-i", v.path, "-ss", String(startSecs)];
+            if (endSecs !== undefined) ffArgs.push("-to", String(endSecs));
+            ffArgs.push(outGif);
+            await execFileAsync("ffmpeg", ffArgs, { timeout: 120_000, maxBuffer: 200 * 1024 * 1024 });
+            let newAudio: string | undefined;
+            if (v.audio) {
+              newAudio = join(tmpDir, `${varName}_snip${opCounter++}_audio.mp3`);
+              const ffAudioArgs = ["-y", "-i", v.audio, "-ss", String(startSecs)];
+              if (durSecs !== undefined) ffAudioArgs.push("-t", String(durSecs));
+              ffAudioArgs.push("-c:a", "libmp3lame", "-q:a", "2", newAudio);
+              await execFileAsync("ffmpeg", ffAudioArgs, { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+            }
+            vars[varName] = { kind: "gif", path: outGif, originVideo: v.originVideo, audio: newAudio };
           }
-          vars[varName] = { kind: "gif", path: outGif, originVideo: v.originVideo, audio: newAudio };
+
+          lastVar = varName;
+          dimCache.delete(varName);
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── convert <var> <format> ────────────────────────────────────────────
+      // Converts a variable to a different format:
+      //   gif        — re-encode as an animated GIF (from video/srcVideo or image)
+      //   mp4        — encode as MP4 (from gif/srcVideo or image)
+      //   png | jpg | webp — extract/convert to a still image (first frame if animated)
+      if (cmd === "convert") {
+        const hasVar = tokens[1] !== undefined && vars[tokens[1]] !== undefined;
+        const varName: string = hasVar ? tokens[1]! : (lastVar ?? "");
+        const a = hasVar ? 2 : 1;
+        const v = vars[varName];
+        if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
+        const fmt = (tokens[a] ?? "").toLowerCase();
+        const VALID_FMTS = ["gif", "mp4", "png", "jpg", "webp"];
+        if (!VALID_FMTS.includes(fmt)) return `[mediascript: "convert" format must be one of ${VALID_FMTS.join(", ")}, got "${fmt}"]`;
+        try {
+          if (fmt === "gif") {
+            const outGif = join(tmpDir, `${varName}_cvt${opCounter++}.gif`);
+            if (v.kind === "image") {
+              // Static image → single-frame GIF
+              await execFileAsync("magick", [v.path, outGif], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+              vars[varName] = { kind: "gif", path: outGif };
+            } else if (v.kind === "gif") {
+              const src = v.srcVideo ?? v.path;
+              const palette = join(tmpDir, `${varName}_pal${opCounter++}.png`);
+              await execFileAsync("ffmpeg", [
+                "-y", "-i", src,
+                "-vf", "fps=15,scale=480:-1:flags=lanczos,palettegen",
+                palette,
+              ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
+              await execFileAsync("ffmpeg", [
+                "-y", "-i", src, "-i", palette,
+                "-lavfi", "fps=15,scale=480:-1:flags=lanczos[x];[x][1:v]paletteuse",
+                outGif,
+              ], { timeout: 180_000, maxBuffer: 200 * 1024 * 1024 });
+              vars[varName] = { kind: "gif", path: outGif };
+            } else if (v.kind === "video") {
+              const palette = join(tmpDir, `${varName}_pal${opCounter++}.png`);
+              await execFileAsync("ffmpeg", [
+                "-y", "-framerate", String(v.fps), "-start_number", "1",
+                "-i", join(v.dir, "frame_%05d.png"),
+                "-vf", "scale=480:-1:flags=lanczos,palettegen",
+                palette,
+              ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
+              await execFileAsync("ffmpeg", [
+                "-y", "-framerate", String(v.fps), "-start_number", "1",
+                "-i", join(v.dir, "frame_%05d.png"), "-i", palette,
+                "-lavfi", "scale=480:-1:flags=lanczos[x];[x][1:v]paletteuse",
+                "-frames:v", String(v.frameCount),
+                outGif,
+              ], { timeout: 180_000, maxBuffer: 200 * 1024 * 1024 });
+              vars[varName] = { kind: "gif", path: outGif };
+            }
+          } else if (fmt === "mp4") {
+            const outMp4 = join(tmpDir, `${varName}_cvt${opCounter++}.mp4`);
+            if (v.kind === "image") {
+              // Static image → 3-second looping MP4
+              await execFileAsync("ffmpeg", [
+                "-y", "-loop", "1", "-i", v.path,
+                "-t", "3", "-c:v", "libx264", "-preset", "ultrafast",
+                "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+                outMp4,
+              ], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+              vars[varName] = { kind: "gif", path: v.path, srcVideo: outMp4, originVideo: true };
+            } else if (v.kind === "gif") {
+              const src = v.srcVideo ?? v.path;
+              await execFileAsync("ffmpeg", [
+                "-y", "-i", src,
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                "-pix_fmt", "yuv420p", "-movflags", "+faststart", outMp4,
+              ], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
+              vars[varName] = { kind: "gif", path: v.path, srcVideo: outMp4, originVideo: true };
+            } else if (v.kind === "video") {
+              await mediascriptReassembleVideo(v, outMp4);
+              vars[varName] = { kind: "gif", path: join(v.dir, "frame_00001.png"), srcVideo: outMp4, originVideo: true };
+            }
+          } else {
+            // Still image: png, jpg, webp — extract first frame or convert
+            const outImg = join(tmpDir, `${varName}_cvt${opCounter++}.${fmt}`);
+            if (v.kind === "image") {
+              await execFileAsync("magick", [v.path, outImg], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+            } else if (v.kind === "gif") {
+              const src = v.srcVideo ?? v.path;
+              await execFileAsync("ffmpeg", [
+                "-y", "-i", src, "-frames:v", "1", "-update", "1", outImg,
+              ], { timeout: 30_000, maxBuffer: 50 * 1024 * 1024 });
+            } else if (v.kind === "video") {
+              await execFileAsync("magick", [mediascriptFramePath(v.dir, 1), outImg], { timeout: 30_000, maxBuffer: 50 * 1024 * 1024 });
+            }
+            vars[varName] = { kind: "image", path: outImg };
+          }
+
           lastVar = varName;
           dimCache.delete(varName);
         } catch (err) {
@@ -1684,6 +1903,43 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             await execFileAsync("ffmpeg", ["-y", "-i", v.audio, "-af", "areverse", newAudio], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
           }
           vars[varName] = { kind: "gif", path: outGif, originVideo: v.originVideo, audio: newAudio };
+          lastVar = varName;
+          dimCache.delete(varName);
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── slide <var> <speed> ───────────────────────────────────────────────
+      // Horizontally scrolls the video using ffmpeg's scroll filter.
+      // speed is a float: fraction of width scrolled per frame (e.g. 0.01).
+      // Positive = right-to-left, negative = left-to-right.
+      if (cmd === "slide") {
+        const hasVar = tokens[1] !== undefined && vars[tokens[1]] !== undefined;
+        const varName: string = hasVar ? tokens[1]! : (lastVar ?? "");
+        const a = hasVar ? 2 : 1;
+        const v = vars[varName];
+        if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
+        if (v.kind === "image") return `[mediascript: "slide" requires a video or GIF variable, not an image]`;
+        if (v.kind !== "gif") return `[mediascript: "slide" requires a GIF variable (videos are auto-converted on load)]`;
+        const speed = isFinite(parseFloat(tokens[a] ?? "")) ? parseFloat(tokens[a]!) : 0.05;
+        try {
+          const src = v.srcVideo ?? v.path;
+          const isVideo = !!v.srcVideo;
+          const outPath = join(tmpDir, `${varName}_slide${opCounter++}.${isVideo ? "mp4" : "gif"}`);
+          const ffArgs = ["-y", "-i", src, "-vf", `scroll=h=${speed}`];
+          if (isVideo) {
+            ffArgs.push("-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart");
+            if (v.audio) ffArgs.push("-c:a", "copy");
+          }
+          ffArgs.push(outPath);
+          await execFileAsync("ffmpeg", ffArgs, { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
+          if (isVideo) {
+            vars[varName] = { kind: "gif", path: v.path, originVideo: true, srcVideo: outPath, audio: v.audio };
+          } else {
+            vars[varName] = { kind: "gif", path: outPath, originVideo: v.originVideo, audio: v.audio };
+          }
           lastVar = varName;
           dimCache.delete(varName);
         } catch (err) {
@@ -1807,7 +2063,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           imArgs = ["-liquid-rescale", "50%x50%"];
           break;
         case "demagik":
-          imArgs = ["-liquid-rescale", "300%x300%", "-resize" "30%"];
+          imArgs = ["-liquid-rescale", "300%x300%", "-resize", "30%"];
           break;
         case "hueshifthsv": {
           const h = parseFloat(args[0] ?? "0") || 0;
@@ -1815,6 +2071,18 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           const l = parseFloat(args[2] ?? "0") || 0;
           const hue = Math.trunc(100 + (h * 200) / 360);
           imArgs = ["-modulate", `${100 + l},${100 + s},${hue}`];
+          break;
+        }
+        case "swaprgba": {
+          // Each char (r/g/b/0) defines what input feeds that output channel.
+          // e.g. bgr → out_R=in_B out_G=in_G out_B=in_R
+          //      r00 → out_R=in_R out_G=0    out_B=0
+          //      rrr → out_R=in_R out_G=in_R out_B=in_R
+          const raw = (args[0] ?? "bgr").toLowerCase().replace(/[^rgb0]/g, "");
+          if (raw.length < 3) return `[mediascript: "swaprgba" pattern must be 3 chars of r/g/b/0, got "${args[0]}"]`;
+          const SRC: Record<string, string> = { r: "1 0 0", g: "0 1 0", b: "0 0 1", "0": "0 0 0" };
+          const rows = [SRC[raw[0]!] ?? "1 0 0", SRC[raw[1]!] ?? "0 1 0", SRC[raw[2]!] ?? "0 0 1"];
+          imArgs = ["-color-matrix", rows.join(" ")];
           break;
         }
         default:
@@ -2921,7 +3189,11 @@ export async function handleTagCommand(
       "  implode <var> <n>       — inward implode (-implode n)",
       "  magik <var>             — content-aware liquid rescale (-liquid-rescale 50%x50%)",
       "  hueshifthsv <var> <h> <s> <l> — hue/sat/brightness shift (-modulate)",
-      "  e.g.  load {iv} image / explode image 1 / hueshifthsv image -130 0 0 / render image",
+      "  swaprgba <var> <pattern>       — remap RGB channels; pattern is 3 chars of r/g/b/0 defining output R,G,B source e.g. bgr rrr r00 0g0",
+      "  slide <var> <speed>           — horizontally scroll (ffmpeg scroll filter); speed = fraction of width per frame, e.g. 0.05",
+      "  snip <var> <start> [end]      — trim to time range in seconds; on video input, trims the source before GIF conversion so full duration is accessible",
+      "  convert <var> <format>        — convert variable to a different format: gif, mp4, png, jpg, webp",
+      "  e.g.  load {iv} image / snip image 5 15 / explode image 1 / render image",
       "  animated GIFs are auto-split into frame_00001.png, frame_00002.png, … — effects",
       "  apply frame by frame, and render re-encodes at the source GIF's frame rate",
       "{tag:<name>}              — inline-run another tag and insert its output  e.g. {tag:invert}",
