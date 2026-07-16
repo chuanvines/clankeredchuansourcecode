@@ -1289,7 +1289,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const outGif = join(tmpDir, `gifop${opCounter++}.gif`);
         await execFileAsync(
           "magick",
-          [t.path, "-coalesce", ...imArgs, outGif],
+          [t.path, "-coalesce", ...imArgs, "-adjoin", outGif],
           { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 },
         );
         vars[effVar] = { ...t, path: outGif };
@@ -1368,13 +1368,8 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             await execFileAsync("ffmpeg", [
               "-y", "-i", srcPath,
               "-t", String(maxDurSec),
-              "-vf", [
-                `fps=${gifFps}`,
-                "scale=min(480\\,iw):-2:flags=lanczos",
-                "split[s0][s1]",
-                "[s0]palettegen=max_colors=256[p]",
-                "[s1][p]paletteuse=dither=bayer",
-              ].join(","),
+              "-filter_complex",
+              `fps=${gifFps},scale=min(480\\,iw):-2:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=256[p];[s1][p]paletteuse=dither=bayer`,
               gifPath,
             ], { timeout: 120_000, maxBuffer: 200 * 1024 * 1024 });
 
