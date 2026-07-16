@@ -881,6 +881,7 @@ export async function runImagescript(code: string): Promise<ScriptResult> {
       const concatTmpDir = await mkdtemp(join(tmpdir(), "isconcat-"));
       try {
         const allAudio = inputs.every((inp) => inp.mediaType === "audio");
+        const allGif   = inputs.every((inp) => inp.mediaType === "gif");
         const n = inputs.length;
 
         // Write raw files
@@ -924,6 +925,27 @@ export async function runImagescript(code: string): Promise<ScriptResult> {
           const destVar = varNames[0]!;
           vars[destVar] = { kind: "buf", buffer, ext: ".mp3", mediaType: "audio" };
           lastMedia = { type: "media", buffer, ext: ".mp3" };
+
+        } else if (allGif) {
+          // ── All-GIF concat ─────────────────────────────────────────────────
+          // Coalesce each GIF (resolves disposal/delta frames) then append all
+          // frames together in sequence with ImageMagick.  This preserves per-
+          // frame delays from each source GIF and keeps the output as a GIF.
+          const coalescedPaths: string[] = [];
+          for (let i = 0; i < rawPaths.length; i++) {
+            const coalesced = join(concatTmpDir, `coal${i}.gif`);
+            await execFileAsync("magick", [rawPaths[i]!, "-coalesce", coalesced],
+              { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+            coalescedPaths.push(coalesced);
+          }
+          const outPath = join(concatTmpDir, "out.gif");
+          await execFileAsync("magick", [...coalescedPaths, "-loop", "0", outPath],
+            { timeout: 300_000, maxBuffer: 300 * 1024 * 1024 });
+          const buffer = await readFile(outPath);
+          const destVar = varNames[0]!;
+          vars[destVar] = { kind: "buf", buffer, ext: ".gif", mediaType: "gif" };
+          lastMedia = { type: "media", buffer, ext: ".gif" };
+
         } else {
           // ── Video/Image/GIF/Audio mixed → normalize each to .mp4 ──────────
           const normPaths: string[] = [];
@@ -956,7 +978,8 @@ export async function runImagescript(code: string): Promise<ScriptResult> {
                 "-vf", "format=yuv420p", ...venc, ...aenc, norm,
               ], { timeout: 120_000, maxBuffer: 200 * 1024 * 1024 });
             } else {
-              // Video or GIF — normalize; add silence if no audio stream
+              // Video or GIF mixed with non-GIF content — normalize to MP4.
+              // Add silence if no audio stream present.
               const hasAudio = await fileHasAudio(raw);
               if (hasAudio) {
                 await execFileAsync("ffmpeg", [
