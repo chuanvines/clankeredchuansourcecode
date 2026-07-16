@@ -3610,5 +3610,12 @@
     "ownerUsername": "gucci_17__75369",
     "createdAt": "2026-07-15T18:31:07.318Z",
     "updatedAt": "2026-07-15T18:31:07.318Z"
+  },
+  "ikilled_x": {
+    "script": "{mediascript:\nload {iv} m\nexplode m 1\nhueshifthsv m -130 0 0\naudiopitch m 2**(-8/12)\nrender m\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-07-16T06:58:06.296Z",
+    "updatedAt": "2026-07-16T06:58:06.296Z"
   }
 }

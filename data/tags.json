@@ -3617,5 +3617,12 @@
     "ownerUsername": "btve436",
     "createdAt": "2026-07-16T06:58:06.296Z",
     "updatedAt": "2026-07-16T06:58:06.296Z"
+  },
+  "/\\": {
+    "script": "{mediascript:\nload {iv} i\n{args}\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-07-16T07:54:18.543Z",
+    "updatedAt": "2026-07-16T07:54:18.543Z"
   }
 }

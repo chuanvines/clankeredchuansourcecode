@@ -1447,39 +1447,64 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const top = vars[topName];
         if (!base) return `[mediascript: undefined variable "${baseName}" — use "load <url> <var>" first]`;
         if (!top) return `[mediascript: undefined variable "${topName}" — use "load <url> <var>" first]`;
-        // For overlay, we need a flat (non-animated) top image.
-        // If top is a gif, extract its first frame as a static PNG.
-        let topFlatPath: string;
-        if (top.kind === "image") {
-          topFlatPath = top.path;
-        } else if (top.kind === "gif") {
-          topFlatPath = join(tmpDir, `overlay_top${opCounter++}.png`);
-          await execFileAsync("magick", [`${top.path}[0]`, topFlatPath], { timeout: 30_000, maxBuffer: 50 * 1024 * 1024 });
-        } else {
-          topFlatPath = mediascriptFramePath(top.dir, 1);
-        }
+
+        const topIsGif = top.kind === "gif";
+        const baseIsGif = base.kind === "gif";
+        const baseIsImage = base.kind === "image";
+
         try {
-          if (base.kind === "image") {
-            const outPath = join(tmpDir, `out${opCounter++}${extname(base.path)}`);
-            await execFileAsync("magick", [base.path, topFlatPath, "-gravity", "Center", "-composite", outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
-            vars[baseName] = { kind: "image", path: outPath };
-          } else if (base.kind === "gif") {
-            // Apply composite to every frame of the animated GIF using -layers composite.
+          if (topIsGif && (baseIsImage || baseIsGif)) {
+            // Animated top over image or GIF base → frame-by-frame composite, output animated GIF.
             const outPath = join(tmpDir, `out${opCounter++}.gif`);
+            const baseArgs: string[] = baseIsImage
+              ? ["(", base.path, ")"]
+              : ["(", base.path, "-coalesce", ")"];
             await execFileAsync("magick", [
-              base.path, "-coalesce",
-              "null:", topFlatPath,
-              "-gravity", "Center",
-              "-layers", "composite",
+              ...baseArgs,
+              "(", top.path, "-coalesce", ")",
+              "-gravity", "Center", "-layers", "composite", "-loop", "0",
               outPath,
             ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
-            vars[baseName] = { kind: "gif", path: outPath, originVideo: base.originVideo, audio: base.audio };
+            vars[baseName] = {
+              kind: "gif", path: outPath,
+              originVideo: baseIsGif ? base.originVideo : false,
+              // prefer base audio; fall back to top audio if base has none
+              audio: (baseIsGif ? base.audio : undefined) ?? top.audio,
+            };
           } else {
-            // base is video: apply per-frame
-            await mediascriptMapLimit(base.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
-              const fp = mediascriptFramePath(base.dir, i);
-              await execFileAsync("magick", [fp, topFlatPath, "-gravity", "Center", "-composite", fp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
-            });
+            // Static top: flatten to a single image first.
+            let topFlatPath: string;
+            if (top.kind === "image") {
+              topFlatPath = top.path;
+            } else if (top.kind === "gif") {
+              // top is gif but base is video — use first frame
+              topFlatPath = join(tmpDir, `overlay_top${opCounter++}.png`);
+              await execFileAsync("magick", [`${top.path}[0]`, topFlatPath], { timeout: 30_000, maxBuffer: 50 * 1024 * 1024 });
+            } else {
+              topFlatPath = mediascriptFramePath(top.dir, 1);
+            }
+
+            if (baseIsImage) {
+              const outPath = join(tmpDir, `out${opCounter++}${extname(base.path)}`);
+              await execFileAsync("magick", [base.path, topFlatPath, "-gravity", "Center", "-composite", outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+              vars[baseName] = { kind: "image", path: outPath };
+            } else if (baseIsGif) {
+              const outPath = join(tmpDir, `out${opCounter++}.gif`);
+              await execFileAsync("magick", [
+                base.path, "-coalesce",
+                "null:", topFlatPath,
+                "-gravity", "Center",
+                "-layers", "composite",
+                outPath,
+              ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
+              vars[baseName] = { kind: "gif", path: outPath, originVideo: base.originVideo, audio: base.audio };
+            } else {
+              // base is video: apply per-frame
+              await mediascriptMapLimit(base.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
+                const fp = mediascriptFramePath(base.dir, i);
+                await execFileAsync("magick", [fp, topFlatPath, "-gravity", "Center", "-composite", fp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+              });
+            }
           }
           lastVar = baseName;
           dimCache.delete(baseName);
