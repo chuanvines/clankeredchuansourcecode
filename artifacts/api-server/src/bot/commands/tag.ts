@@ -1343,7 +1343,8 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
 
             const written = (await readdir(frameDir)).filter((f) => /^frame_\d{5}\.png$/.test(f));
-            const frameCount = Math.max(1, Math.min(written.length, MEDIASCRIPT_MAX_GIF_FRAMES));
+            if (written.length === 0) throw new Error("ffmpeg extracted 0 frames — video may be corrupt, unsupported, or have no video stream");
+            const frameCount = Math.min(written.length, MEDIASCRIPT_MAX_GIF_FRAMES);
 
             // Extract audio if present
             let audio: string | undefined;
