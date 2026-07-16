@@ -1121,7 +1121,7 @@ export async function runImagescript(code: string): Promise<ScriptResult> {
   return lastMedia ?? "";
 }
 
-const MEDIASCRIPT_MAX_GIF_FRAMES = 240;
+const MEDIASCRIPT_MAX_VIDEO_SECONDS = 120; // 2-minute cap
 const MEDIASCRIPT_FRAME_CONCURRENCY = 6;
 
 type MediascriptVar =
@@ -1371,7 +1371,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             ...extractLimit,
             "-start_number", "1",
             join(framesDir, "frame_%05d.png"),
-          ], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
+          ], { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
 
           const frameFiles = (await readdir(framesDir)).filter(f => f.endsWith(".png"));
           const frameCount = frameFiles.length;
@@ -1459,6 +1459,16 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             const srcPath = join(tmpDir, `${varName}_src${ext}`);
             await writeFile(srcPath, Buffer.from(resp.data));
 
+            // Check duration — reject anything over 2 minutes
+            const { stdout: durCheckOut } = await execFileAsync("ffprobe", [
+              "-v", "error", "-show_entries", "format=duration",
+              "-of", "default=nk=1:noprint_wrappers=1", srcPath,
+            ], { timeout: 15_000, maxBuffer: 1024 * 1024 });
+            const videoDuration = parseFloat(durCheckOut.trim());
+            if (Number.isFinite(videoDuration) && videoDuration > MEDIASCRIPT_MAX_VIDEO_SECONDS) {
+              return `[mediascript: video is too long (${Math.round(videoDuration)}s) — maximum is 2 minutes (120s)]`;
+            }
+
             // Step 1: Extract audio if present
             let audio: string | undefined;
             try {
@@ -1471,28 +1481,20 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
                 const audioPath = join(tmpDir, `${varName}_audio.mp3`);
                 await execFileAsync("ffmpeg", [
                   "-y", "-i", srcPath, "-vn", "-acodec", "libmp3lame", "-q:a", "2", audioPath,
-                ], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+                ], { timeout: 120_000, maxBuffer: 50 * 1024 * 1024 });
                 audio = audioPath;
               }
             } catch { /* no audio or extraction failed */ }
 
-            // Step 2: Convert video → GIF (cap at 30 fps, MEDIASCRIPT_MAX_GIF_FRAMES frames).
-            // Effects run on the GIF via ImageMagick; render converts back to MP4.
-            const gifFps = 30;
-            const maxDurSec = MEDIASCRIPT_MAX_GIF_FRAMES / gifFps; // 8 s @ 30 fps
+            // Step 2: Extract a single frame as the GIF preview (for dimension detection only).
+            // All effects and rendering use srcVideo directly, so only 1 frame is needed here.
             const gifPath = join(tmpDir, `${varName}_src.gif`);
             await execFileAsync("ffmpeg", [
               "-y", "-i", srcPath,
-              "-t", String(maxDurSec),
-              "-vf", [
-                `fps=${gifFps}`,
-                "scale=min(480\\,iw):-2:flags=lanczos",
-                "split[s0][s1]",
-                "[s0]palettegen=max_colors=256[p]",
-                "[s1][p]paletteuse=dither=bayer",
-              ].join(","),
+              "-frames:v", "1",
+              "-vf", "scale=min(480\\,iw):-2:flags=lanczos",
               gifPath,
-            ], { timeout: 120_000, maxBuffer: 200 * 1024 * 1024 });
+            ], { timeout: 30_000, maxBuffer: 10 * 1024 * 1024 });
 
             vars[varName] = { kind: "gif", path: gifPath, originVideo: true, srcVideo: srcPath, audio };
           } else if (ext.toLowerCase() === ".gif") {
