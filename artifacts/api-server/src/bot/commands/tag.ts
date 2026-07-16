@@ -1458,11 +1458,11 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             // null: separates destination frames (base) from source frames (top) for -layers composite.
             const outPath = join(tmpDir, `out${opCounter++}.gif`);
             const baseArgs: string[] = baseIsImage
-              ? [base.path]
-              : [base.path, "-coalesce"];
+              ? ["(", base.path, ")"]
+              : ["(", base.path, "-coalesce", ")"];
             await execFileAsync("magick", [
               ...baseArgs,
-              "null:", top.path, "-coalesce",
+              "null:", "(", top.path, "-coalesce", ")",
               "-gravity", "Center", "-layers", "composite", "-loop", "0",
               outPath,
             ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
