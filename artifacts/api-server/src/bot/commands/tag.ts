@@ -1573,10 +1573,6 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         if (!base) return `[mediascript: undefined variable "${baseName}" — use "load <url> <var>" first]`;
         if (!top) return `[mediascript: undefined variable "${topName}" — use "load <url> <var>" first]`;
 
-        const topIsGif = top.kind === "gif";
-        const baseIsGif = base.kind === "gif";
-        const baseIsImage = base.kind === "image";
-
         // Mix two audio tracks; if only one exists, return it; if neither, return undefined.
         const overlayMixAudio = async (aAudio: string | undefined, bAudio: string | undefined): Promise<string | undefined> => {
           if (aAudio && bAudio) {
@@ -1591,67 +1587,131 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           return aAudio ?? bAudio;
         };
 
-        try {
-          if (topIsGif && (baseIsImage || baseIsGif)) {
-            // Animated top over image or GIF base → frame-by-frame composite, output animated GIF.
-            // null: separates destination frames (base) from source frames (top) for -layers composite.
-            const outPath = join(tmpDir, `out${opCounter++}.gif`);
-            const baseArgs: string[] = baseIsImage
-              ? ["(", base.path, ")"]
-              : ["(", base.path, "-coalesce", ")"];
-            await execFileAsync("magick", [
-              ...baseArgs,
-              "null:", "(", top.path, "-coalesce", ")",
-              "-gravity", "Center", "-layers", "composite", "-loop", "0",
-              outPath,
-            ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
-            const baseAudio = baseIsGif ? base.audio : undefined;
-            vars[baseName] = {
-              kind: "gif", path: outPath,
-              originVideo: baseIsGif ? base.originVideo : false,
-              audio: await overlayMixAudio(baseAudio, top.audio),
-            };
-          } else {
-            // Static top: flatten to a single image first.
-            let topFlatPath: string;
-            let topAudio: string | undefined;
-            if (top.kind === "image") {
-              topFlatPath = top.path;
-            } else if (top.kind === "gif") {
-              // top is gif but base is video — use first frame visually, still mix audio
-              topFlatPath = join(tmpDir, `overlay_top${opCounter++}.png`);
-              await execFileAsync("magick", [`${top.path}[0]`, topFlatPath], { timeout: 30_000, maxBuffer: 50 * 1024 * 1024 });
-              topAudio = top.audio;
-            } else {
-              topFlatPath = mediascriptFramePath(top.dir, 1);
-              topAudio = top.audio;
-            }
+        // Resolve a var to a path ffmpeg can read directly.
+        // isStatic=true → pass with -loop 1 (still image, no natural end).
+        const resolveFFmpegInput = async (v: MediascriptVar): Promise<{ path: string; isStatic: boolean }> => {
+          if (v.kind === "image") return { path: v.path, isStatic: true };
+          if (v.kind === "gif") {
+            if (v.srcVideo) return { path: v.srcVideo, isStatic: false };
+            return { path: v.path, isStatic: false }; // ffmpeg reads animated GIF natively
+          }
+          // video kind (frame dir) — reassemble to temp MP4 first
+          const tmpMp4 = join(tmpDir, `overlay_in${opCounter++}.mp4`);
+          await mediascriptReassembleVideo(v, tmpMp4);
+          return { path: tmpMp4, isStatic: false };
+        };
 
-            if (baseIsImage) {
-              const outPath = join(tmpDir, `out${opCounter++}${extname(base.path)}`);
-              await execFileAsync("magick", [base.path, topFlatPath, "-gravity", "Center", "-composite", outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
-              vars[baseName] = { kind: "image", path: outPath };
-            } else if (baseIsGif) {
+        try {
+          // Use ffmpeg overlay filter whenever base or top involves a real video/srcVideo.
+          // ImageMagick path is kept only for pure image / plain-GIF (no srcVideo) combos.
+          const baseHasSrc = base.kind === "gif" && !!(base as Extract<MediascriptVar, { kind: "gif" }>).srcVideo;
+          const baseIsVideoKind = base.kind === "video";
+          const topHasSrc = top.kind === "gif" && !!(top as Extract<MediascriptVar, { kind: "gif" }>).srcVideo;
+          const topIsVideoKind = top.kind === "video";
+          const useFFmpeg = baseHasSrc || baseIsVideoKind || topHasSrc || topIsVideoKind;
+
+          if (useFFmpeg) {
+            // ── ffmpeg overlay ────────────────────────────────────────────────
+            const [baseIn, topIn] = await Promise.all([
+              resolveFFmpegInput(base),
+              resolveFFmpegInput(top),
+            ]);
+
+            const outPath = join(tmpDir, `overlay${opCounter++}.mp4`);
+            const ffArgs: string[] = ["-y"];
+
+            // Base input
+            if (baseIn.isStatic) ffArgs.push("-loop", "1");
+            ffArgs.push("-i", baseIn.path);
+
+            // Top input.
+            // When base drives the length, loop top so it covers the full duration.
+            // When base is static, top drives the length — don't loop.
+            if (!topIn.isStatic && !baseIn.isStatic) ffArgs.push("-stream_loop", "-1");
+            if (topIn.isStatic) ffArgs.push("-loop", "1");
+            ffArgs.push("-i", topIn.path);
+
+            const baseAudio = base.kind !== "image" ? (base as Extract<MediascriptVar, { kind: "gif" | "video" }>).audio : undefined;
+            const topAudio  = top.kind  !== "image" ? (top  as Extract<MediascriptVar, { kind: "gif" | "video" }>).audio : undefined;
+            const mixedAudio = await overlayMixAudio(baseAudio, topAudio);
+            if (mixedAudio) ffArgs.push("-i", mixedAudio);
+
+            // eof_action=endall: stop when the non-looped stream (the "main" one) ends.
+            ffArgs.push(
+              "-filter_complex", "[0:v][1:v]overlay=x=(W-w)/2:y=(H-h)/2:eof_action=endall[vout]",
+              "-map", "[vout]",
+            );
+            if (mixedAudio) ffArgs.push("-map", "2:a", "-c:a", "aac");
+            ffArgs.push(
+              "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+              "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+              "-shortest",
+              outPath,
+            );
+
+            await execFileAsync("ffmpeg", ffArgs, { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
+
+            // Extract a 1-frame preview GIF for dimension detection
+            const previewPath = join(tmpDir, `overlay_preview${opCounter++}.gif`);
+            await execFileAsync("ffmpeg", [
+              "-y", "-i", outPath, "-frames:v", "1",
+              "-vf", "scale=min(480\\,iw):-2:flags=lanczos",
+              previewPath,
+            ], { timeout: 30_000, maxBuffer: 10 * 1024 * 1024 });
+
+            vars[baseName] = { kind: "gif", path: previewPath, originVideo: true, srcVideo: outPath, audio: mixedAudio };
+
+          } else {
+            // ── ImageMagick path (plain images / GIFs with no srcVideo) ───────
+            const topIsGif   = top.kind  === "gif";
+            const baseIsGif  = base.kind === "gif";
+            const baseIsImage = base.kind === "image";
+
+            if (topIsGif && (baseIsImage || baseIsGif)) {
+              // Animated top over image or plain-GIF base → -layers composite
               const outPath = join(tmpDir, `out${opCounter++}.gif`);
+              const baseArgs: string[] = baseIsImage
+                ? ["(", base.path, ")"]
+                : ["(", base.path, "-coalesce", ")"];
               await execFileAsync("magick", [
-                base.path, "-coalesce",
-                "null:", topFlatPath,
-                "-gravity", "Center",
-                "-layers", "composite",
+                ...baseArgs,
+                "null:", "(", top.path, "-coalesce", ")",
+                "-gravity", "Center", "-layers", "composite", "-loop", "0",
                 outPath,
               ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
-              vars[baseName] = { kind: "gif", path: outPath, originVideo: base.originVideo, audio: await overlayMixAudio(base.audio, topAudio) };
+              const baseAudio = baseIsGif ? base.audio : undefined;
+              vars[baseName] = {
+                kind: "gif", path: outPath,
+                originVideo: baseIsGif ? base.originVideo : false,
+                audio: await overlayMixAudio(baseAudio, top.audio),
+              };
             } else {
-              // base is video: apply per-frame
-              await mediascriptMapLimit(base.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
-                const fp = mediascriptFramePath(base.dir, i);
-                await execFileAsync("magick", [fp, topFlatPath, "-gravity", "Center", "-composite", fp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
-              });
-              // patch audio on the existing video var
-              const patchedAudio = await overlayMixAudio(base.audio, topAudio);
-              if (patchedAudio !== base.audio) vars[baseName] = { ...base, audio: patchedAudio };
+              // Static (image) top over image or plain-GIF base
+              let topFlatPath: string;
+              if (top.kind === "image") {
+                topFlatPath = top.path;
+              } else {
+                topFlatPath = join(tmpDir, `overlay_top${opCounter++}.png`);
+                await execFileAsync("magick", [`${top.path}[0]`, topFlatPath], { timeout: 30_000, maxBuffer: 50 * 1024 * 1024 });
+              }
+
+              if (baseIsImage) {
+                const outPath = join(tmpDir, `out${opCounter++}${extname(base.path)}`);
+                await execFileAsync("magick", [base.path, topFlatPath, "-gravity", "Center", "-composite", outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+                vars[baseName] = { kind: "image", path: outPath };
+              } else {
+                const outPath = join(tmpDir, `out${opCounter++}.gif`);
+                await execFileAsync("magick", [
+                  base.path, "-coalesce",
+                  "null:", topFlatPath,
+                  "-gravity", "Center", "-layers", "composite",
+                  outPath,
+                ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
+                vars[baseName] = { kind: "gif", path: outPath, originVideo: base.originVideo, audio: base.audio };
+              }
             }
           }
+
           lastVar = baseName;
           dimCache.delete(baseName);
         } catch (err) {
