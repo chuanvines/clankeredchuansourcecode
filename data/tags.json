@@ -3610,12 +3610,5 @@
     "ownerUsername": "gucci_17__75369",
     "createdAt": "2026-07-15T18:31:07.318Z",
     "updatedAt": "2026-07-15T18:31:07.318Z"
-  },
-  "g-major-9": {
-    "script": "{imagescript:\nload {iv} i\nlut=https://cdn.discordapp.com/attachments/1124758906376302632/1514634424656859216/gm9.cube?ex=6a354f3b&is=6a33fdbb&hm=b7812af5a04fbe8027118677d98ebd24c05f7afec3fa4640bea1b9c02aadf696&\npitch=-12;0;5;7\n}",
-    "ownerId": "1221656858612203581",
-    "ownerUsername": "gucci_17__75369",
-    "createdAt": "2026-07-16T05:09:31.036Z",
-    "updatedAt": "2026-07-16T05:09:31.036Z"
   }
 }
