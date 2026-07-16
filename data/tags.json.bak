@@ -459,7 +459,7 @@
     "ownerId": "1387479962323255306",
     "ownerUsername": "yasinreturns",
     "createdAt": "2026-06-11T18:49:18.059Z",
-    "updatedAt": "2026-06-15T13:26:02.072Z"
+    "updatedAt": "2026-07-16T16:17:00.332Z"
   },
   "crying_x": {
     "script": "{imagescript:\nload {iv} i\nwave=0;8;0;2;31;31\nhue i -135\ninvert i\npitch=0;-5\n}",
@@ -3617,5 +3617,68 @@
     "ownerUsername": "btve436",
     "createdAt": "2026-07-16T06:58:06.296Z",
     "updatedAt": "2026-07-16T06:58:06.296Z"
+  },
+  "/\\": {
+    "script": "{mediascript:\nload {iv} i\n{args}\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-07-16T07:54:18.543Z",
+    "updatedAt": "2026-07-16T07:54:18.543Z"
+  },
+  "g-major-9": {
+    "script": "{imagescript:\nload {iv} i\ngradientmap=[[151,227,0,255],[0,69,80,255],[255,255,255,200]]\npitch=0;-12;5;7\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-16T10:50:40.134Z",
+    "updatedAt": "2026-07-16T10:50:40.134Z"
+  },
+  "g-major-10": {
+    "script": "I Had To Use SwapUV For This {imagescript:\nload {iv} i\nswapuv i\nhueshifthsv i 180\ninvert i\nhaah i\npitch=0;-12;-5;7;4;12\npitch=0;-1\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-16T10:55:35.754Z",
+    "updatedAt": "2026-07-16T10:58:59.605Z"
+  },
+  "green_lowers_mediascript": {
+    "script": "{mediascript:\nload {iv} media\nswaprgba media grb\naudiopitch media 2**(-12/12)\nrender media\n}",
+    "ownerId": "1513712642819231812",
+    "ownerUsername": "yellowgreengmd_gd",
+    "createdAt": "2026-07-16T11:19:25.389Z",
+    "updatedAt": "2026-07-16T11:19:25.389Z"
+  },
+  "g-major-11": {
+    "script": "{imagescript:\nload {iv} i\ngradientmap=[[255,255,255,255],[255,255,255,255],[0,0,0,255]]\npitch=14\nwaaw i\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-16T12:24:00.936Z",
+    "updatedAt": "2026-07-16T12:24:00.936Z"
+  },
+  "g-major-12": {
+    "script": "Edit: I Actually Founded The Saturation Effect {imagescript:\nload {iv} i\nhueshifthsv i -50\nsaturation i 2\ngm4 i\npitch=-9;-2;3;7;10;15\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-16T12:57:19.276Z",
+    "updatedAt": "2026-07-16T14:17:20.959Z"
+  },
+  "g-major-13": {
+    "script": "Lazy Butterfly’s Version Of This Effect {imagescript:\nload {iv} i\nswapuv i \nhueshifthsv i 20\nsaturation i 2\ngm4 i\npitch=0;4;6;12\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-16T14:20:03.078Z",
+    "updatedAt": "2026-07-16T14:23:09.583Z"
+  },
+  "g-major-14": {
+    "script": "{imagescript:\nload {iv} i\nmirror i 90\nmirror i\ninvert i\nchannelblend=0;0;b\npitch=-12;0;16\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-16T15:26:38.563Z",
+    "updatedAt": "2026-07-16T15:26:38.563Z"
+  },
+  "g-major-15": {
+    "script": "{imagescript:\nload {iv} i\nwave=0;8;0;2;31;31\nacontrast i 100\nacontrast i 100\nacontrast i 100\npitch=0;5\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-16T16:20:28.609Z",
+    "updatedAt": "2026-07-16T16:20:28.609Z"
   }
 }
