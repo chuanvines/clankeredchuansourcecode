@@ -1353,10 +1353,10 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               }
             } catch { /* no audio or extraction failed */ }
 
-            // Step 2: Convert video → GIF (cap at 15 fps, MEDIASCRIPT_MAX_GIF_FRAMES frames).
+            // Step 2: Convert video → GIF (cap at 30 fps, MEDIASCRIPT_MAX_GIF_FRAMES frames).
             // Effects run on the GIF via ImageMagick; render converts back to MP4.
-            const gifFps = 15;
-            const maxDurSec = MEDIASCRIPT_MAX_GIF_FRAMES / gifFps; // 16 s @ 15 fps
+            const gifFps = 30;
+            const maxDurSec = MEDIASCRIPT_MAX_GIF_FRAMES / gifFps; // 8 s @ 30 fps
             const gifPath = join(tmpDir, `${varName}_src.gif`);
             await execFileAsync("ffmpeg", [
               "-y", "-i", srcPath,
