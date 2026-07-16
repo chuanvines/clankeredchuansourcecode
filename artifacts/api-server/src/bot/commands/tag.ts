@@ -1331,18 +1331,28 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           const framesDir = join(tmpDir, `${effVar}_frames${opCounter++}`);
           await mkdir(framesDir, { recursive: true });
 
-          // Detect source fps
-          const { stdout: fpsOut } = await execFileAsync("ffprobe", [
-            "-v", "error", "-select_streams", "v:0",
-            "-show_entries", "stream=r_frame_rate",
-            "-of", "default=nk=1:noprint_wrappers=1", t.srcVideo,
-          ], { timeout: 15_000, maxBuffer: 1024 * 1024 });
+          // Detect source fps and duration
+          const [{ stdout: fpsOut }, { stdout: durOut }] = await Promise.all([
+            execFileAsync("ffprobe", [
+              "-v", "error", "-select_streams", "v:0",
+              "-show_entries", "stream=r_frame_rate",
+              "-of", "default=nk=1:noprint_wrappers=1", t.srcVideo,
+            ], { timeout: 15_000, maxBuffer: 1024 * 1024 }),
+            execFileAsync("ffprobe", [
+              "-v", "error",
+              "-show_entries", "format=duration",
+              "-of", "default=nk=1:noprint_wrappers=1", t.srcVideo,
+            ], { timeout: 15_000, maxBuffer: 1024 * 1024 }),
+          ]);
           const fpsParts = fpsOut.trim().split("/").map(Number);
           const fps = (fpsParts[0] && fpsParts[1]) ? fpsParts[0] / fpsParts[1] : 30;
+          const srcDur = parseFloat(durOut.trim());
+          const tFlag = Number.isFinite(srcDur) && srcDur > 0 ? ["-t", String(srcDur + 0.01)] : [];
 
           // Extract all frames (1-indexed to match mediascriptFramePath)
           await execFileAsync("ffmpeg", [
             "-y", "-i", t.srcVideo,
+            ...tFlag,
             "-vf", `fps=${fps}`,
             "-start_number", "1",
             join(framesDir, "frame_%05d.png"),
