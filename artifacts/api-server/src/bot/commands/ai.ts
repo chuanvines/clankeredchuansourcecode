@@ -3,9 +3,16 @@ import { Message, AttachmentBuilder } from "discord.js";
 import { logger } from "../lib/logger.js";
 import { processTagscript } from "./tag.js";
 
-const client = new Groq({
-  apiKey: process.env["GROQ_API_KEY"],
-});
+let _client: Groq | null = null;
+function getClient(): Groq {
+  if (!_client) {
+    if (!process.env["GROQ_API_KEY"]) {
+      throw new Error("GROQ_API_KEY is not set — the &ai command is unavailable.");
+    }
+    _client = new Groq({ apiKey: process.env["GROQ_API_KEY"] });
+  }
+  return _client;
+}
 
 const MODEL = "llama-3.3-70b-versatile";
 const MAX_TOKENS = 8192;
@@ -281,7 +288,7 @@ export async function runAi(message: Message): Promise<void> {
   try {
     logger.info({ prompt: prompt.slice(0, 100), debugMode }, "Running &ai command");
 
-    const response = await client.chat.completions.create({
+    const response = await getClient().chat.completions.create({
       model: MODEL,
       max_tokens: MAX_TOKENS,
       messages: [
