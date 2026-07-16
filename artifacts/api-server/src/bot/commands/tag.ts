@@ -2163,6 +2163,137 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         continue;
       }
 
+      if (cmd === "concatmultiple") {
+        // concatmultiple <var1> <var2> [<var3> ...] — join N mediascript vars in order.
+        // Result replaces var1.  All kinds (image, gif, video) are supported:
+        //   image           → 3-second still + silence
+        //   gif (no src)    → ffmpeg reads animated GIF; silence added if no audio
+        //   gif (srcVideo)  → use srcVideo (already MP4); silence added if no audio
+        //   video           → reassemble frames → MP4 via mediascriptReassembleVideo
+        // Final concat uses the ffmpeg concat demuxer with stream-copy video and
+        // re-encoded AAC audio so segment boundaries are clean.
+        const concatVarNames = tokens.slice(1);
+        if (concatVarNames.length < 2)
+          return `[mediascript: "concatmultiple" needs at least 2 variables, e.g. concatmultiple a b c]`;
+
+        const missingVar = concatVarNames.find((n) => !vars[n]);
+        if (missingVar) return `[mediascript: concatmultiple — undefined variable "${missingVar}"]`;
+
+        const concatTmp = join(tmpDir, `concat${opCounter++}`);
+        await mkdir(concatTmp, { recursive: true });
+
+        try {
+          const vscale = "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p,fps=30";
+          const venc = ["-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-movflags", "+faststart"];
+          const aenc = ["-c:a", "aac", "-ar", "44100", "-ac", "2"];
+
+          /** True if the file has at least one audio stream. */
+          const fileHasAudio = async (p: string): Promise<boolean> => {
+            try {
+              const { stdout } = await execFileAsync(
+                "ffprobe", ["-v", "error", "-select_streams", "a",
+                  "-show_entries", "stream=index", "-of", "csv=p=0", p],
+                { timeout: 10_000 },
+              );
+              return stdout.trim().length > 0;
+            } catch { return false; }
+          };
+
+          const normPaths: string[] = [];
+
+          for (let ci = 0; ci < concatVarNames.length; ci++) {
+            const vn = concatVarNames[ci]!;
+            const cv = vars[vn]!;
+            const norm = join(concatTmp, `norm${ci}.mp4`);
+
+            if (cv.kind === "image") {
+              // Still image → 3-second video with silence
+              await execFileAsync("ffmpeg", [
+                "-y", "-loop", "1", "-i", cv.path,
+                "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
+                "-t", "3",
+                "-map", "0:v", "-map", "1:a",
+                "-vf", vscale, ...venc, ...aenc, norm,
+              ], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+
+            } else if (cv.kind === "gif") {
+              const src = cv.srcVideo ?? cv.path;
+              const hasAudio = cv.audio ? true : await fileHasAudio(src);
+              if (hasAudio) {
+                const audioSrc = cv.audio ?? src;
+                await execFileAsync("ffmpeg", [
+                  "-y", "-i", src,
+                  ...(cv.audio ? ["-i", cv.audio] : []),
+                  "-map", "0:v:0",
+                  "-map", cv.audio ? "1:a:0" : "0:a:0",
+                  "-vf", vscale, ...venc,
+                  "-af", "apad=pad_dur=0.05", ...aenc, "-shortest", norm,
+                ], { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
+              } else {
+                await execFileAsync("ffmpeg", [
+                  "-y", "-i", src,
+                  "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
+                  "-map", "0:v:0", "-map", "1:a",
+                  "-vf", vscale, ...venc, ...aenc, "-shortest", norm,
+                ], { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
+              }
+
+            } else {
+              // video kind — reassemble frames to a temp MP4 first, then re-encode
+              // to enforce consistent resolution/fps/audio before concat.
+              const assembled = join(concatTmp, `asm${ci}.mp4`);
+              await mediascriptReassembleVideo(cv, assembled);
+              const hasAudio = cv.audio ? true : await fileHasAudio(assembled);
+              if (hasAudio) {
+                await execFileAsync("ffmpeg", [
+                  "-y", "-i", assembled,
+                  "-map", "0:v:0", "-map", "0:a:0",
+                  "-vf", vscale, ...venc, ...aenc, "-shortest", norm,
+                ], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
+              } else {
+                await execFileAsync("ffmpeg", [
+                  "-y", "-i", assembled,
+                  "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
+                  "-map", "0:v:0", "-map", "1:a",
+                  "-vf", vscale, ...venc, ...aenc, "-shortest", norm,
+                ], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
+              }
+            }
+
+            normPaths.push(norm);
+          }
+
+          // Write filelist and concat (stream-copy video, re-encode audio for clean boundaries)
+          const filelistPath = join(concatTmp, "filelist.txt");
+          await writeFile(filelistPath, normPaths.map((p) => `file '${p}'`).join("\n"));
+          const concatOut = join(concatTmp, "out.mp4");
+          await execFileAsync("ffmpeg", [
+            "-y", "-f", "concat", "-safe", "0", "-i", filelistPath,
+            "-c:v", "copy",
+            "-c:a", "aac", "-ar", "44100", "-ac", "2",
+            "-movflags", "+faststart",
+            concatOut,
+          ], { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
+
+          // 1-frame preview GIF for dimension detection
+          const concatPreview = join(tmpDir, `concatpreview${opCounter++}.gif`);
+          await execFileAsync("ffmpeg", [
+            "-y", "-i", concatOut, "-frames:v", "1",
+            "-vf", "scale=min(480\\,iw):-2:flags=lanczos",
+            concatPreview,
+          ], { timeout: 30_000, maxBuffer: 10 * 1024 * 1024 });
+
+          vars[concatVarNames[0]!] = {
+            kind: "gif", path: concatPreview, originVideo: true, srcVideo: concatOut,
+          };
+          lastVar = concatVarNames[0]!;
+          dimCache.delete(concatVarNames[0]!);
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
       // ── effect commands (ImageMagick): <effect> <var> [<args...>] ─────────
       const effVar: string = tokens[1] ?? lastVar ?? "";
       const target = vars[effVar];
@@ -3335,7 +3466,8 @@ export async function handleTagCommand(
       "  implode <var> <n>       — inward implode (-implode n)",
       "  magik <var>             — content-aware liquid rescale (-liquid-rescale 50%x50%)",
       "  hueshifthsv <var> <h> <s> <l> — hue/sat/brightness shift (-modulate)",
-  "  contrast <var> <strength>     — adjust contrast (ffmpeg eq=contrast; 1=unchanged, >1 more, <1 less)",
+  "  contrast <var> <strength>      — adjust contrast (ffmpeg eq=contrast; 1=unchanged, >1 more, <1 less)",
+      "  concatmultiple <v1> <v2> [...] — join 2+ variables end-to-end (image=3s still; gif/video=full duration); result replaces v1",
       "  swaprgba <var> <pattern>       — remap RGB channels; pattern is 3 chars of r/g/b/0 defining output R,G,B source e.g. bgr rrr r00 0g0",
       "  slide <var> <speed>           — horizontally scroll (ffmpeg scroll filter); speed = fraction of width per frame, e.g. 0.05",
       "  snip <var> <start> [end]      — trim to time range in seconds; on video input, trims the source before GIF conversion so full duration is accessible",
