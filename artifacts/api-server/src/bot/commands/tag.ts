@@ -1,3 +1,4 @@
+
 import {
   AttachmentBuilder,
   Message,
@@ -1285,7 +1286,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           [t.path, "-coalesce", ...imArgs, outGif],
           { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 },
         );
-        vars[effVar] = { kind: "gif", path: outGif };
+        vars[effVar] = { kind: "gif", path: outGif, originVideo: t.originVideo, audio: t.audio };
       } else {
         // video: apply per-frame
         await mediascriptMapLimit(t.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
@@ -1335,38 +1336,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             const srcPath = join(tmpDir, `${varName}_src${ext}`);
             await writeFile(srcPath, Buffer.from(resp.data));
 
-            // Detect FPS
-            let fps = 30;
-            try {
-              const { stdout: fpsOut } = await execFileAsync("ffprobe", [
-                "-v", "error", "-select_streams", "v:0",
-                "-show_entries", "stream=r_frame_rate",
-                "-of", "default=nk=1:noprint_wrappers=1", srcPath,
-              ]);
-              const parts = fpsOut.trim().split("/");
-              const num = Number(parts[0]), den = Number(parts[1] ?? "1");
-              if (num > 0 && den > 0) fps = Math.round((num / den) * 100) / 100;
-            } catch { /* use default 30 fps */ }
-
-            // Cap fps to avoid extracting thousands of frames from high-fps sources
-            const clampedFps = Math.min(fps, 60);
-
-            // Extract frames (capped at MEDIASCRIPT_MAX_GIF_FRAMES)
-            const frameDir = join(tmpDir, `${varName}_frames`);
-            await mkdir(frameDir, { recursive: true });
-            await execFileAsync("ffmpeg", [
-              "-y", "-i", srcPath,
-              "-vf", `fps=${clampedFps}`,
-              "-frames:v", String(MEDIASCRIPT_MAX_GIF_FRAMES),
-              "-q:v", "2",
-              join(frameDir, "frame_%05d.png"),
-            ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
-
-            const written = (await readdir(frameDir)).filter((f) => /^frame_\d{5}\.png$/.test(f));
-            if (written.length === 0) throw new Error("ffmpeg extracted 0 frames — video may be corrupt, unsupported, or have no video stream");
-            const frameCount = Math.min(written.length, MEDIASCRIPT_MAX_GIF_FRAMES);
-
-            // Extract audio if present
+            // Step 1: Extract audio if present
             let audio: string | undefined;
             try {
               const { stdout: hasAudio } = await execFileAsync("ffprobe", [
@@ -1383,9 +1353,8 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               }
             } catch { /* no audio or extraction failed */ }
 
-            // Step 2: Convert video → GIF so mediascript effects run on it as an
-            // animated GIF (ImageMagick -coalesce path). Cap at 15 fps and
-            // MEDIASCRIPT_MAX_GIF_FRAMES frames to keep GIF size manageable.
+            // Step 2: Convert video → GIF (cap at 15 fps, MEDIASCRIPT_MAX_GIF_FRAMES frames).
+            // Effects run on the GIF via ImageMagick; render converts back to MP4.
             const gifFps = 15;
             const maxDurSec = MEDIASCRIPT_MAX_GIF_FRAMES / gifFps; // 16 s @ 15 fps
             const gifPath = join(tmpDir, `${varName}_src.gif`);
@@ -1504,7 +1473,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               "-layers", "composite",
               outPath,
             ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
-            vars[baseName] = { kind: "gif", path: outPath };
+            vars[baseName] = { kind: "gif", path: outPath, originVideo: base.originVideo, audio: base.audio };
           } else {
             // base is video: apply per-frame
             await mediascriptMapLimit(base.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
@@ -1527,8 +1496,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const factorExpr = tokens[2] ?? "1";
         const v = vars[varName];
         if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
-        if (v.kind !== "video") return `[mediascript: "audiopitch" requires a video variable (loaded from mp4/webm/mov/etc.)]`;
-        if (!v.audio) return `[mediascript: "audiopitch": variable "${varName}" has no audio track]`;
+        if (v.kind === "image" || !v.audio) return `[mediascript: "audiopitch": variable "${varName}" has no audio track]`;
         const factor = await mediascriptEvalNum(factorExpr, vars, dimCache);
         if (!isFinite(factor) || factor <= 0) return `[mediascript: "audiopitch" factor must be a positive number, got "${factorExpr}"]`;
         const cents = Math.round(1200 * Math.log2(factor));
@@ -1544,38 +1512,32 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       }
 
       // ── trim <var> <start_secs> [end_secs] ───────────────────────────────
-      // Trims a video to a time range (seconds). Omitting end keeps the rest of the clip.
+      // Trims a GIF/video to a time range (seconds). Omitting end keeps the rest.
       if (cmd === "trim") {
         const varName: string = tokens[1] ?? lastVar ?? "";
         const v = vars[varName];
         if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
-        if (v.kind !== "video") return `[mediascript: "trim" requires a video variable (loaded from mp4/webm/mov/etc.)]`;
+        if (v.kind === "image") return `[mediascript: "trim" requires a video or GIF variable, not an image]`;
+        if (v.kind !== "gif") return `[mediascript: "trim" requires a GIF variable (videos are auto-converted on load)]`;
         const startSecs = await mediascriptEvalNum(tokens[2] ?? "0", vars, dimCache);
-        const endSecs = tokens[3] != null
-          ? await mediascriptEvalNum(tokens[3], vars, dimCache)
-          : v.frameCount / v.fps;
+        const endSecs = tokens[3] != null ? await mediascriptEvalNum(tokens[3], vars, dimCache) : undefined;
         if (!isFinite(startSecs) || startSecs < 0) return `[mediascript: "trim" start must be >= 0, got "${tokens[2]}"]`;
-        if (!isFinite(endSecs) || endSecs <= startSecs) return `[mediascript: "trim" end must be > start, got "${tokens[3]}"]`;
-        const startFrame = Math.max(1, Math.floor(startSecs * v.fps) + 1);
-        const endFrame = Math.min(v.frameCount, Math.ceil(endSecs * v.fps));
-        if (startFrame > v.frameCount) return `[mediascript: "trim" start (${startSecs.toFixed(2)}s) is past end of clip (${(v.frameCount / v.fps).toFixed(2)}s)]`;
+        if (endSecs !== undefined && (!isFinite(endSecs) || endSecs <= startSecs)) return `[mediascript: "trim" end must be > start, got "${tokens[3]}"]`;
         try {
-          const newDir = join(tmpDir, `${varName}_trim${opCounter++}`);
-          await mkdir(newDir, { recursive: true });
-          const newCount = endFrame - startFrame + 1;
-          await mediascriptMapLimit(newCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
-            await copyFile(mediascriptFramePath(v.dir, startFrame + i - 1), mediascriptFramePath(newDir, i));
-          });
+          const outGif = join(tmpDir, `${varName}_trim${opCounter++}.gif`);
+          const ffArgs = ["-y", "-i", v.path, "-ss", String(startSecs)];
+          if (endSecs !== undefined) ffArgs.push("-to", String(endSecs));
+          ffArgs.push(outGif);
+          await execFileAsync("ffmpeg", ffArgs, { timeout: 120_000, maxBuffer: 200 * 1024 * 1024 });
           let newAudio: string | undefined;
           if (v.audio) {
             newAudio = join(tmpDir, `${varName}_trim${opCounter++}_audio.mp3`);
-            const duration = endSecs - startSecs;
-            await execFileAsync("ffmpeg", [
-              "-y", "-i", v.audio, "-ss", String(startSecs), "-t", String(duration),
-              "-c:a", "libmp3lame", "-q:a", "2", newAudio,
-            ], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+            const ffAudioArgs = ["-y", "-i", v.audio, "-ss", String(startSecs)];
+            if (endSecs !== undefined) ffAudioArgs.push("-t", String(endSecs - startSecs));
+            ffAudioArgs.push("-c:a", "libmp3lame", "-q:a", "2", newAudio);
+            await execFileAsync("ffmpeg", ffAudioArgs, { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
           }
-          vars[varName] = { kind: "video", dir: newDir, frameCount: newCount, fps: v.fps, audio: newAudio };
+          vars[varName] = { kind: "gif", path: outGif, originVideo: v.originVideo, audio: newAudio };
           lastVar = varName;
           dimCache.delete(varName);
         } catch (err) {
@@ -1591,18 +1553,27 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const varName: string = tokens[1] ?? lastVar ?? "";
         const v = vars[varName];
         if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
-        if (v.kind !== "video") return `[mediascript: "speed" requires a video variable (loaded from mp4/webm/mov/etc.)]`;
+        if (v.kind === "image") return `[mediascript: "speed" requires a video or GIF variable, not an image]`;
+        if (v.kind !== "gif") return `[mediascript: "speed" requires a GIF variable (videos are auto-converted on load)]`;
         const factor = await mediascriptEvalNum(tokens[2] ?? "1", vars, dimCache);
         if (!isFinite(factor) || factor <= 0) return `[mediascript: "speed" factor must be a positive number, got "${tokens[2]}"]`;
         try {
-          const newFps = Math.min(60, v.fps * factor);
+          // Adjust GIF frame delays: detect current delay from first frame, scale by 1/factor.
+          const { stdout: identOut } = await execFileAsync("magick", ["identify", "-format", "%T\n", v.path]);
+          const firstDelay = parseInt(identOut.trim().split("\n")[0] ?? "7", 10) || 7; // centiseconds
+          const newDelay = Math.max(2, Math.round(firstDelay / factor)); // min 2cs ≈ 50fps
+          const outGif = join(tmpDir, `${varName}_speed${opCounter++}.gif`);
+          await execFileAsync("magick", [
+            v.path, "-coalesce", "-set", "delay", String(newDelay), "-layers", "optimize", "-loop", "0", outGif,
+          ], { timeout: 120_000, maxBuffer: 200 * 1024 * 1024 });
           let newAudio: string | undefined;
           if (v.audio) {
             newAudio = join(tmpDir, `${varName}_speed${opCounter++}_audio.mp3`);
             await execFileAsync("sox", [v.audio, newAudio, "tempo", String(factor)], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
           }
-          vars[varName] = { ...v, fps: newFps, audio: newAudio };
+          vars[varName] = { kind: "gif", path: outGif, originVideo: v.originVideo, audio: newAudio };
           lastVar = varName;
+          dimCache.delete(varName);
         } catch (err) {
           return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
         }
@@ -1615,8 +1586,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const varName: string = tokens[1] ?? lastVar ?? "";
         const v = vars[varName];
         if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
-        if (v.kind !== "video") return `[mediascript: "volume" requires a video variable (loaded from mp4/webm/mov/etc.)]`;
-        if (!v.audio) return `[mediascript: "volume": variable "${varName}" has no audio track — use "load" on a video with audio]`;
+        if (v.kind === "image" || !v.audio) return `[mediascript: "volume": variable "${varName}" has no audio track — use "load" on a video with audio]`;
         const factor = await mediascriptEvalNum(tokens[2] ?? "1", vars, dimCache);
         if (!isFinite(factor) || factor < 0) return `[mediascript: "volume" factor must be >= 0, got "${tokens[2]}"]`;
         const newAudio = join(tmpDir, `${varName}_vol${opCounter++}.mp3`);
@@ -1631,37 +1601,36 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       }
 
       // ── mute <var> ────────────────────────────────────────────────────────
-      // Removes the audio track from a video variable.
+      // Removes the audio track from a video/GIF variable.
       if (cmd === "mute") {
         const varName: string = tokens[1] ?? lastVar ?? "";
         const v = vars[varName];
         if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
-        if (v.kind !== "video") return `[mediascript: "mute" requires a video variable (loaded from mp4/webm/mov/etc.)]`;
+        if (v.kind === "image") return `[mediascript: "mute" requires a video or GIF variable, not an image]`;
         vars[varName] = { ...v, audio: undefined };
         lastVar = varName;
         continue;
       }
 
       // ── reverse <var> ─────────────────────────────────────────────────────
-      // Reverses video frames and audio (if present).
+      // Reverses a GIF's frames and audio (if present).
       if (cmd === "reverse") {
         const varName: string = tokens[1] ?? lastVar ?? "";
         const v = vars[varName];
         if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
-        if (v.kind !== "video") return `[mediascript: "reverse" requires a video variable (loaded from mp4/webm/mov/etc.)]`;
+        if (v.kind === "image") return `[mediascript: "reverse" requires a video or GIF variable, not an image]`;
+        if (v.kind !== "gif") return `[mediascript: "reverse" requires a GIF variable (videos are auto-converted on load)]`;
         try {
-          const newDir = join(tmpDir, `${varName}_rev${opCounter++}`);
-          await mkdir(newDir, { recursive: true });
-          // Frame i in new sequence = frame (N - i + 1) from original
-          await mediascriptMapLimit(v.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
-            await copyFile(mediascriptFramePath(v.dir, v.frameCount - i + 1), mediascriptFramePath(newDir, i));
-          });
+          const outGif = join(tmpDir, `${varName}_rev${opCounter++}.gif`);
+          await execFileAsync("magick", [
+            v.path, "-coalesce", "-reverse", "-layers", "optimize", "-loop", "0", outGif,
+          ], { timeout: 120_000, maxBuffer: 200 * 1024 * 1024 });
           let newAudio: string | undefined;
           if (v.audio) {
             newAudio = join(tmpDir, `${varName}_rev${opCounter++}_audio.mp3`);
             await execFileAsync("sox", [v.audio, newAudio, "reverse"], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
           }
-          vars[varName] = { kind: "video", dir: newDir, frameCount: v.frameCount, fps: v.fps, audio: newAudio };
+          vars[varName] = { kind: "gif", path: outGif, originVideo: v.originVideo, audio: newAudio };
           lastVar = varName;
           dimCache.delete(varName);
         } catch (err) {
