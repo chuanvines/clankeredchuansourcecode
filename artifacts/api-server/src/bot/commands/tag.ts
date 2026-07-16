@@ -1193,12 +1193,16 @@ async function mediascriptReassembleVideo(
  *   magik                         → -liquid-rescale 50%x50%
  *   hueshifthsv <h> <s> <l>       → -modulate <100+l>,<100+s>,<100+h*200/360>
  *
- * GIF handling: when the loaded file is an animated GIF, it is exploded into
- * a numbered frame sequence (frame_00001.png, frame_00002.png, frame_00003.png, …).
- * Effects are then applied frame by frame across the whole sequence, and
- * "render" re-assembles the frames back into a GIF using the original file's
- * per-frame delay and loop count, so the output plays at the same frame rate
- * as the input.
+ * Video-specific commands (require a variable loaded from mp4/webm/mov/etc.):
+ *   trim <var> <start> [end]      — trim to time range in seconds (end defaults to clip length)
+ *   speed <var> <factor>          — change playback speed (2 = 2× faster, 0.5 = half speed); audio tempo adjusted to match
+ *   volume <var> <factor>         — adjust audio volume (2 = double, 0.5 = half)
+ *   mute <var>                    — remove audio track
+ *   reverse <var>                 — reverse frames and audio
+ *   audiopitch <var> <factor>     — shift audio pitch (2**(-1/12) = one semitone down); speed unchanged
+ *
+ * GIF handling: GIFs are stored and processed as GIF files. Effects apply to
+ * all frames at once via ImageMagick's native animated GIF support (-coalesce).
  *
  * Example:
  *   load {iv} image
@@ -1487,6 +1491,133 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           await execFileAsync("sox", [v.audio, newAudioPath, "pitch", String(cents)], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
           vars[varName] = { ...v, audio: newAudioPath };
           lastVar = varName;
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── trim <var> <start_secs> [end_secs] ───────────────────────────────
+      // Trims a video to a time range (seconds). Omitting end keeps the rest of the clip.
+      if (cmd === "trim") {
+        const varName = tokens[1] ?? lastVar ?? "";
+        const v = vars[varName];
+        if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
+        if (v.kind !== "video") return `[mediascript: "trim" requires a video variable (loaded from mp4/webm/mov/etc.)]`;
+        const startSecs = await mediascriptEvalNum(tokens[2] ?? "0", vars, dimCache);
+        const endSecs = tokens[3] != null
+          ? await mediascriptEvalNum(tokens[3], vars, dimCache)
+          : v.frameCount / v.fps;
+        if (!isFinite(startSecs) || startSecs < 0) return `[mediascript: "trim" start must be >= 0, got "${tokens[2]}"]`;
+        if (!isFinite(endSecs) || endSecs <= startSecs) return `[mediascript: "trim" end must be > start, got "${tokens[3]}"]`;
+        const startFrame = Math.max(1, Math.floor(startSecs * v.fps) + 1);
+        const endFrame = Math.min(v.frameCount, Math.ceil(endSecs * v.fps));
+        if (startFrame > v.frameCount) return `[mediascript: "trim" start (${startSecs.toFixed(2)}s) is past end of clip (${(v.frameCount / v.fps).toFixed(2)}s)]`;
+        try {
+          const newDir = join(tmpDir, `${varName}_trim${opCounter++}`);
+          await mkdir(newDir, { recursive: true });
+          const newCount = endFrame - startFrame + 1;
+          await mediascriptMapLimit(newCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
+            await copyFile(mediascriptFramePath(v.dir, startFrame + i - 1), mediascriptFramePath(newDir, i));
+          });
+          let newAudio: string | undefined;
+          if (v.audio) {
+            newAudio = join(tmpDir, `${varName}_trim${opCounter++}_audio.mp3`);
+            const duration = endSecs - startSecs;
+            await execFileAsync("ffmpeg", [
+              "-y", "-i", v.audio, "-ss", String(startSecs), "-t", String(duration),
+              "-c:a", "libmp3lame", "-q:a", "2", newAudio,
+            ], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+          }
+          vars[varName] = { kind: "video", dir: newDir, frameCount: newCount, fps: v.fps, audio: newAudio };
+          lastVar = varName;
+          dimCache.delete(varName);
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── speed <var> <factor> ──────────────────────────────────────────────
+      // Changes playback speed. >1 = faster, <1 = slower. Audio tempo is
+      // adjusted to match (pitch preserved via sox tempo effect).
+      if (cmd === "speed") {
+        const varName = tokens[1] ?? lastVar ?? "";
+        const v = vars[varName];
+        if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
+        if (v.kind !== "video") return `[mediascript: "speed" requires a video variable (loaded from mp4/webm/mov/etc.)]`;
+        const factor = await mediascriptEvalNum(tokens[2] ?? "1", vars, dimCache);
+        if (!isFinite(factor) || factor <= 0) return `[mediascript: "speed" factor must be a positive number, got "${tokens[2]}"]`;
+        try {
+          const newFps = Math.min(60, v.fps * factor);
+          let newAudio: string | undefined;
+          if (v.audio) {
+            newAudio = join(tmpDir, `${varName}_speed${opCounter++}_audio.mp3`);
+            await execFileAsync("sox", [v.audio, newAudio, "tempo", String(factor)], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+          }
+          vars[varName] = { ...v, fps: newFps, audio: newAudio };
+          lastVar = varName;
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── volume <var> <factor> ─────────────────────────────────────────────
+      // Adjusts audio volume. 1 = unchanged, 2 = double, 0.5 = half.
+      if (cmd === "volume") {
+        const varName = tokens[1] ?? lastVar ?? "";
+        const v = vars[varName];
+        if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
+        if (v.kind !== "video") return `[mediascript: "volume" requires a video variable (loaded from mp4/webm/mov/etc.)]`;
+        if (!v.audio) return `[mediascript: "volume": variable "${varName}" has no audio track — use "load" on a video with audio]`;
+        const factor = await mediascriptEvalNum(tokens[2] ?? "1", vars, dimCache);
+        if (!isFinite(factor) || factor < 0) return `[mediascript: "volume" factor must be >= 0, got "${tokens[2]}"]`;
+        const newAudio = join(tmpDir, `${varName}_vol${opCounter++}.mp3`);
+        try {
+          await execFileAsync("sox", [v.audio, newAudio, "vol", String(factor)], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+          vars[varName] = { ...v, audio: newAudio };
+          lastVar = varName;
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── mute <var> ────────────────────────────────────────────────────────
+      // Removes the audio track from a video variable.
+      if (cmd === "mute") {
+        const varName = tokens[1] ?? lastVar ?? "";
+        const v = vars[varName];
+        if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
+        if (v.kind !== "video") return `[mediascript: "mute" requires a video variable (loaded from mp4/webm/mov/etc.)]`;
+        vars[varName] = { ...v, audio: undefined };
+        lastVar = varName;
+        continue;
+      }
+
+      // ── reverse <var> ─────────────────────────────────────────────────────
+      // Reverses video frames and audio (if present).
+      if (cmd === "reverse") {
+        const varName = tokens[1] ?? lastVar ?? "";
+        const v = vars[varName];
+        if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
+        if (v.kind !== "video") return `[mediascript: "reverse" requires a video variable (loaded from mp4/webm/mov/etc.)]`;
+        try {
+          const newDir = join(tmpDir, `${varName}_rev${opCounter++}`);
+          await mkdir(newDir, { recursive: true });
+          // Frame i in new sequence = frame (N - i + 1) from original
+          await mediascriptMapLimit(v.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
+            await copyFile(mediascriptFramePath(v.dir, v.frameCount - i + 1), mediascriptFramePath(newDir, i));
+          });
+          let newAudio: string | undefined;
+          if (v.audio) {
+            newAudio = join(tmpDir, `${varName}_rev${opCounter++}_audio.mp3`);
+            await execFileAsync("sox", [v.audio, newAudio, "reverse"], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+          }
+          vars[varName] = { kind: "video", dir: newDir, frameCount: v.frameCount, fps: v.fps, audio: newAudio };
+          lastVar = varName;
+          dimCache.delete(varName);
         } catch (err) {
           return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
         }
