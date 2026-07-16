@@ -1211,7 +1211,7 @@ async function mediascriptReassembleVideo(
   const inputArgs = ["-framerate", String(v.fps), "-start_number", "1", "-i", join(v.dir, "frame_%05d.png")];
   // apad extends audio to the video length so -shortest stops at the last video frame
   // rather than cutting it early when the re-encoded audio is a few ms shorter.
-  const audioArgs: string[] = v.audio ? ["-i", v.audio, "-af", "apad", "-c:a", "aac", "-shortest"] : [];
+  const audioArgs: string[] = v.audio ? ["-i", v.audio, "-af", "apad=pad_dur=0.05", "-c:a", "aac", "-shortest"] : [];
   await execFileAsync(
     "ffmpeg",
     ["-y", ...inputArgs, ...audioArgs, "-frames:v", String(v.frameCount), "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart", outPath],
