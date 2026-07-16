@@ -1168,7 +1168,8 @@ async function mediascriptReassembleVideo(
   v: Extract<MediascriptVar, { kind: "video" }>,
   outPath: string,
 ): Promise<void> {
-  const inputArgs = ["-framerate", String(v.fps), "-i", join(v.dir, "frame_%05d.png"), "-frames:v", String(v.frameCount)];
+  // Frames are extracted 1-indexed (frame_00001.png…) via -scene 1, so tell ffmpeg to start at 1.
+  const inputArgs = ["-framerate", String(v.fps), "-start_number", "1", "-i", join(v.dir, "frame_%05d.png"), "-frames:v", String(v.frameCount)];
   const audioArgs: string[] = v.audio ? ["-i", v.audio, "-c:a", "aac", "-shortest"] : [];
   await execFileAsync(
     "ffmpeg",
