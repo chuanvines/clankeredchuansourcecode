@@ -1492,8 +1492,9 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       // ── audiopitch <var> <factor-expr> ────────────────────────────────────
       // factor is a multiplier: e.g. 2**(-1/12) = one semitone down
       if (cmd === "audiopitch") {
-        const varName: string = tokens[1] ?? lastVar ?? "";
-        const factorExpr = tokens[2] ?? "1";
+        const hasVar = tokens[1] !== undefined && vars[tokens[1]] !== undefined;
+        const varName: string = hasVar ? tokens[1]! : (lastVar ?? "");
+        const factorExpr = tokens[hasVar ? 2 : 1] ?? "1";
         const v = vars[varName];
         if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
         if (v.kind === "image" || !v.audio) return `[mediascript: "audiopitch": variable "${varName}" has no audio track]`;
@@ -1514,15 +1515,17 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       // ── trim <var> <start_secs> [end_secs] ───────────────────────────────
       // Trims a GIF/video to a time range (seconds). Omitting end keeps the rest.
       if (cmd === "trim") {
-        const varName: string = tokens[1] ?? lastVar ?? "";
+        const hasVar = tokens[1] !== undefined && vars[tokens[1]] !== undefined;
+        const varName: string = hasVar ? tokens[1]! : (lastVar ?? "");
+        const a = hasVar ? 2 : 1; // arg offset
         const v = vars[varName];
         if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
         if (v.kind === "image") return `[mediascript: "trim" requires a video or GIF variable, not an image]`;
         if (v.kind !== "gif") return `[mediascript: "trim" requires a GIF variable (videos are auto-converted on load)]`;
-        const startSecs = await mediascriptEvalNum(tokens[2] ?? "0", vars, dimCache);
-        const endSecs = tokens[3] != null ? await mediascriptEvalNum(tokens[3], vars, dimCache) : undefined;
-        if (!isFinite(startSecs) || startSecs < 0) return `[mediascript: "trim" start must be >= 0, got "${tokens[2]}"]`;
-        if (endSecs !== undefined && (!isFinite(endSecs) || endSecs <= startSecs)) return `[mediascript: "trim" end must be > start, got "${tokens[3]}"]`;
+        const startSecs = await mediascriptEvalNum(tokens[a] ?? "0", vars, dimCache);
+        const endSecs = tokens[a + 1] != null ? await mediascriptEvalNum(tokens[a + 1]!, vars, dimCache) : undefined;
+        if (!isFinite(startSecs) || startSecs < 0) return `[mediascript: "trim" start must be >= 0, got "${tokens[a]}"]`;
+        if (endSecs !== undefined && (!isFinite(endSecs) || endSecs <= startSecs)) return `[mediascript: "trim" end must be > start, got "${tokens[a + 1]}"]`;
         try {
           const outGif = join(tmpDir, `${varName}_trim${opCounter++}.gif`);
           const ffArgs = ["-y", "-i", v.path, "-ss", String(startSecs)];
@@ -1550,12 +1553,14 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       // Changes playback speed. >1 = faster, <1 = slower. Audio tempo is
       // adjusted to match (pitch preserved via sox tempo effect).
       if (cmd === "speed") {
-        const varName: string = tokens[1] ?? lastVar ?? "";
+        const hasVar = tokens[1] !== undefined && vars[tokens[1]] !== undefined;
+        const varName: string = hasVar ? tokens[1]! : (lastVar ?? "");
         const v = vars[varName];
         if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
         if (v.kind === "image") return `[mediascript: "speed" requires a video or GIF variable, not an image]`;
         if (v.kind !== "gif") return `[mediascript: "speed" requires a GIF variable (videos are auto-converted on load)]`;
-        const factor = await mediascriptEvalNum(tokens[2] ?? "1", vars, dimCache);
+        const factorExpr = tokens[hasVar ? 2 : 1] ?? "1";
+        const factor = await mediascriptEvalNum(factorExpr, vars, dimCache);
         if (!isFinite(factor) || factor <= 0) return `[mediascript: "speed" factor must be a positive number, got "${tokens[2]}"]`;
         try {
           // Adjust GIF frame delays: detect current delay from first frame, scale by 1/factor.
@@ -1569,7 +1574,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           let newAudio: string | undefined;
           if (v.audio) {
             newAudio = join(tmpDir, `${varName}_speed${opCounter++}_audio.mp3`);
-            await execFileAsync("sox", [v.audio, newAudio, "tempo", String(factor)], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+            await execFileAsync("ffmpeg", ["-y", "-i", v.audio, "-af", `rubberband=tempo=${factor}`, newAudio], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
           }
           vars[varName] = { kind: "gif", path: outGif, originVideo: v.originVideo, audio: newAudio };
           lastVar = varName;
@@ -1583,15 +1588,17 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       // ── volume <var> <factor> ─────────────────────────────────────────────
       // Adjusts audio volume. 1 = unchanged, 2 = double, 0.5 = half.
       if (cmd === "volume") {
-        const varName: string = tokens[1] ?? lastVar ?? "";
+        const hasVar = tokens[1] !== undefined && vars[tokens[1]] !== undefined;
+        const varName: string = hasVar ? tokens[1]! : (lastVar ?? "");
+        const factorExpr = tokens[hasVar ? 2 : 1] ?? "1";
         const v = vars[varName];
         if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
         if (v.kind === "image" || !v.audio) return `[mediascript: "volume": variable "${varName}" has no audio track — use "load" on a video with audio]`;
-        const factor = await mediascriptEvalNum(tokens[2] ?? "1", vars, dimCache);
-        if (!isFinite(factor) || factor < 0) return `[mediascript: "volume" factor must be >= 0, got "${tokens[2]}"]`;
+        const factor = await mediascriptEvalNum(factorExpr, vars, dimCache);
+        if (!isFinite(factor) || factor < 0) return `[mediascript: "volume" factor must be >= 0, got "${factorExpr}"]`;
         const newAudio = join(tmpDir, `${varName}_vol${opCounter++}.mp3`);
         try {
-          await execFileAsync("sox", [v.audio, newAudio, "vol", String(factor)], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+          await execFileAsync("ffmpeg", ["-y", "-i", v.audio, "-af", `volume=${factor}`, newAudio], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
           vars[varName] = { ...v, audio: newAudio };
           lastVar = varName;
         } catch (err) {
@@ -1603,7 +1610,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       // ── mute <var> ────────────────────────────────────────────────────────
       // Removes the audio track from a video/GIF variable.
       if (cmd === "mute") {
-        const varName: string = tokens[1] ?? lastVar ?? "";
+        const varName: string = (tokens[1] !== undefined && vars[tokens[1]]) ? tokens[1] : (lastVar ?? "");
         const v = vars[varName];
         if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
         if (v.kind === "image") return `[mediascript: "mute" requires a video or GIF variable, not an image]`;
@@ -1615,7 +1622,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       // ── reverse <var> ─────────────────────────────────────────────────────
       // Reverses a GIF's frames and audio (if present).
       if (cmd === "reverse") {
-        const varName: string = tokens[1] ?? lastVar ?? "";
+        const varName: string = (tokens[1] !== undefined && vars[tokens[1]]) ? tokens[1] : (lastVar ?? "");
         const v = vars[varName];
         if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
         if (v.kind === "image") return `[mediascript: "reverse" requires a video or GIF variable, not an image]`;
@@ -1628,7 +1635,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           let newAudio: string | undefined;
           if (v.audio) {
             newAudio = join(tmpDir, `${varName}_rev${opCounter++}_audio.mp3`);
-            await execFileAsync("sox", [v.audio, newAudio, "reverse"], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+            await execFileAsync("ffmpeg", ["-y", "-i", v.audio, "-af", "areverse", newAudio], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
           }
           vars[varName] = { kind: "gif", path: outGif, originVideo: v.originVideo, audio: newAudio };
           lastVar = varName;
@@ -1732,6 +1739,12 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       switch (cmd) {
         case "invert":
           imArgs = ["-negate"];
+          break;
+        case "flip":
+          imArgs = ["-flip"];
+          break;
+        case "flop":
+          imArgs = ["-flop"];
           break;
         case "swirl":
           imArgs = ["-swirl", args[0] ?? "50"];
