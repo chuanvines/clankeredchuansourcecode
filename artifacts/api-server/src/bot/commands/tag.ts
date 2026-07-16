@@ -1292,7 +1292,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           [t.path, "-coalesce", ...imArgs, outGif],
           { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 },
         );
-        vars[effVar] = { kind: "gif", path: outGif };
+        vars[effVar] = { ...t, path: outGif };
       } else {
         // video: apply per-frame
         await mediascriptMapLimit(t.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
@@ -1480,7 +1480,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               "-layers", "composite",
               outPath,
             ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
-            vars[baseName] = { kind: "gif", path: outPath };
+            vars[baseName] = { ...base, path: outPath };
           } else {
             // base is video: apply per-frame
             await mediascriptMapLimit(base.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
