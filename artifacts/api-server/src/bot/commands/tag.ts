@@ -1502,7 +1502,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const cents = Math.round(1200 * Math.log2(factor));
         const newAudioPath = join(tmpDir, `${varName}_pitched${opCounter++}.mp3`);
         try {
-          await execFileAsync("sox", [v.audio, newAudioPath, "pitch", String(cents)], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+          await execFileAsync("ffmpeg", ["-y", "-i", v.audio, "-af", `rubberband=pitch=${factor}`, newAudioPath], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
           vars[varName] = { ...v, audio: newAudioPath };
           lastVar = varName;
         } catch (err) {
