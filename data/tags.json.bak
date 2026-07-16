@@ -473,7 +473,7 @@
     "ownerId": "1387479962323255306",
     "ownerUsername": "yasinreturns",
     "createdAt": "2026-06-11T18:52:36.693Z",
-    "updatedAt": "2026-06-15T13:26:00.401Z"
+    "updatedAt": "2026-07-16T18:57:10.814Z"
   },
   "gm16": {
     "script": "{imagescript:\nload {iv} i\nhflip i\nhuehsv i -135\ninvert i\npitch=0;-3\n}",
@@ -3680,5 +3680,40 @@
     "ownerUsername": "gucci_17__75369",
     "createdAt": "2026-07-16T16:20:28.609Z",
     "updatedAt": "2026-07-16T16:20:28.609Z"
+  },
+  "g-major-16": {
+    "script": "{imagescript:\nload {iv} i\nflop i\nhueshifthsv i -135\npitch=0;-3\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-16T19:00:01.479Z",
+    "updatedAt": "2026-07-16T19:00:01.479Z"
+  },
+  "g-major-74": {
+    "script": "{imagescript:\nload {iv} i\nexplode i\ninvlum i\npitch=-10;9;14\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-16T19:08:24.327Z",
+    "updatedAt": "2026-07-16T19:08:24.327Z"
+  },
+  "g-major-74-hsla": {
+    "script": "{imagescript:\nload {iv} i\nexplode i\ninvert i\nhueshifthsv i 180\npitch=-10;9;14\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-16T19:11:18.040Z",
+    "updatedAt": "2026-07-16T19:11:18.040Z"
+  },
+  "irevived_x": {
+    "script": "{mediascript:\nload {iv} m\nimplode m 0.5\nhueshifthsv m 130 0 0\naudiopitch m 2**(8/12)\nrender m\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-07-16T19:13:32.918Z",
+    "updatedAt": "2026-07-16T19:13:32.918Z"
+  },
+  "mclaren-major": {
+    "script": "This Is <@1221656858612203581> Favorite Effect {imagescript:\nload {iv} i \nget i width w\nget i height h\nswirl i -90\nhueshifthsv i 50\ndistort i resize w h*2\ncover i w h\nswirl i 90\npitch=-10;9;14\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-16T19:16:52.348Z",
+    "updatedAt": "2026-07-16T19:32:07.651Z"
   }
 }

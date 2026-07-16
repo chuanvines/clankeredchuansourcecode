@@ -2058,6 +2058,51 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         continue;
       }
 
+      // ── contrast <var> <strength> — ffmpeg eq=contrast ───────────────────────
+      if (cmd === "contrast") {
+        const effVar2: string = tokens[1] ?? lastVar ?? "";
+        const v2 = vars[effVar2];
+        if (!v2) return `[mediascript: undefined variable "${effVar2}" — use "load <url> <var>" first]`;
+        const strength = parseFloat(tokens[2] ?? "1");
+        if (!Number.isFinite(strength)) return `[mediascript: "contrast" requires a numeric strength, e.g. contrast image 1.5]`;
+        try {
+          if (v2.kind === "image") {
+            const outPath = join(tmpDir, `out${opCounter++}${extname(v2.path)}`);
+            await execFileAsync("ffmpeg", ["-y", "-i", v2.path, "-vf", `eq=contrast=${strength}`, outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+            vars[effVar2] = { kind: "image", path: outPath };
+          } else if (v2.kind === "gif") {
+            const src = v2.srcVideo ?? v2.path;
+            const isVideo = !!v2.srcVideo;
+            const outPath = join(tmpDir, `${effVar2}_contrast${opCounter++}.${isVideo ? "mp4" : "gif"}`);
+            const ffArgs = ["-y", "-i", src, "-vf", `eq=contrast=${strength}`];
+            if (isVideo) {
+              ffArgs.push("-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart");
+              if (v2.audio) ffArgs.push("-c:a", "copy");
+            }
+            ffArgs.push(outPath);
+            await execFileAsync("ffmpeg", ffArgs, { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
+            if (isVideo) {
+              vars[effVar2] = { kind: "gif", path: v2.path, originVideo: true, srcVideo: outPath, audio: v2.audio };
+            } else {
+              vars[effVar2] = { kind: "gif", path: outPath, originVideo: v2.originVideo, audio: v2.audio };
+            }
+          } else {
+            // video kind (frame dir) — apply per frame
+            await mediascriptMapLimit(v2.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
+              const fp = mediascriptFramePath(v2.dir, i);
+              const tmp = fp + ".contrast.png";
+              await execFileAsync("ffmpeg", ["-y", "-i", fp, "-vf", `eq=contrast=${strength}`, tmp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+              renameSync(tmp, fp);
+            });
+          }
+          lastVar = effVar2;
+          dimCache.delete(effVar2);
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
       // ── effect commands (ImageMagick): <effect> <var> [<args...>] ─────────
       const effVar: string = tokens[1] ?? lastVar ?? "";
       const target = vars[effVar];
@@ -3230,6 +3275,7 @@ export async function handleTagCommand(
       "  implode <var> <n>       — inward implode (-implode n)",
       "  magik <var>             — content-aware liquid rescale (-liquid-rescale 50%x50%)",
       "  hueshifthsv <var> <h> <s> <l> — hue/sat/brightness shift (-modulate)",
+  "  contrast <var> <strength>     — adjust contrast (ffmpeg eq=contrast; 1=unchanged, >1 more, <1 less)",
       "  swaprgba <var> <pattern>       — remap RGB channels; pattern is 3 chars of r/g/b/0 defining output R,G,B source e.g. bgr rrr r00 0g0",
       "  slide <var> <speed>           — horizontally scroll (ffmpeg scroll filter); speed = fraction of width per frame, e.g. 0.05",
       "  snip <var> <start> [end]      — trim to time range in seconds; on video input, trims the source before GIF conversion so full duration is accessible",

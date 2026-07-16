@@ -473,7 +473,7 @@
     "ownerId": "1387479962323255306",
     "ownerUsername": "yasinreturns",
     "createdAt": "2026-06-11T18:52:36.693Z",
-    "updatedAt": "2026-06-15T13:26:00.401Z"
+    "updatedAt": "2026-07-16T18:57:10.814Z"
   },
   "gm16": {
     "script": "{imagescript:\nload {iv} i\nhflip i\nhuehsv i -135\ninvert i\npitch=0;-3\n}",
@@ -3680,5 +3680,40 @@
     "ownerUsername": "gucci_17__75369",
     "createdAt": "2026-07-16T16:20:28.609Z",
     "updatedAt": "2026-07-16T16:20:28.609Z"
+  },
+  "g-major-16": {
+    "script": "{imagescript:\nload {iv} i\nflop i\nhueshifthsv i -135\npitch=0;-3\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-16T19:00:01.479Z",
+    "updatedAt": "2026-07-16T19:00:01.479Z"
+  },
+  "g-major-74": {
+    "script": "{imagescript:\nload {iv} i\nexplode i\ninvlum i\npitch=-10;9;14\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-16T19:08:24.327Z",
+    "updatedAt": "2026-07-16T19:08:24.327Z"
+  },
+  "g-major-74-hsla": {
+    "script": "{imagescript:\nload {iv} i\nexplode i\ninvert i\nhueshifthsv i 180\npitch=-10;9;14\n}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-16T19:11:18.040Z",
+    "updatedAt": "2026-07-16T19:11:18.040Z"
+  },
+  "irevived_x": {
+    "script": "{mediascript:\nload {iv} m\nimplode m 0.5\nhueshifthsv m 130 0 0\naudiopitch m 2**(8/12)\nrender m\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-07-16T19:13:32.918Z",
+    "updatedAt": "2026-07-16T19:13:32.918Z"
+  },
+  "mclaren-major": {
+    "script": "{sh:load {iv}\n\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\n\nffmpeg -i $FILE_1 -vf huesaturation=45:strength=100,format=yuv444p,scale=$h:$h,\"geq='p(W*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*cos((atan2(Y-H*0.5,X-W*0.5))+((-130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)),H*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*sin((atan2(Y-H*0.5,X-W*0.5))+((-130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)))'\",scale=$w:$h,setsar=1:1,format=yuv420p,crop=$w:$h/2,scale=$w:$h,setsar=1,format=yuv444p,scale=$h:$h,\"geq='p(W*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*cos((atan2(Y-H*0.5,X-W*0.5))+((130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)),H*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*sin((atan2(Y-H*0.5,X-W*0.5))+((130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)))'\",scale=$w:$h,setsar=1:1,format=yuv420p -filter_complex \"[0:a]rubberband=formant=712923000:pitch=2^0.5[a1];[a1]amix=1,volume=1,atrim=0.02,areverse[outa]\" -map 0:v -map \"[outa]\" ./output/mclm.mp4}",
+    "ownerId": "1221656858612203581",
+    "ownerUsername": "gucci_17__75369",
+    "createdAt": "2026-07-16T19:16:52.348Z",
+    "updatedAt": "2026-07-16T19:39:03.792Z"
   }
 }
