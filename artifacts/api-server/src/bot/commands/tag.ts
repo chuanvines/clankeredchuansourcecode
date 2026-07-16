@@ -1392,7 +1392,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       // ── render <var> ──────────────────────────────────────────────────────
       if (cmd === "render") {
         const renderVarName: string = tokens[1] ?? lastVar ?? "";
-        return renderVar(renderVarName);
+        return await renderVar(renderVarName);
       }
 
       // ── copy <src> <dst> ──────────────────────────────────────────────────
@@ -1767,7 +1767,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       }
     }
 
-    if (lastVar && vars[lastVar]) return renderVar(lastVar);
+    if (lastVar && vars[lastVar]) return await renderVar(lastVar);
     return `[mediascript: nothing to render — add a "render <var>" line]`;
   } finally {
     await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
