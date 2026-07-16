@@ -1087,7 +1087,7 @@ const MEDIASCRIPT_FRAME_CONCURRENCY = 6;
 
 type MediascriptVar =
   | { kind: "image"; path: string }
-  | { kind: "gif"; dir: string; frameCount: number; delays: number[]; loop: number }
+  | { kind: "gif"; path: string }
   | { kind: "video"; dir: string; frameCount: number; fps: number; audio?: string };
 
 /** Zero-padded frame path, e.g. frame_00001.png, frame_00002.png, … */
@@ -1107,59 +1107,8 @@ async function mediascriptMapLimit(count: number, limit: number, fn: (idx: numbe
   await Promise.all(workers);
 }
 
-/**
- * Splits an animated GIF into a sequence of numbered frame PNGs
- * (frame_00001.png, frame_00002.png, …) and reads back its per-frame
- * delay (in 1/100s ticks) and loop count so the sequence can be
- * reassembled at the same frame rate later.
- */
-async function mediascriptDecomposeGif(srcPath: string, destDir: string): Promise<{ frameCount: number; delays: number[]; loop: number }> {
-  // NOTE: never append a `[0]` frame selector before counting — that reduces the
-  // sequence to a single image and makes ImageMagick report a frame count of 1
-  // regardless of the real number of frames in the GIF.
-  let delays: number[] = [];
-  try {
-    const { stdout: delayStdout } = await execFileAsync("magick", ["identify", "-format", "%T\n", srcPath]);
-    delays = delayStdout.split("\n").map((s) => parseInt(s.trim(), 10)).filter((n) => Number.isFinite(n));
-  } catch { /* fall back to default delay below */ }
-  if (delays.length === 0) delays = [4];
-
-  await execFileAsync(
-    "magick",
-    [srcPath, "-coalesce", "-scene", "1", join(destDir, "frame_%05d.png")],
-    { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 },
-  );
-
-  // Trust the frame files actually written to disk over any `identify` frame
-  // count, since that's what render will need to read back later.
-  const written = (await readdir(destDir)).filter((f) => /^frame_\d{5}\.png$/.test(f));
-  if (written.length === 0) throw new Error("GIF decompose produced 0 frames — ImageMagick wrote no output (file may be corrupt or not a real GIF)");
-  let frameCount = Math.min(written.length, MEDIASCRIPT_MAX_GIF_FRAMES);
-
-  while (delays.length < frameCount) delays.push(delays[delays.length - 1]!);
-  delays = delays.slice(0, frameCount);
-
-  // ImageMagick has no reliable cross-version property for a GIF's loop count via
-  // `identify -format`, so default to infinite looping (0), which matches the vast
-  // majority of GIFs used for effects.
-  const loop = 0;
-
-  return { frameCount, delays, loop };
-}
-
-/** Reassembles a numbered frame sequence back into a GIF at the recorded frame rate. */
-async function mediascriptReassembleGif(dir: string, frameCount: number, delays: number[], loop: number, outPath: string): Promise<void> {
-  const args: string[] = [];
-  for (let i = 1; i <= frameCount; i++) {
-    const fp = mediascriptFramePath(dir, i);
-    if (!existsSync(fp)) {
-      throw new Error(`missing frame ${basename(fp)} — expected ${frameCount} frames but not all were written/survived processing`);
-    }
-    args.push("-delay", String(delays[i - 1] ?? 4), fp);
-  }
-  args.push("-loop", String(loop), outPath);
-  await execFileAsync("magick", args, { timeout: 180_000, maxBuffer: 100 * 1024 * 1024 });
-}
+// (mediascriptDecomposeGif and mediascriptReassembleGif removed — GIF vars now store
+//  a single GIF file path; effects are applied directly via magick -coalesce.)
 
 /** Extracts a concise, actionable message from a failed execFileAsync call — prefers stderr over the
  *  (often huge, argv-laden) top-level error message so failures on long frame-list commands stay readable. */
@@ -1174,7 +1123,7 @@ function mediascriptErrorDetail(err: unknown): string {
 
 /** Get pixel dimensions of a mediascript variable (first frame for gif/video). */
 async function mediascriptGetDims(v: MediascriptVar): Promise<{ w: number; h: number }> {
-  const probePath = v.kind === "image" ? v.path : mediascriptFramePath(v.dir, 1);
+  const probePath = v.kind === "video" ? mediascriptFramePath(v.dir, 1) : v.kind === "gif" ? `${v.path}[0]` : v.path;
   try {
     const { stdout } = await execFileAsync("magick", ["identify", "-format", "%w %h", probePath]);
     const parts = stdout.trim().split(/\s+/);
@@ -1282,11 +1231,9 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           return `[mediascript: failed to render video "${name}": ${mediascriptErrorDetail(err)}]`;
         }
       }
-      // gif
+      // gif — stored as a GIF file; just read it back
       try {
-        const outPath = join(tmpDir, `render${opCounter++}.gif`);
-        await mediascriptReassembleGif(v.dir, v.frameCount, v.delays, v.loop, outPath);
-        const buffer = await readFile(outPath);
+        const buffer = await readFile(v.path);
         return { type: "media", buffer, ext: ".gif" };
       } catch (err) {
         return `[mediascript: failed to render gif "${name}": ${mediascriptErrorDetail(err)}]`;
@@ -1305,36 +1252,15 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         await execFileAsync("magick", [t.path, ...imArgs, outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
         vars[effVar] = { kind: "image", path: outPath };
       } else if (t.kind === "gif") {
-        // 1. Reassemble current frames → temp GIF (preserves per-frame delays)
-        const tempGif = join(tmpDir, `gifop${opCounter++}.gif`);
-        const reArgs: string[] = [];
-        for (let i = 1; i <= t.frameCount; i++) {
-          reArgs.push("-delay", String(t.delays[i - 1] ?? 4), mediascriptFramePath(t.dir, i));
-        }
-        reArgs.push("-loop", String(t.loop), tempGif);
-        await execFileAsync("magick", reArgs, { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
-
-        // 2. Clear old frames from t.dir so a silent IM failure (exit 0, 0 files written)
-        //    is correctly detected as "0 frames" rather than masked by stale files.
-        for (const f of await readdir(t.dir)) {
-          if (/^frame_\d{5}\.png$/.test(f)) await rm(join(t.dir, f));
-        }
-
-        // 3. Apply effect to full GIF → re-extract numbered frames (1-indexed via -scene 1)
-        //    Coalesce first so every frame is a complete image before the effect is applied.
+        // Apply effect directly to the GIF file (no per-frame extraction).
+        // -coalesce ensures every frame is a complete image before the effect runs.
+        const outGif = join(tmpDir, `gifop${opCounter++}.gif`);
         await execFileAsync(
           "magick",
-          [tempGif, "-coalesce", ...imArgs, "-scene", "1", join(t.dir, "frame_%05d.png")],
+          [t.path, "-coalesce", ...imArgs, outGif],
           { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 },
         );
-
-        // 4. Recount frames and sync delays
-        const written = (await readdir(t.dir)).filter((f) => /^frame_\d{5}\.png$/.test(f));
-        if (written.length === 0) throw new Error("effect produced 0 frames — ImageMagick wrote no output (GIF may be corrupt or unsupported)");
-        const newCount = Math.min(written.length, MEDIASCRIPT_MAX_GIF_FRAMES);
-        const delays = t.delays.slice();
-        while (delays.length < newCount) delays.push(delays[delays.length - 1] ?? 4);
-        vars[effVar] = { kind: "gif", dir: t.dir, frameCount: newCount, delays: delays.slice(0, newCount), loop: t.loop };
+        vars[effVar] = { kind: "gif", path: outGif };
       } else {
         // video: apply per-frame
         await mediascriptMapLimit(t.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
@@ -1435,10 +1361,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           } else if (ext.toLowerCase() === ".gif") {
             const srcPath = join(tmpDir, `${varName}_src.gif`);
             await writeFile(srcPath, Buffer.from(resp.data));
-            const frameDir = join(tmpDir, `${varName}_frames`);
-            await mkdir(frameDir, { recursive: true });
-            const { frameCount, delays, loop } = await mediascriptDecomposeGif(srcPath, frameDir);
-            vars[varName] = { kind: "gif", dir: frameDir, frameCount, delays, loop };
+            vars[varName] = { kind: "gif", path: srcPath };
           } else {
             const filePath = join(tmpDir, `${varName}${ext}`);
             await writeFile(filePath, Buffer.from(resp.data));
@@ -1471,12 +1394,9 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             await copyFile(src.path, newPath);
             vars[dstName] = { kind: "image", path: newPath };
           } else if (src.kind === "gif") {
-            const newDir = join(tmpDir, `${dstName}_frames${opCounter++}`);
-            await mkdir(newDir, { recursive: true });
-            await mediascriptMapLimit(src.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
-              await copyFile(mediascriptFramePath(src.dir, i), mediascriptFramePath(newDir, i));
-            });
-            vars[dstName] = { kind: "gif", dir: newDir, frameCount: src.frameCount, delays: [...src.delays], loop: src.loop };
+            const newPath = join(tmpDir, `${dstName}_copy${opCounter++}.gif`);
+            await copyFile(src.path, newPath);
+            vars[dstName] = { kind: "gif", path: newPath };
           } else {
             // video
             const newDir = join(tmpDir, `${dstName}_frames${opCounter++}`);
@@ -1508,19 +1428,38 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const top = vars[topName];
         if (!base) return `[mediascript: undefined variable "${baseName}" — use "load <url> <var>" first]`;
         if (!top) return `[mediascript: undefined variable "${topName}" — use "load <url> <var>" first]`;
-        const topFlatPath = top.kind === "image" ? top.path : mediascriptFramePath(top.dir, 1);
+        // For overlay, we need a flat (non-animated) top image.
+        // If top is a gif, extract its first frame as a static PNG.
+        let topFlatPath: string;
+        if (top.kind === "image") {
+          topFlatPath = top.path;
+        } else if (top.kind === "gif") {
+          topFlatPath = join(tmpDir, `overlay_top${opCounter++}.png`);
+          await execFileAsync("magick", [`${top.path}[0]`, topFlatPath], { timeout: 30_000, maxBuffer: 50 * 1024 * 1024 });
+        } else {
+          topFlatPath = mediascriptFramePath(top.dir, 1);
+        }
         try {
           if (base.kind === "image") {
             const outPath = join(tmpDir, `out${opCounter++}${extname(base.path)}`);
             await execFileAsync("magick", [base.path, topFlatPath, "-gravity", "Center", "-composite", outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
             vars[baseName] = { kind: "image", path: outPath };
+          } else if (base.kind === "gif") {
+            // Apply composite to every frame of the animated GIF using -layers composite.
+            const outPath = join(tmpDir, `out${opCounter++}.gif`);
+            await execFileAsync("magick", [
+              base.path, "-coalesce",
+              "null:", topFlatPath,
+              "-gravity", "Center",
+              "-layers", "composite",
+              outPath,
+            ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
+            vars[baseName] = { kind: "gif", path: outPath };
           } else {
+            // base is video: apply per-frame
             await mediascriptMapLimit(base.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
               const fp = mediascriptFramePath(base.dir, i);
-              const topFrame = top.kind === "image"
-                ? topFlatPath
-                : mediascriptFramePath(top.dir, Math.min(i, top.frameCount));
-              await execFileAsync("magick", [fp, topFrame, "-gravity", "Center", "-composite", fp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+              await execFileAsync("magick", [fp, topFlatPath, "-gravity", "Center", "-composite", fp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
             });
           }
           lastVar = baseName;
