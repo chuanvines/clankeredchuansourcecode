@@ -1133,7 +1133,8 @@ async function mediascriptDecomposeGif(srcPath: string, destDir: string): Promis
   // Trust the frame files actually written to disk over any `identify` frame
   // count, since that's what render will need to read back later.
   const written = (await readdir(destDir)).filter((f) => /^frame_\d{5}\.png$/.test(f));
-  let frameCount = Math.max(1, Math.min(written.length, MEDIASCRIPT_MAX_GIF_FRAMES));
+  if (written.length === 0) throw new Error("GIF decompose produced 0 frames — ImageMagick wrote no output (file may be corrupt or not a real GIF)");
+  let frameCount = Math.min(written.length, MEDIASCRIPT_MAX_GIF_FRAMES);
 
   while (delays.length < frameCount) delays.push(delays[delays.length - 1]!);
   delays = delays.slice(0, frameCount);
@@ -1313,7 +1314,13 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         reArgs.push("-loop", String(t.loop), tempGif);
         await execFileAsync("magick", reArgs, { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
 
-        // 2. Apply effect to full GIF → re-extract numbered frames (1-indexed via -scene 1)
+        // 2. Clear old frames from t.dir so a silent IM failure (exit 0, 0 files written)
+        //    is correctly detected as "0 frames" rather than masked by stale files.
+        for (const f of await readdir(t.dir)) {
+          if (/^frame_\d{5}\.png$/.test(f)) await rm(join(t.dir, f));
+        }
+
+        // 3. Apply effect to full GIF → re-extract numbered frames (1-indexed via -scene 1)
         //    Coalesce first so every frame is a complete image before the effect is applied.
         await execFileAsync(
           "magick",
@@ -1321,9 +1328,10 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 },
         );
 
-        // 3. Recount frames and sync delays
+        // 4. Recount frames and sync delays
         const written = (await readdir(t.dir)).filter((f) => /^frame_\d{5}\.png$/.test(f));
-        const newCount = Math.max(1, Math.min(written.length, MEDIASCRIPT_MAX_GIF_FRAMES));
+        if (written.length === 0) throw new Error("effect produced 0 frames — ImageMagick wrote no output (GIF may be corrupt or unsupported)");
+        const newCount = Math.min(written.length, MEDIASCRIPT_MAX_GIF_FRAMES);
         const delays = t.delays.slice();
         while (delays.length < newCount) delays.push(delays[delays.length - 1] ?? 4);
         vars[effVar] = { kind: "gif", dir: t.dir, frameCount: newCount, delays: delays.slice(0, newCount), loop: t.loop };
