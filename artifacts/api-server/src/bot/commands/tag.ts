@@ -1331,8 +1331,8 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           const framesDir = join(tmpDir, `${effVar}_frames${opCounter++}`);
           await mkdir(framesDir, { recursive: true });
 
-          // Detect source fps and duration
-          const [{ stdout: fpsOut }, { stdout: durOut }] = await Promise.all([
+          // Detect source fps, duration, and frame count
+          const [{ stdout: fpsOut }, { stdout: durOut }, { stdout: nbFramesOut }] = await Promise.all([
             execFileAsync("ffprobe", [
               "-v", "error", "-select_streams", "v:0",
               "-show_entries", "stream=r_frame_rate",
@@ -1343,17 +1343,30 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               "-show_entries", "format=duration",
               "-of", "default=nk=1:noprint_wrappers=1", t.srcVideo,
             ], { timeout: 15_000, maxBuffer: 1024 * 1024 }),
+            execFileAsync("ffprobe", [
+              "-v", "error", "-select_streams", "v:0",
+              "-show_entries", "stream=nb_frames",
+              "-of", "default=nk=1:noprint_wrappers=1", t.srcVideo,
+            ], { timeout: 15_000, maxBuffer: 1024 * 1024 }),
           ]);
           const fpsParts = fpsOut.trim().split("/").map(Number);
           const fps = (fpsParts[0] && fpsParts[1]) ? fpsParts[0] / fpsParts[1] : 30;
           const srcDur = parseFloat(durOut.trim());
-          const tFlag = Number.isFinite(srcDur) && srcDur > 0 ? ["-t", String(srcDur + 0.01)] : [];
+          const nbFrames = parseInt(nbFramesOut.trim(), 10);
+
+          // Prefer -vframes (exact frame count) over -t (duration-based) because
+          // ffprobe's format=duration equals the last frame's PTS, not PTS+duration,
+          // so each re-render would lose one frame if we relied on -t alone.
+          // Fall back to -t with two frame-durations of headroom if nb_frames is unavailable.
+          const extractLimit: string[] = Number.isFinite(nbFrames) && nbFrames > 0
+            ? ["-vframes", String(nbFrames)]
+            : (Number.isFinite(srcDur) && srcDur > 0 ? ["-t", String(srcDur + 2 / fps)] : []);
 
           // Extract all frames (1-indexed to match mediascriptFramePath)
           await execFileAsync("ffmpeg", [
             "-y", "-i", t.srcVideo,
-            ...tFlag,
             "-vf", `fps=${fps}`,
+            ...extractLimit,
             "-start_number", "1",
             join(framesDir, "frame_%05d.png"),
           ], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
