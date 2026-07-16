@@ -1087,7 +1087,7 @@ const MEDIASCRIPT_FRAME_CONCURRENCY = 6;
 
 type MediascriptVar =
   | { kind: "image"; path: string }
-  | { kind: "gif"; path: string; wasVideo?: boolean; fps?: number; audio?: string }
+  | { kind: "gif"; path: string }
   | { kind: "video"; dir: string; frameCount: number; fps: number; audio?: string };
 
 /** Zero-padded frame path, e.g. frame_00001.png, frame_00002.png, … */
@@ -1236,27 +1236,8 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           return `[mediascript: failed to render video "${name}": ${mediascriptErrorDetail(err)}]`;
         }
       }
-      // gif — stored as a GIF file; if it originated from a video, convert back to mp4
+      // gif — stored as a GIF file; just read it back
       try {
-        if (v.wasVideo) {
-          const outPath = join(tmpDir, `render${opCounter++}.mp4`);
-          const audioArgs: string[] = v.audio
-            ? ["-i", v.audio, "-c:a", "aac", "-shortest"]
-            : [];
-          await execFileAsync(
-            "ffmpeg",
-            [
-              "-y", "-i", v.path,
-              ...audioArgs,
-              "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
-              "-pix_fmt", "yuv420p", "-movflags", "+faststart",
-              outPath,
-            ],
-            { timeout: 180_000, maxBuffer: 100 * 1024 * 1024 },
-          );
-          const buffer = await readFile(outPath);
-          return { type: "media", buffer, ext: ".mp4" };
-        }
         const buffer = await readFile(v.path);
         return { type: "media", buffer, ext: ".gif" };
       } catch (err) {
@@ -1284,7 +1265,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           [t.path, "-coalesce", ...imArgs, outGif],
           { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 },
         );
-        vars[effVar] = { kind: "gif", path: outGif, wasVideo: t.wasVideo, fps: t.fps, audio: t.audio };
+        vars[effVar] = { kind: "gif", path: outGif };
       } else {
         // video: apply per-frame
         await mediascriptMapLimit(t.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
@@ -1334,8 +1315,8 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             const srcPath = join(tmpDir, `${varName}_src${ext}`);
             await writeFile(srcPath, Buffer.from(resp.data));
 
-            // Detect FPS (capped at 20 for GIF to keep size manageable)
-            let fps = 15;
+            // Detect FPS
+            let fps = 30;
             try {
               const { stdout: fpsOut } = await execFileAsync("ffprobe", [
                 "-v", "error", "-select_streams", "v:0",
@@ -1345,31 +1326,27 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               const parts = fpsOut.trim().split("/");
               const num = Number(parts[0]), den = Number(parts[1] ?? "1");
               if (num > 0 && den > 0) fps = Math.round((num / den) * 100) / 100;
-            } catch { /* use default 15 fps */ }
+            } catch { /* use default 30 fps */ }
 
-            // Cap fps for GIF (max 20fps) and limit duration to avoid huge files
-            const gifFps = Math.min(fps, 20);
-            const maxDuration = MEDIASCRIPT_MAX_GIF_FRAMES / gifFps;
+            // Cap fps to avoid extracting thousands of frames from high-fps sources
+            const clampedFps = Math.min(fps, 60);
 
-            // Step 1: Generate palette for high-quality GIF conversion
-            const palettePath = join(tmpDir, `${varName}_palette.png`);
+            // Extract frames (capped at MEDIASCRIPT_MAX_GIF_FRAMES)
+            const frameDir = join(tmpDir, `${varName}_frames`);
+            await mkdir(frameDir, { recursive: true });
             await execFileAsync("ffmpeg", [
               "-y", "-i", srcPath,
-              "-t", String(maxDuration),
-              "-vf", `fps=${gifFps},scale=480:-2:flags=lanczos,palettegen=stats_mode=diff`,
-              palettePath,
-            ], { timeout: 60_000, maxBuffer: 20 * 1024 * 1024 });
-
-            // Step 2: Convert video → GIF using the palette
-            const gifPath = join(tmpDir, `${varName}_src.gif`);
-            await execFileAsync("ffmpeg", [
-              "-y", "-i", srcPath, "-i", palettePath,
-              "-t", String(maxDuration),
-              "-filter_complex", `fps=${gifFps},scale=480:-2:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle`,
-              gifPath,
+              "-vf", `fps=${clampedFps}`,
+              "-frames:v", String(MEDIASCRIPT_MAX_GIF_FRAMES),
+              "-q:v", "2",
+              join(frameDir, "frame_%05d.png"),
             ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
 
-            // Step 3: Extract audio if present (preserved for mp4 render)
+            const written = (await readdir(frameDir)).filter((f) => /^frame_\d{5}\.png$/.test(f));
+            if (written.length === 0) throw new Error("ffmpeg extracted 0 frames — video may be corrupt, unsupported, or have no video stream");
+            const frameCount = Math.min(written.length, MEDIASCRIPT_MAX_GIF_FRAMES);
+
+            // Extract audio if present
             let audio: string | undefined;
             try {
               const { stdout: hasAudio } = await execFileAsync("ffprobe", [
@@ -1380,14 +1357,13 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               if (hasAudio.trim() === "audio") {
                 const audioPath = join(tmpDir, `${varName}_audio.mp3`);
                 await execFileAsync("ffmpeg", [
-                  "-y", "-i", srcPath, "-t", String(maxDuration),
-                  "-vn", "-acodec", "libmp3lame", "-q:a", "2", audioPath,
+                  "-y", "-i", srcPath, "-vn", "-acodec", "libmp3lame", "-q:a", "2", audioPath,
                 ], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
                 audio = audioPath;
               }
             } catch { /* no audio or extraction failed */ }
 
-            vars[varName] = { kind: "gif", path: gifPath, wasVideo: true, fps: gifFps, audio };
+            vars[varName] = { kind: "video", dir: frameDir, frameCount, fps: clampedFps, audio };
           } else if (ext.toLowerCase() === ".gif") {
             const srcPath = join(tmpDir, `${varName}_src.gif`);
             await writeFile(srcPath, Buffer.from(resp.data));
@@ -1426,8 +1402,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           } else if (src.kind === "gif") {
             const newPath = join(tmpDir, `${dstName}_copy${opCounter++}.gif`);
             await copyFile(src.path, newPath);
-            // Preserve wasVideo/fps/audio so render knows to output mp4 if it was originally a video
-            vars[dstName] = { kind: "gif", path: newPath, wasVideo: src.wasVideo, fps: src.fps, audio: src.audio };
+            vars[dstName] = { kind: "gif", path: newPath };
           } else {
             // video
             const newDir = join(tmpDir, `${dstName}_frames${opCounter++}`);
@@ -1485,7 +1460,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               "-layers", "composite",
               outPath,
             ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
-            vars[baseName] = { kind: "gif", path: outPath, wasVideo: base.wasVideo, fps: base.fps, audio: base.audio };
+            vars[baseName] = { kind: "gif", path: outPath };
           } else {
             // base is video: apply per-frame
             await mediascriptMapLimit(base.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
