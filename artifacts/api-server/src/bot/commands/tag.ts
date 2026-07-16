@@ -1806,6 +1806,9 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         case "magik":
           imArgs = ["-liquid-rescale", "50%x50%"];
           break;
+        case "demagik":
+          imArgs = ["-liquid-rescale", "300%x300%", "-resize" "30%"];
+          break;
         case "hueshifthsv": {
           const h = parseFloat(args[0] ?? "0") || 0;
           const s = parseFloat(args[1] ?? "0") || 0;
