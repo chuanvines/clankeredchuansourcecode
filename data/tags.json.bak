@@ -3710,10 +3710,10 @@
     "updatedAt": "2026-07-16T19:13:32.918Z"
   },
   "mclaren-major": {
-    "script": "{sh:load {iv}\n\nw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 $FILE_1)\nh=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 $FILE_1)\nfc=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $FILE_1)\nd=$(ffprobe -i $FILE_1 -show_entries format=duration -v quiet -of csv=\"p=0\")\n\nffmpeg -i $FILE_1 -vf huesaturation=45:strength=100,format=yuv444p,scale=$h:$h,\"geq='p(W*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*cos((atan2(Y-H*0.5,X-W*0.5))+((-130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)),H*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*sin((atan2(Y-H*0.5,X-W*0.5))+((-130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)))'\",scale=$w:$h,setsar=1:1,format=yuv420p,crop=$w:$h/2,scale=$w:$h,setsar=1,format=yuv444p,scale=$h:$h,\"geq='p(W*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*cos((atan2(Y-H*0.5,X-W*0.5))+((130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)),H*0.5+(hypot(X-W*0.5,Y-H*0.5)+1e-6)*sin((atan2(Y-H*0.5,X-W*0.5))+((130)/180*PI)*(if(lt(hypot(X-W*0.5,Y-H*0.5)+1e-6,min(W,H)*0.5),1-(hypot(X-W*0.5,Y-H*0.5)+1e-6)/(min(W,H)*0.5),0)^2)))'\",scale=$w:$h,setsar=1:1,format=yuv420p -filter_complex \"[0:a]rubberband=formant=712923000:pitch=2^0.5[a1];[a1]amix=1,volume=1,atrim=0.02,areverse[outa]\" -map 0:v -map \"[outa]\" ./output/mclm.mp4}",
+    "script": "This Is <@1221656858612203581> Favorite Effect {imagescript:\nload {iv} i \nget i width w\nget i height h\nswirl i -90\nhueshifthsv i 50\ndistort i resize w h*2\ncover i w h\nswirl i 90\npitch=-10;9;14\n}",
     "ownerId": "1221656858612203581",
     "ownerUsername": "gucci_17__75369",
     "createdAt": "2026-07-16T19:16:52.348Z",
-    "updatedAt": "2026-07-16T19:39:03.792Z"
+    "updatedAt": "2026-07-16T19:32:07.651Z"
   }
 }

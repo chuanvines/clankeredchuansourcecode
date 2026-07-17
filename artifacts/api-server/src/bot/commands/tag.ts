@@ -1291,7 +1291,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         if (v.originVideo) {
           const outPath = join(tmpDir, `render${opCounter++}.mp4`);
           const audioArgs: string[] = v.audio
-            ? ["-i", v.audio, "-af", "apad=pad_dur=0.05", "-c:a", "aac", "-shortest"]
+            ? ["-i", v.audio, "-af", "apad", "-c:a", "aac", "-shortest"]
             : [];
           await execFileAsync(
             "ffmpeg",
@@ -1573,6 +1573,10 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         if (!base) return `[mediascript: undefined variable "${baseName}" — use "load <url> <var>" first]`;
         if (!top) return `[mediascript: undefined variable "${topName}" — use "load <url> <var>" first]`;
 
+        const topIsGif = top.kind === "gif";
+        const baseIsGif = base.kind === "gif";
+        const baseIsImage = base.kind === "image";
+
         // Mix two audio tracks; if only one exists, return it; if neither, return undefined.
         const overlayMixAudio = async (aAudio: string | undefined, bAudio: string | undefined): Promise<string | undefined> => {
           if (aAudio && bAudio) {
@@ -1587,131 +1591,67 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           return aAudio ?? bAudio;
         };
 
-        // Resolve a var to a path ffmpeg can read directly.
-        // isStatic=true → pass with -loop 1 (still image, no natural end).
-        const resolveFFmpegInput = async (v: MediascriptVar): Promise<{ path: string; isStatic: boolean }> => {
-          if (v.kind === "image") return { path: v.path, isStatic: true };
-          if (v.kind === "gif") {
-            if (v.srcVideo) return { path: v.srcVideo, isStatic: false };
-            return { path: v.path, isStatic: false }; // ffmpeg reads animated GIF natively
-          }
-          // video kind (frame dir) — reassemble to temp MP4 first
-          const tmpMp4 = join(tmpDir, `overlay_in${opCounter++}.mp4`);
-          await mediascriptReassembleVideo(v, tmpMp4);
-          return { path: tmpMp4, isStatic: false };
-        };
-
         try {
-          // Use ffmpeg overlay filter whenever base or top involves a real video/srcVideo.
-          // ImageMagick path is kept only for pure image / plain-GIF (no srcVideo) combos.
-          const baseHasSrc = base.kind === "gif" && !!(base as Extract<MediascriptVar, { kind: "gif" }>).srcVideo;
-          const baseIsVideoKind = base.kind === "video";
-          const topHasSrc = top.kind === "gif" && !!(top as Extract<MediascriptVar, { kind: "gif" }>).srcVideo;
-          const topIsVideoKind = top.kind === "video";
-          const useFFmpeg = baseHasSrc || baseIsVideoKind || topHasSrc || topIsVideoKind;
-
-          if (useFFmpeg) {
-            // ── ffmpeg overlay ────────────────────────────────────────────────
-            const [baseIn, topIn] = await Promise.all([
-              resolveFFmpegInput(base),
-              resolveFFmpegInput(top),
-            ]);
-
-            const outPath = join(tmpDir, `overlay${opCounter++}.mp4`);
-            const ffArgs: string[] = ["-y"];
-
-            // Base input
-            if (baseIn.isStatic) ffArgs.push("-loop", "1");
-            ffArgs.push("-i", baseIn.path);
-
-            // Top input.
-            // When base drives the length, loop top so it covers the full duration.
-            // When base is static, top drives the length — don't loop.
-            if (!topIn.isStatic && !baseIn.isStatic) ffArgs.push("-stream_loop", "-1");
-            if (topIn.isStatic) ffArgs.push("-loop", "1");
-            ffArgs.push("-i", topIn.path);
-
-            const baseAudio = base.kind !== "image" ? (base as Extract<MediascriptVar, { kind: "gif" | "video" }>).audio : undefined;
-            const topAudio  = top.kind  !== "image" ? (top  as Extract<MediascriptVar, { kind: "gif" | "video" }>).audio : undefined;
-            const mixedAudio = await overlayMixAudio(baseAudio, topAudio);
-            if (mixedAudio) ffArgs.push("-i", mixedAudio);
-
-            // eof_action=endall: stop when the non-looped stream (the "main" one) ends.
-            ffArgs.push(
-              "-filter_complex", "[0:v][1:v]overlay=x=(W-w)/2:y=(H-h)/2:eof_action=endall[vout]",
-              "-map", "[vout]",
-            );
-            if (mixedAudio) ffArgs.push("-map", "2:a", "-c:a", "aac");
-            ffArgs.push(
-              "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
-              "-pix_fmt", "yuv420p", "-movflags", "+faststart",
-              "-shortest",
+          if (topIsGif && (baseIsImage || baseIsGif)) {
+            // Animated top over image or GIF base → frame-by-frame composite, output animated GIF.
+            // null: separates destination frames (base) from source frames (top) for -layers composite.
+            const outPath = join(tmpDir, `out${opCounter++}.gif`);
+            const baseArgs: string[] = baseIsImage
+              ? ["(", base.path, ")"]
+              : ["(", base.path, "-coalesce", ")"];
+            await execFileAsync("magick", [
+              ...baseArgs,
+              "null:", "(", top.path, "-coalesce", ")",
+              "-gravity", "Center", "-layers", "composite", "-loop", "0",
               outPath,
-            );
-
-            await execFileAsync("ffmpeg", ffArgs, { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
-
-            // Extract a 1-frame preview GIF for dimension detection
-            const previewPath = join(tmpDir, `overlay_preview${opCounter++}.gif`);
-            await execFileAsync("ffmpeg", [
-              "-y", "-i", outPath, "-frames:v", "1",
-              "-vf", "scale=min(480\\,iw):-2:flags=lanczos",
-              previewPath,
-            ], { timeout: 30_000, maxBuffer: 10 * 1024 * 1024 });
-
-            vars[baseName] = { kind: "gif", path: previewPath, originVideo: true, srcVideo: outPath, audio: mixedAudio };
-
+            ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
+            const baseAudio = baseIsGif ? base.audio : undefined;
+            vars[baseName] = {
+              kind: "gif", path: outPath,
+              originVideo: baseIsGif ? base.originVideo : false,
+              audio: await overlayMixAudio(baseAudio, top.audio),
+            };
           } else {
-            // ── ImageMagick path (plain images / GIFs with no srcVideo) ───────
-            const topIsGif   = top.kind  === "gif";
-            const baseIsGif  = base.kind === "gif";
-            const baseIsImage = base.kind === "image";
+            // Static top: flatten to a single image first.
+            let topFlatPath: string;
+            let topAudio: string | undefined;
+            if (top.kind === "image") {
+              topFlatPath = top.path;
+            } else if (top.kind === "gif") {
+              // top is gif but base is video — use first frame visually, still mix audio
+              topFlatPath = join(tmpDir, `overlay_top${opCounter++}.png`);
+              await execFileAsync("magick", [`${top.path}[0]`, topFlatPath], { timeout: 30_000, maxBuffer: 50 * 1024 * 1024 });
+              topAudio = top.audio;
+            } else {
+              topFlatPath = mediascriptFramePath(top.dir, 1);
+              topAudio = top.audio;
+            }
 
-            if (topIsGif && (baseIsImage || baseIsGif)) {
-              // Animated top over image or plain-GIF base → -layers composite
+            if (baseIsImage) {
+              const outPath = join(tmpDir, `out${opCounter++}${extname(base.path)}`);
+              await execFileAsync("magick", [base.path, topFlatPath, "-gravity", "Center", "-composite", outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+              vars[baseName] = { kind: "image", path: outPath };
+            } else if (baseIsGif) {
               const outPath = join(tmpDir, `out${opCounter++}.gif`);
-              const baseArgs: string[] = baseIsImage
-                ? ["(", base.path, ")"]
-                : ["(", base.path, "-coalesce", ")"];
               await execFileAsync("magick", [
-                ...baseArgs,
-                "null:", "(", top.path, "-coalesce", ")",
-                "-gravity", "Center", "-layers", "composite", "-loop", "0",
+                base.path, "-coalesce",
+                "null:", topFlatPath,
+                "-gravity", "Center",
+                "-layers", "composite",
                 outPath,
               ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
-              const baseAudio = baseIsGif ? base.audio : undefined;
-              vars[baseName] = {
-                kind: "gif", path: outPath,
-                originVideo: baseIsGif ? base.originVideo : false,
-                audio: await overlayMixAudio(baseAudio, top.audio),
-              };
+              vars[baseName] = { kind: "gif", path: outPath, originVideo: base.originVideo, audio: await overlayMixAudio(base.audio, topAudio) };
             } else {
-              // Static (image) top over image or plain-GIF base
-              let topFlatPath: string;
-              if (top.kind === "image") {
-                topFlatPath = top.path;
-              } else {
-                topFlatPath = join(tmpDir, `overlay_top${opCounter++}.png`);
-                await execFileAsync("magick", [`${top.path}[0]`, topFlatPath], { timeout: 30_000, maxBuffer: 50 * 1024 * 1024 });
-              }
-
-              if (baseIsImage) {
-                const outPath = join(tmpDir, `out${opCounter++}${extname(base.path)}`);
-                await execFileAsync("magick", [base.path, topFlatPath, "-gravity", "Center", "-composite", outPath], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
-                vars[baseName] = { kind: "image", path: outPath };
-              } else {
-                const outPath = join(tmpDir, `out${opCounter++}.gif`);
-                await execFileAsync("magick", [
-                  base.path, "-coalesce",
-                  "null:", topFlatPath,
-                  "-gravity", "Center", "-layers", "composite",
-                  outPath,
-                ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
-                vars[baseName] = { kind: "gif", path: outPath, originVideo: base.originVideo, audio: base.audio };
-              }
+              // base is video: apply per-frame
+              await mediascriptMapLimit(base.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
+                const fp = mediascriptFramePath(base.dir, i);
+                await execFileAsync("magick", [fp, topFlatPath, "-gravity", "Center", "-composite", fp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+              });
+              // patch audio on the existing video var
+              const patchedAudio = await overlayMixAudio(base.audio, topAudio);
+              if (patchedAudio !== base.audio) vars[baseName] = { ...base, audio: patchedAudio };
             }
           }
-
           lastVar = baseName;
           dimCache.delete(baseName);
         } catch (err) {
@@ -2157,173 +2097,6 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           }
           lastVar = effVar2;
           dimCache.delete(effVar2);
-        } catch (err) {
-          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
-        }
-        continue;
-      }
-
-      if (cmd === "concatmultiple") {
-        // concatmultiple <var1> <var2> [<var3> ...] — join N mediascript vars in order.
-        // Result replaces var1.  All kinds (image, gif, video) are supported:
-        //   image           → 3-second still + silence
-        //   gif (no src)    → ffmpeg reads animated GIF; silence added if no audio
-        //   gif (srcVideo)  → use srcVideo (already MP4); silence added if no audio
-        //   video           → reassemble frames → MP4 via mediascriptReassembleVideo
-        // Final concat uses the ffmpeg concat demuxer with stream-copy video and
-        // re-encoded AAC audio so segment boundaries are clean.
-        const concatVarNames = tokens.slice(1);
-        if (concatVarNames.length < 2)
-          return `[mediascript: "concatmultiple" needs at least 2 variables, e.g. concatmultiple a b c]`;
-
-        const missingVar = concatVarNames.find((n) => !vars[n]);
-        if (missingVar) return `[mediascript: concatmultiple — undefined variable "${missingVar}"]`;
-
-        const concatTmp = join(tmpDir, `concat${opCounter++}`);
-        await mkdir(concatTmp, { recursive: true });
-
-        try {
-          const vscale = "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p,fps=30";
-          const venc = ["-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p"];
-          const aenc = ["-c:a", "aac", "-ar", "44100", "-ac", "2"];
-
-          /** Probe video duration in seconds; returns 0 on failure. */
-          const probeDuration = async (p: string): Promise<number> => {
-            try {
-              const { stdout } = await execFileAsync(
-                "ffprobe", ["-v", "error", "-show_entries", "format=duration",
-                  "-of", "default=nk=1:noprint_wrappers=1", p],
-                { timeout: 10_000 },
-              );
-              const d = parseFloat(stdout.trim());
-              return Number.isFinite(d) && d > 0 ? d : 0;
-            } catch { return 0; }
-          };
-
-          const normPaths: string[] = [];
-
-          for (let ci = 0; ci < concatVarNames.length; ci++) {
-            const vn = concatVarNames[ci]!;
-            const cv = vars[vn]!;
-            const norm = join(concatTmp, `norm${ci}.mp4`);
-
-            if (cv.kind === "image") {
-              // Still image → 3-second video with silence
-              await execFileAsync("ffmpeg", [
-                "-y", "-loop", "1", "-i", cv.path,
-                "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
-                "-t", "3",
-                "-map", "0:v", "-map", "1:a",
-                "-vf", vscale, ...venc, ...aenc,
-                "-movflags", "+faststart", norm,
-              ], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
-
-            } else if (cv.kind === "gif") {
-              // For srcVideo: use the full MP4 directly.
-              // For plain GIF: pass -ignore_loop 0 so ffmpeg reads all frames exactly once.
-              const isRawGif = !cv.srcVideo;
-              const src = cv.srcVideo ?? cv.path;
-
-              // Probe source duration so we can use an explicit -t instead of -shortest.
-              // -shortest is unreliable when one stream is anullsrc (infinite) and the
-              // other is a container whose duration metadata may be approximate.
-              let dur = await probeDuration(src);
-              // Plain GIF: ffprobe often can't report duration; count frames via identify
-              if (dur === 0 && isRawGif) {
-                try {
-                  const { stdout: identOut } = await execFileAsync(
-                    "magick", ["identify", "-format", "%T\n", cv.path],
-                    { timeout: 20_000, maxBuffer: 1024 * 1024 },
-                  );
-                  const delays = identOut.trim().split("\n").map((s) => parseInt(s, 10)).filter(Number.isFinite);
-                  // GIF frame delays are in centiseconds
-                  dur = delays.reduce((a, b) => a + b, 0) / 100;
-                } catch { /* fallback below */ }
-              }
-              // Fallback: just use a generous cap — ffmpeg will stop when the GIF ends
-              const durArgs: string[] = dur > 0 ? ["-t", String(dur + 0.1)] : [];
-
-              const ffArgs: string[] = ["-y"];
-              if (isRawGif) ffArgs.push("-ignore_loop", "0");
-              ffArgs.push("-i", src);
-
-              // Audio: prefer the separate extracted MP3; otherwise add silence
-              if (cv.audio) {
-                ffArgs.push("-i", cv.audio,
-                  "-map", "0:v:0", "-map", "1:a:0",
-                  ...durArgs,
-                  "-vf", vscale, ...venc,
-                  "-af", "apad=pad_dur=0.05", ...aenc,
-                  "-movflags", "+faststart", norm,
-                );
-              } else {
-                ffArgs.push(
-                  "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
-                  "-map", "0:v:0", "-map", "1:a",
-                  ...durArgs,
-                  "-vf", vscale, ...venc, ...aenc,
-                  "-movflags", "+faststart", norm,
-                );
-              }
-              await execFileAsync("ffmpeg", ffArgs, { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
-
-            } else {
-              // video kind — reassemble frames to a consistent MP4 (includes audio if any),
-              // then re-encode to normalize resolution/fps/audio before concat.
-              const assembled = join(concatTmp, `asm${ci}.mp4`);
-              await mediascriptReassembleVideo(cv, assembled);
-              const dur = await probeDuration(assembled);
-              const durArgs: string[] = dur > 0 ? ["-t", String(dur + 0.1)] : [];
-              if (cv.audio) {
-                // mediascriptReassembleVideo already muxes audio into assembled
-                await execFileAsync("ffmpeg", [
-                  "-y", "-i", assembled,
-                  "-map", "0:v:0", "-map", "0:a:0",
-                  ...durArgs,
-                  "-vf", vscale, ...venc, ...aenc,
-                  "-movflags", "+faststart", norm,
-                ], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
-              } else {
-                await execFileAsync("ffmpeg", [
-                  "-y", "-i", assembled,
-                  "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
-                  "-map", "0:v:0", "-map", "1:a",
-                  ...durArgs,
-                  "-vf", vscale, ...venc, ...aenc,
-                  "-movflags", "+faststart", norm,
-                ], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
-              }
-            }
-
-            normPaths.push(norm);
-          }
-
-          // Concat: re-encode (not stream-copy) so codec parameters, PTS origin,
-          // and level/profile are identical across all segments — avoids the
-          // "1 frame" symptom caused by inconsistent H.264 stream headers.
-          const filelistPath = join(concatTmp, "filelist.txt");
-          await writeFile(filelistPath, normPaths.map((p) => `file '${p}'`).join("\n"));
-          const concatOut = join(concatTmp, "out.mp4");
-          await execFileAsync("ffmpeg", [
-            "-y", "-f", "concat", "-safe", "0", "-i", filelistPath,
-            ...venc, "-movflags", "+faststart",
-            ...aenc,
-            concatOut,
-          ], { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
-
-          // 1-frame preview GIF for dimension detection
-          const concatPreview = join(tmpDir, `concatpreview${opCounter++}.gif`);
-          await execFileAsync("ffmpeg", [
-            "-y", "-i", concatOut, "-frames:v", "1",
-            "-vf", "scale=min(480\\,iw):-2:flags=lanczos",
-            concatPreview,
-          ], { timeout: 30_000, maxBuffer: 10 * 1024 * 1024 });
-
-          vars[concatVarNames[0]!] = {
-            kind: "gif", path: concatPreview, originVideo: true, srcVideo: concatOut,
-          };
-          lastVar = concatVarNames[0]!;
-          dimCache.delete(concatVarNames[0]!);
         } catch (err) {
           return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
         }
@@ -3502,8 +3275,7 @@ export async function handleTagCommand(
       "  implode <var> <n>       — inward implode (-implode n)",
       "  magik <var>             — content-aware liquid rescale (-liquid-rescale 50%x50%)",
       "  hueshifthsv <var> <h> <s> <l> — hue/sat/brightness shift (-modulate)",
-  "  contrast <var> <strength>      — adjust contrast (ffmpeg eq=contrast; 1=unchanged, >1 more, <1 less)",
-      "  concatmultiple <v1> <v2> [...] — join 2+ variables end-to-end (image=3s still; gif/video=full duration); result replaces v1",
+  "  contrast <var> <strength>     — adjust contrast (ffmpeg eq=contrast; 1=unchanged, >1 more, <1 less)",
       "  swaprgba <var> <pattern>       — remap RGB channels; pattern is 3 chars of r/g/b/0 defining output R,G,B source e.g. bgr rrr r00 0g0",
       "  slide <var> <speed>           — horizontally scroll (ffmpeg scroll filter); speed = fraction of width per frame, e.g. 0.05",
       "  snip <var> <start> [end]      — trim to time range in seconds; on video input, trims the source before GIF conversion so full duration is accessible",
