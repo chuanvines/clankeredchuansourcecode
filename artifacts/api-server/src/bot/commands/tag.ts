@@ -1640,6 +1640,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             "-define", `pango:font=Arial ${fontSize}`,
             textSource,
             "-trim", "+repage",
+            "-resize", "150%",
             outPath,
           ], { timeout: 15_000, maxBuffer: 20 * 1024 * 1024, env: { ...process.env, FONTCONFIG_FILE: FONTS_CONF_PATH } });
           vars[varName] = { kind: "image", path: outPath };
