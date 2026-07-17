@@ -1631,6 +1631,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             "-font", fontPath,
             "-pointsize", String(fontSize),
             textSource,
+            "-resize", "64%",
             outPath,
           ], { timeout: 15_000, maxBuffer: 20 * 1024 * 1024 });
           vars[varName] = { kind: "image", path: outPath };

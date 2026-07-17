@@ -3722,5 +3722,12 @@
     "ownerUsername": "thatoneguynobodyinvited",
     "createdAt": "2026-07-17T13:32:33.680Z",
     "updatedAt": "2026-07-17T13:32:33.680Z"
+  },
+  "tti": {
+    "script": "{mediascript:\ntti t 100 0 white {args}\nrender t\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-07-17T18:44:19.452Z",
+    "updatedAt": "2026-07-17T18:44:19.452Z"
   }
 }
