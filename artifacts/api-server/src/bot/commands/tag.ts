@@ -1618,7 +1618,11 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         if (!text) return `[mediascript: "tti" requires text: tti <var> <font_size> <wrap_width> <color> <text...>]`;
         const outPath = join(tmpDir, `${varName}_tti${opCounter++}.png`);
         const fontPath = join(dirname(fileURLToPath(import.meta.url)), "assets", "Arial.ttf");
-        const sizeArgs: string[] = wrapWidth > 0 ? ["-size", `${wrapWidth}x`] : [];
+        // wrapWidth>0: caption: wraps text at that pixel width (height grows).
+        // wrapWidth=0: label: auto-sizes canvas to fit text; width grows, \n makes new lines.
+        const useCaption = wrapWidth > 0;
+        const sizeArgs: string[] = useCaption ? ["-size", `${wrapWidth}x`] : [];
+        const textSource = useCaption ? `caption:${text}` : `label:${text}`;
         try {
           await execFileAsync("magick", [
             "-background", "none",
@@ -1626,7 +1630,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             "-fill", color,
             "-font", fontPath,
             "-pointsize", String(fontSize),
-            `caption:${text}`,
+            textSource,
             outPath,
           ], { timeout: 15_000, maxBuffer: 20 * 1024 * 1024 });
           vars[varName] = { kind: "image", path: outPath };
