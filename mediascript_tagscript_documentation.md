@@ -203,7 +203,7 @@ Variables are named by you with `load`. Videos are automatically extracted into 
 
 | Command | Description |
 |---|---|
-| `load <url> <var>` | Download URL into variable. Detects image/gif/video automatically. Videos > 2 min are rejected |
+| `load <url> <var>` | Download URL into variable. Detects image/gif/video/audio automatically. Videos > 2 min are rejected. Audio files (`.mp3`, `.wav`, `.ogg`, `.flac`, `.aac`, `.m4a`, `.opus`) are normalised to mp3 and stored as an audio variable. Use with `audioputreplace` to swap audio onto a video/gif |
 | `render <var>` | Output variable as the final attachment (implicit if omitted) |
 | `copy <src> <dst>` | Duplicate a variable (deep copy of frames/audio) |
 

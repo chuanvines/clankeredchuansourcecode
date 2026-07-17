@@ -1126,6 +1126,7 @@ const MEDIASCRIPT_FRAME_CONCURRENCY = 6;
 
 type MediascriptVar =
   | { kind: "image"; path: string }
+  | { kind: "audio"; path: string; ext: string }
   | { kind: "gif"; path: string; originVideo?: boolean; srcVideo?: string; audio?: string }
   | { kind: "video"; dir: string; frameCount: number; fps: number; audio?: string };
 
@@ -1162,6 +1163,7 @@ function mediascriptErrorDetail(err: unknown): string {
 
 /** Get pixel dimensions of a mediascript variable (first frame for gif/video). */
 async function mediascriptGetDims(v: MediascriptVar): Promise<{ w: number; h: number }> {
+  if (v.kind === "audio") return { w: 0, h: 0 };
   const probePath = v.kind === "video" ? mediascriptFramePath(v.dir, 1) : v.kind === "gif" ? `${v.path}[0]` : v.path;
   try {
     const { stdout } = await execFileAsync("magick", ["identify", "-format", "%w %h", probePath]);
@@ -1265,6 +1267,10 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
     async function renderVar(name: string): Promise<MediaResult | string> {
       const v = vars[name];
       if (!v) return `[mediascript: undefined variable "${name}" — use "load <url> <var>" first]`;
+      if (v.kind === "audio") {
+        const buffer = await readFile(v.path);
+        return { type: "media", buffer, ext: v.ext };
+      }
       if (v.kind === "image") {
         const buffer = await readFile(v.path);
         return { type: "media", buffer, ext: extname(v.path) || ".png" };
@@ -1421,6 +1427,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
     }
 
     const VIDEO_EXTS = new Set([".mp4", ".webm", ".mov", ".avi", ".mkv"]);
+    const AUDIO_EXTS = new Set([".mp3", ".wav", ".ogg", ".flac", ".aac", ".m4a", ".opus"]);
 
     const lines = code
       .split("\n")
@@ -1454,6 +1461,20 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           }
 
           const isVideo = VIDEO_EXTS.has(ext.toLowerCase()) || ct.startsWith("video/");
+          const isAudio = !isVideo && (AUDIO_EXTS.has(ext.toLowerCase()) || ct.startsWith("audio/"));
+
+          if (isAudio) {
+            const rawPath = join(tmpDir, `${varName}_src${ext || ".mp3"}`);
+            await writeFile(rawPath, Buffer.from(resp.data));
+            // Normalise everything to mp3 so rubberband / ffmpeg filters always work.
+            const mp3Path = join(tmpDir, `${varName}_audio.mp3`);
+            await execFileAsync("ffmpeg", ["-y", "-i", rawPath, "-acodec", "libmp3lame", "-q:a", "2", mp3Path],
+              { timeout: 120_000, maxBuffer: 50 * 1024 * 1024 });
+            vars[varName] = { kind: "audio", path: mp3Path, ext: ".mp3" };
+            lastVar = varName;
+            dimCache.delete(varName);
+            continue;
+          }
 
           if (isVideo) {
             const srcPath = join(tmpDir, `${varName}_src${ext}`);
@@ -2009,7 +2030,10 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         if (v2.kind === "image") return `[mediascript: "audioputreplace" source has no audio track]`;
         try {
           let newAudio: string | undefined;
-          if (v2.kind === "gif") {
+          if (v2.kind === "audio") {
+            // Audio var — use its path directly.
+            newAudio = v2.path;
+          } else if (v2.kind === "gif") {
             if (v2.audio) {
               // Already have a separate audio file — use it directly.
               newAudio = v2.audio;
