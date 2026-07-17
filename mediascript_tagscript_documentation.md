@@ -211,7 +211,9 @@ Variables are named by you with `load`. Videos are automatically extracted into 
 
 | Command | Description |
 |---|---|
-| `overlay <base> <top>` | Composite `top` centered onto `base`. Handles all type combinations (image/gif/video). Audio is mixed when both have audio tracks |
+| `create <var> <w> <h> <r> <g> <b>` | Create a new solid-colour image. `w`/`h` are pixel dimensions; `r`/`g`/`b` are 0–255 colour components. Supports numeric expressions (e.g. `iw`, `(512/2)`) |
+| `tti <var> <font_size> <wrap_width> <color> <text...>` | Render text to a transparent-background PNG using Arial. `wrap_width=0` = auto-width (no wrapping). `color` is any ImageMagick colour name or hex (`black`, `#ff0000`, etc.). Text may contain spaces |
+| `overlay <base> <top> [x_pos] [y_pos] [opacity]` | Composite `top` onto `base`. Without `x_pos`/`y_pos` top is centred (default). With both, top is placed at that pixel offset from the top-left (`NorthWest` gravity). `opacity` is 0–1 (default `1`). Handles all type combinations (image/gif/video). Audio is mixed when both have audio tracks |
 | `join <var1> <var2> [vertical]` | Stack two variables side-by-side (`vertical=false`, default) or top-to-bottom (`vertical=true`). Inputs are auto-scaled to match height (hstack) or width (vstack). Output stored in `var1`. Audio carried from `var1` if present |
 
 #### ImageMagick Effects
