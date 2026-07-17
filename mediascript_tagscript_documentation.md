@@ -225,7 +225,7 @@ Variables are named by you with `load`. Videos are automatically extracted into 
 | `explode <var> <n>` | Outward fisheye push (`-implode -n`) |
 | `implode <var> <n>` | Inward fisheye pull (`-implode n`) |
 | `magik <var>` | Content-aware liquid rescale to 50% |
-| `demagik <var>` | Content-aware liquid rescale to 300%, then resize to 30% |
+| `demagik <var>` | Content-aware liquid rescale to 300%, then resize to 30% — repeated 2 times |
 | `hueshifthsv <var> <h> <s> <l>` | Hue/saturation/lightness via `-modulate`. Values are offsets from 0 |
 | `swaprgba <var> <pattern>` | Swap RGB channels. Pattern is 3 chars of `r`/`g`/`b`/`0` (e.g. `bgr`, `rrg`, `r00`) |
 | `rotate <var> <angle>` | Rotate by degrees (black background fill) |
