@@ -1637,7 +1637,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             "-background", "none",
             ...sizeArgs,
             "-fill", color,
-            "-define", `pango:font=Arial ${fontSize}`,
+            "-define", `pango:font=Sans ${fontSize}`,
             textSource,
             "-trim", "+repage",
             "-resize", "150%",
