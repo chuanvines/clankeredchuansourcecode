@@ -1614,7 +1614,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const fontSize = Math.max(1, Math.round(await mediascriptEvalNum(tokens[2] ?? "48", vars, dimCache)));
         const wrapWidth = Math.max(0, Math.round(await mediascriptEvalNum(tokens[3] ?? "0", vars, dimCache)));
         const color = tokens[4] ?? "white";
-        const text = tokens.slice(5).join(" ");
+        const text = tokens.slice(5).join(" ").replace(/\\n/g, "\n");
         if (!text) return `[mediascript: "tti" requires text: tti <var> <font_size> <wrap_width> <color> <text...>]`;
         const outPath = join(tmpDir, `${varName}_tti${opCounter++}.png`);
         const fontPath = join(dirname(fileURLToPath(import.meta.url)), "assets", "Arial.ttf");
