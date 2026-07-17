@@ -3715,12 +3715,5 @@
     "ownerUsername": "gucci_17__75369",
     "createdAt": "2026-07-16T19:16:52.348Z",
     "updatedAt": "2026-07-16T20:03:32.876Z"
-  },
-  "ihtx_10": {
-    "script": "{mediascript:\nload {iv} &\nsnip & 0 0.483\ncopy & 1\n{replace:#|1|{args}}\ncopy 1 2\n{replace:#|2|{args}}\ncopy 2 3\n{replace:#|3|{args}}\ncopy 3 4\n{replace:#|4|{args}}\ncopy 4 5\n{replace:#|5|{args}}\ncopy 5 6\n{replace:#|6|{args}}\ncopy 6 7\n{replace:#|7|{args}}\ncopy 7 8\n{replace:#|8|{args}}\ncopy 8 9\n{replace:#|9|{args}}\ncopy 9 10\n{replace:#|10|{args}}\ncopy 10 11\nconcatmultiple 1 2 3 4 5 6 7 8 9 10\nrender 1\n}",
-    "ownerId": "1431176242614501538",
-    "ownerUsername": "btve436",
-    "createdAt": "2026-07-16T20:15:09.047Z",
-    "updatedAt": "2026-07-16T20:15:09.047Z"
   }
 }
