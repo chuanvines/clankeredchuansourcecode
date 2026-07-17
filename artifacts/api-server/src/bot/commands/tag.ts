@@ -1797,9 +1797,19 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           const s1 = await resolveSrc(v1);
           const s2 = await resolveSrc(v2);
           const bothImages = v1.kind === "image" && v2.kind === "image";
+          // Normalise both inputs to the same dimension before stacking so that
+          // hstack/vstack don't error when the two sources have different sizes.
+          // Use v1's dimension as the reference (height for hstack, width for vstack).
+          const refDims = await mediascriptGetDims(v1);
           const stackFilter = vertical
-            ? "[0:v]scale=iw:-2,setsar=1[a];[1:v]scale=iw:-2,setsar=1[b];[a][b]vstack[v]"
-            : "[0:v]scale=-2:ih,setsar=1[a];[1:v]scale=-2:ih,setsar=1[b];[a][b]hstack[v]";
+            ? (() => {
+                const tw = refDims.w % 2 === 0 ? refDims.w : refDims.w - 1;
+                return `[0:v]scale=${tw}:-2,setsar=1[a];[1:v]scale=${tw}:-2,setsar=1[b];[a][b]vstack[v]`;
+              })()
+            : (() => {
+                const th = refDims.h % 2 === 0 ? refDims.h : refDims.h - 1;
+                return `[0:v]scale=-2:${th},setsar=1[a];[1:v]scale=-2:${th},setsar=1[b];[a][b]hstack[v]`;
+              })();
 
           if (bothImages) {
             const outExt = extname(s1.path) || ".png";
