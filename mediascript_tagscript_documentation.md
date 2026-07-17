@@ -212,6 +212,7 @@ Variables are named by you with `load`. Videos are automatically extracted into 
 | Command | Description |
 |---|---|
 | `overlay <base> <top>` | Composite `top` centered onto `base`. Handles all type combinations (image/gif/video). Audio is mixed when both have audio tracks |
+| `join <var1> <var2> [vertical]` | Stack two variables side-by-side (`vertical=false`, default) or top-to-bottom (`vertical=true`). Inputs are auto-scaled to match height (hstack) or width (vstack). Output stored in `var1`. Audio carried from `var1` if present |
 
 #### ImageMagick Effects
 *(work on image, gif, video)*
@@ -245,7 +246,7 @@ Variables are named by you with `load`. Videos are automatically extracted into 
 | `speed <var> <factor>` | Change playback speed. `>1` = faster, `<1` = slower (GIF frame delay; audio tempo via rubberband) |
 | `volume <var> <factor>` | Adjust audio volume (requires audio track) |
 | `mute <var>` | Remove audio track |
-| `audioputreplace <var> <var2>` | Replace the audio of `var` with the audio from `var2`. Extracts from srcVideo if needed. Errors if `var2` has no audio track |
+| `audioputreplace <var> <var2>` | Replace the audio of `var` with the audio from `var2`. Accepts audio, gif, or video variables as source. Extracts from srcVideo if needed. Errors if `var2` has no audio track |
 | `reverse <var>` | Reverse frames and audio |
 | `audiopitch <var> <factor>` | Pitch shift. Factor is a multiplier: `2**(-1/12)` = one semitone down |
 | `slide <var> <speed>` | Horizontal scroll. Positive = right-to-left. Speed = fraction of width per frame |

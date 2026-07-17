@@ -1765,6 +1765,77 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         continue;
       }
 
+      // ── join <var1> <var2> [vertical] ────────────────────────────────────
+      // Joins two variables side-by-side (hstack) or vertically (vstack).
+      // vertical defaults to false. Output is stored back into var1.
+      if (cmd === "join") {
+        const var1Name: string = tokens[1] ?? lastVar ?? "";
+        const var2Name: string = tokens[2] ?? "";
+        const vertical = (tokens[3] ?? "false").toLowerCase() === "true";
+        const v1 = vars[var1Name];
+        const v2 = vars[var2Name];
+        if (!v1) return `[mediascript: undefined variable "${var1Name}" — use "load <url> <var>" first]`;
+        if (!v2) return `[mediascript: undefined variable "${var2Name}" — use "load <url> <var>" first]`;
+        if (v1.kind === "audio") return `[mediascript: "join" requires image/gif/video variables, not audio]`;
+        if (v2.kind === "audio") return `[mediascript: "join" requires image/gif/video variables, not audio]`;
+        try {
+          // Resolve each var to a concrete ffmpeg-readable path.
+          const resolveSrc = async (v: MediascriptVar): Promise<{ path: string; isStill: boolean; audio?: string }> => {
+            if (v.kind === "image") return { path: v.path, isStill: true };
+            if (v.kind === "gif") {
+              if (v.srcVideo) return { path: v.srcVideo, isStill: false, audio: v.audio };
+              return { path: v.path, isStill: false, audio: v.audio };
+            }
+            if (v.kind === "video") {
+              const tmp = join(tmpDir, `join_src${opCounter++}.mp4`);
+              await mediascriptReassembleVideo(v, tmp);
+              return { path: tmp, isStill: false, audio: v.audio };
+            }
+            return { path: "", isStill: true };
+          };
+
+          const s1 = await resolveSrc(v1);
+          const s2 = await resolveSrc(v2);
+          const bothImages = v1.kind === "image" && v2.kind === "image";
+          const stackFilter = vertical
+            ? "[0:v]scale=iw:-2,setsar=1[a];[1:v]scale=iw:-2,setsar=1[b];[a][b]vstack[v]"
+            : "[0:v]scale=-2:ih,setsar=1[a];[1:v]scale=-2:ih,setsar=1[b];[a][b]hstack[v]";
+
+          if (bothImages) {
+            const outExt = extname(s1.path) || ".png";
+            const outPath = join(tmpDir, `${var1Name}_join${opCounter++}${outExt}`);
+            await execFileAsync("ffmpeg", [
+              "-y", "-i", s1.path, "-i", s2.path,
+              "-filter_complex", stackFilter,
+              "-map", "[v]", outPath,
+            ], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+            vars[var1Name] = { kind: "image", path: outPath };
+          } else {
+            const outPath = join(tmpDir, `${var1Name}_join${opCounter++}.mp4`);
+            const i1Args = s1.isStill ? ["-loop", "1", "-i", s1.path] : ["-i", s1.path];
+            const i2Args = s2.isStill ? ["-loop", "1", "-i", s2.path] : ["-stream_loop", "-1", "-i", s2.path];
+            const ffArgs: string[] = ["-y", ...i1Args, ...i2Args];
+            if (s1.audio) ffArgs.push("-i", s1.audio);
+            ffArgs.push("-filter_complex", stackFilter, "-map", "[v]");
+            if (s1.audio) ffArgs.push("-map", "2:a", "-c:a", "aac");
+            ffArgs.push(
+              "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+              "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-shortest", outPath,
+            );
+            await execFileAsync("ffmpeg", ffArgs, { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
+            const thumbPath = join(tmpDir, `${var1Name}_join_thumb${opCounter++}.png`);
+            await execFileAsync("ffmpeg", ["-y", "-i", outPath, "-frames:v", "1", thumbPath],
+              { timeout: 10_000, maxBuffer: 10 * 1024 * 1024 });
+            vars[var1Name] = { kind: "gif", path: thumbPath, originVideo: true, srcVideo: outPath, audio: s1.audio };
+          }
+          lastVar = var1Name;
+          dimCache.delete(var1Name);
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
       // ── audiopitch <var> <factor-expr> ────────────────────────────────────
       // factor is a multiplier: e.g. 2**(-1/12) = one semitone down
       if (cmd === "audiopitch") {
@@ -2056,7 +2127,13 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             newAudio = v2.audio;
           }
           if (!newAudio) return `[mediascript: "audioputreplace" source variable "${var2Name}" has no audio track]`;
-          vars[varName] = { ...v, audio: newAudio } as typeof v;
+          // Clear srcVideo so renderVar goes through the originVideo/audio path
+          // rather than reading srcVideo directly (which ignores v.audio).
+          if (v.kind === "gif") {
+            vars[varName] = { kind: "gif", path: v.path, originVideo: v.originVideo ?? true, audio: newAudio };
+          } else if (v.kind === "video") {
+            vars[varName] = { kind: "video", dir: v.dir, frameCount: v.frameCount, fps: v.fps, audio: newAudio };
+          }
           lastVar = varName;
         } catch (err) {
           return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
