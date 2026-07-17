@@ -2184,19 +2184,20 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
 
         try {
           const vscale = "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p,fps=30";
-          const venc = ["-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-movflags", "+faststart"];
+          const venc = ["-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p"];
           const aenc = ["-c:a", "aac", "-ar", "44100", "-ac", "2"];
 
-          /** True if the file has at least one audio stream. */
-          const fileHasAudio = async (p: string): Promise<boolean> => {
+          /** Probe video duration in seconds; returns 0 on failure. */
+          const probeDuration = async (p: string): Promise<number> => {
             try {
               const { stdout } = await execFileAsync(
-                "ffprobe", ["-v", "error", "-select_streams", "a",
-                  "-show_entries", "stream=index", "-of", "csv=p=0", p],
+                "ffprobe", ["-v", "error", "-show_entries", "format=duration",
+                  "-of", "default=nk=1:noprint_wrappers=1", p],
                 { timeout: 10_000 },
               );
-              return stdout.trim().length > 0;
-            } catch { return false; }
+              const d = parseFloat(stdout.trim());
+              return Number.isFinite(d) && d > 0 ? d : 0;
+            } catch { return 0; }
           };
 
           const normPaths: string[] = [];
@@ -2213,49 +2214,82 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
                 "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
                 "-t", "3",
                 "-map", "0:v", "-map", "1:a",
-                "-vf", vscale, ...venc, ...aenc, norm,
+                "-vf", vscale, ...venc, ...aenc,
+                "-movflags", "+faststart", norm,
               ], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
 
             } else if (cv.kind === "gif") {
+              // For srcVideo: use the full MP4 directly.
+              // For plain GIF: pass -ignore_loop 0 so ffmpeg reads all frames exactly once.
+              const isRawGif = !cv.srcVideo;
               const src = cv.srcVideo ?? cv.path;
-              const hasAudio = cv.audio ? true : await fileHasAudio(src);
-              if (hasAudio) {
-                const audioSrc = cv.audio ?? src;
-                await execFileAsync("ffmpeg", [
-                  "-y", "-i", src,
-                  ...(cv.audio ? ["-i", cv.audio] : []),
-                  "-map", "0:v:0",
-                  "-map", cv.audio ? "1:a:0" : "0:a:0",
-                  "-vf", vscale, ...venc,
-                  "-af", "apad=pad_dur=0.05", ...aenc, "-shortest", norm,
-                ], { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
+
+              // Probe source duration so we can use an explicit -t instead of -shortest.
+              // -shortest is unreliable when one stream is anullsrc (infinite) and the
+              // other is a container whose duration metadata may be approximate.
+              let dur = await probeDuration(src);
+              // Plain GIF: ffprobe often can't report duration; count frames via identify
+              if (dur === 0 && isRawGif) {
+                try {
+                  const { stdout: identOut } = await execFileAsync(
+                    "magick", ["identify", "-format", "%T\n", cv.path],
+                    { timeout: 20_000, maxBuffer: 1024 * 1024 },
+                  );
+                  const delays = identOut.trim().split("\n").map((s) => parseInt(s, 10)).filter(Number.isFinite);
+                  // GIF frame delays are in centiseconds
+                  dur = delays.reduce((a, b) => a + b, 0) / 100;
+                } catch { /* fallback below */ }
+              }
+              // Fallback: just use a generous cap — ffmpeg will stop when the GIF ends
+              const durArgs: string[] = dur > 0 ? ["-t", String(dur + 0.1)] : [];
+
+              const ffArgs: string[] = ["-y"];
+              if (isRawGif) ffArgs.push("-ignore_loop", "0");
+              ffArgs.push("-i", src);
+
+              // Audio: prefer the separate extracted MP3; otherwise add silence
+              if (cv.audio) {
+                ffArgs.push("-i", cv.audio,
+                  "-map", "0:v:0", "-map", "1:a:0",
+                  ...durArgs,
+                  "-vf", vscale, ...venc, ...aenc,
+                  "-movflags", "+faststart", norm,
+                );
               } else {
-                await execFileAsync("ffmpeg", [
-                  "-y", "-i", src,
+                ffArgs.push(
                   "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
                   "-map", "0:v:0", "-map", "1:a",
-                  "-vf", vscale, ...venc, ...aenc, "-shortest", norm,
-                ], { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
+                  ...durArgs,
+                  "-vf", vscale, ...venc, ...aenc,
+                  "-movflags", "+faststart", norm,
+                );
               }
+              await execFileAsync("ffmpeg", ffArgs, { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
 
             } else {
-              // video kind — reassemble frames to a temp MP4 first, then re-encode
-              // to enforce consistent resolution/fps/audio before concat.
+              // video kind — reassemble frames to a consistent MP4 (includes audio if any),
+              // then re-encode to normalize resolution/fps/audio before concat.
               const assembled = join(concatTmp, `asm${ci}.mp4`);
               await mediascriptReassembleVideo(cv, assembled);
-              const hasAudio = cv.audio ? true : await fileHasAudio(assembled);
-              if (hasAudio) {
+              const dur = await probeDuration(assembled);
+              const durArgs: string[] = dur > 0 ? ["-t", String(dur + 0.1)] : [];
+              if (cv.audio) {
+                // mediascriptReassembleVideo already muxes audio into assembled
                 await execFileAsync("ffmpeg", [
                   "-y", "-i", assembled,
                   "-map", "0:v:0", "-map", "0:a:0",
-                  "-vf", vscale, ...venc, ...aenc, "-shortest", norm,
+                  ...durArgs,
+                  "-vf", vscale, ...venc, ...aenc,
+                  "-movflags", "+faststart", norm,
                 ], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
               } else {
                 await execFileAsync("ffmpeg", [
                   "-y", "-i", assembled,
                   "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
                   "-map", "0:v:0", "-map", "1:a",
-                  "-vf", vscale, ...venc, ...aenc, "-shortest", norm,
+                  ...durArgs,
+                  "-vf", vscale, ...venc, ...aenc,
+                  "-movflags", "+faststart", norm,
                 ], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
               }
             }
@@ -2263,15 +2297,16 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             normPaths.push(norm);
           }
 
-          // Write filelist and concat (stream-copy video, re-encode audio for clean boundaries)
+          // Concat: re-encode (not stream-copy) so codec parameters, PTS origin,
+          // and level/profile are identical across all segments — avoids the
+          // "1 frame" symptom caused by inconsistent H.264 stream headers.
           const filelistPath = join(concatTmp, "filelist.txt");
           await writeFile(filelistPath, normPaths.map((p) => `file '${p}'`).join("\n"));
           const concatOut = join(concatTmp, "out.mp4");
           await execFileAsync("ffmpeg", [
             "-y", "-f", "concat", "-safe", "0", "-i", filelistPath,
-            "-c:v", "copy",
-            "-c:a", "aac", "-ar", "44100", "-ac", "2",
-            "-movflags", "+faststart",
+            ...venc, "-movflags", "+faststart",
+            ...aenc,
             concatOut,
           ], { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
 
