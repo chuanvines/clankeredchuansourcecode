@@ -245,6 +245,7 @@ Variables are named by you with `load`. Videos are automatically extracted into 
 | `speed <var> <factor>` | Change playback speed. `>1` = faster, `<1` = slower (GIF frame delay; audio tempo via rubberband) |
 | `volume <var> <factor>` | Adjust audio volume (requires audio track) |
 | `mute <var>` | Remove audio track |
+| `audioputreplace <var> <var2>` | Replace the audio of `var` with the audio from `var2`. Extracts from srcVideo if needed. Errors if `var2` has no audio track |
 | `reverse <var>` | Reverse frames and audio |
 | `audiopitch <var> <factor>` | Pitch shift. Factor is a multiplier: `2**(-1/12)` = one semitone down |
 | `slide <var> <speed>` | Horizontal scroll. Positive = right-to-left. Speed = fraction of width per frame |

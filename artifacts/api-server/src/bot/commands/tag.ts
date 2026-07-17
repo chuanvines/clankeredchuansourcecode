@@ -1995,6 +1995,51 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         continue;
       }
 
+      // ── audioputreplace <var> <var2> ──────────────────────────────────────
+      // Replaces the audio track of <var> with the audio from <var2>.
+      // Extracts audio from <var2> if needed (srcVideo or video kind).
+      if (cmd === "audioputreplace") {
+        const varName: string = (tokens[1] !== undefined && vars[tokens[1]]) ? tokens[1] : (lastVar ?? "");
+        const var2Name: string = tokens[2] ?? "";
+        const v = vars[varName];
+        const v2 = vars[var2Name];
+        if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
+        if (!v2) return `[mediascript: audioputreplace: undefined source variable "${var2Name}" — use "load <url> <var>" first]`;
+        if (v.kind === "image") return `[mediascript: "audioputreplace" target must be a video or GIF, not an image]`;
+        if (v2.kind === "image") return `[mediascript: "audioputreplace" source has no audio track]`;
+        try {
+          let newAudio: string | undefined;
+          if (v2.kind === "gif") {
+            if (v2.audio) {
+              // Already have a separate audio file — use it directly.
+              newAudio = v2.audio;
+            } else if (v2.srcVideo) {
+              // Extract audio from the backing mp4.
+              const hasAudio = await execFileAsync(
+                "ffprobe", ["-v", "error", "-select_streams", "a:0", "-show_entries", "stream=codec_type",
+                  "-of", "default=nk=1:noprint_wrappers=1", v2.srcVideo],
+                { timeout: 10_000, maxBuffer: 1024 * 1024 },
+              ).then(r => r.stdout.trim()).catch(() => "");
+              if (hasAudio === "audio") {
+                const extracted = join(tmpDir, `${var2Name}_exaudio${opCounter++}.mp3`);
+                await execFileAsync("ffmpeg", ["-y", "-i", v2.srcVideo, "-vn", "-acodec", "libmp3lame", "-q:a", "2", extracted],
+                  { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+                newAudio = extracted;
+              }
+            }
+          } else if (v2.kind === "video") {
+            // Frame-dir video — audio is already extracted into v2.audio.
+            newAudio = v2.audio;
+          }
+          if (!newAudio) return `[mediascript: "audioputreplace" source variable "${var2Name}" has no audio track]`;
+          vars[varName] = { ...v, audio: newAudio } as typeof v;
+          lastVar = varName;
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
       // ── reverse <var> ─────────────────────────────────────────────────────
       // Reverses a GIF's frames and audio (if present).
       if (cmd === "reverse") {
