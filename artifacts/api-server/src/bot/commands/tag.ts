@@ -20,14 +20,6 @@ import axios from "axios";
 
 const RUN_TS_SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "run-ts.mjs");
 
-// Fonts.conf written once per process so pango can find Arial + NotoColorEmoji from assets.
-const ASSETS_DIR = join(dirname(fileURLToPath(import.meta.url)), "assets");
-const FONTS_CONF_PATH = join(tmpdir(), "mediascript_fonts.conf");
-const _fontsConfReady: Promise<void> = writeFile(
-  FONTS_CONF_PATH,
-  `<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "fonts.dtd">\n<fontconfig>\n  <dir>${ASSETS_DIR}</dir>\n  <include ignore_missing="yes">/etc/fonts/fonts.conf</include>\n</fontconfig>\n`,
-).catch(() => { /* ignore if already written */ });
-
 import { parseEffectsString } from "../effects/parser.js";
 import { processMedia, detectMediaType } from "../effects/processor.js";
 import { toCdnUrl } from "./catboxupload.js";
@@ -1625,24 +1617,22 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const text = tokens.slice(5).join(" ").replace(/\\n/g, "\n");
         if (!text) return `[mediascript: "tti" requires text: tti <var> <font_size> <wrap_width> <color> <text...>]`;
         const outPath = join(tmpDir, `${varName}_tti${opCounter++}.png`);
-        // pango: handles unicode, emojis (via NotoColorEmoji), and \n newlines.
-        // wrapWidth>0 → wrap at that pixel width (height grows).
-        // wrapWidth=0 → auto-size; width grows, explicit \n adds lines.
-        // -trim +repage removes excess transparent space for tight text height.
-        await _fontsConfReady;
-        const sizeArgs: string[] = wrapWidth > 0 ? ["-size", `${wrapWidth}x`] : [];
-        const textSource = `pango:${text}`;
+        const fontPath = join(dirname(fileURLToPath(import.meta.url)), "assets", "Arial.ttf");
+        // wrapWidth>0: caption: wraps text at that pixel width (height grows).
+        // wrapWidth=0: label: auto-sizes canvas to fit text; width grows, \n makes new lines.
+        const useCaption = wrapWidth > 0;
+        const sizeArgs: string[] = useCaption ? ["-size", `${wrapWidth}x`] : [];
+        const textSource = useCaption ? `caption:${text}` : `label:${text}`;
         try {
           await execFileAsync("magick", [
             "-background", "none",
             ...sizeArgs,
             "-fill", color,
-            "-define", `pango:font=Sans ${fontSize}`,
+            "-font", fontPath,
+            "-pointsize", String(fontSize),
             textSource,
-            "-trim", "+repage",
-            "-resize", "150%",
             outPath,
-          ], { timeout: 15_000, maxBuffer: 20 * 1024 * 1024, env: { ...process.env, FONTCONFIG_FILE: FONTS_CONF_PATH } });
+          ], { timeout: 15_000, maxBuffer: 20 * 1024 * 1024 });
           vars[varName] = { kind: "image", path: outPath };
           lastVar = varName;
           dimCache.delete(varName);
