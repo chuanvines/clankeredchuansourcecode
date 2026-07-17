@@ -2059,6 +2059,44 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         continue;
       }
 
+      // ── spin <var> <speed> [crop] ─────────────────────────────────────────
+      if (cmd === "spin") {
+        const hasVar = tokens[1] !== undefined && vars[tokens[1]] !== undefined;
+        const varName: string = hasVar ? tokens[1]! : (lastVar ?? "");
+        const a = hasVar ? 2 : 1;
+        const v = vars[varName];
+        if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
+        if (v.kind === "image") return `[mediascript: "spin" requires a video or GIF variable, not an image]`;
+        if (v.kind !== "gif") return `[mediascript: "spin" requires a GIF variable (videos are auto-converted on load)]`;
+        const speed = isFinite(parseFloat(tokens[a] ?? "")) ? parseFloat(tokens[a]!) : 1;
+        const crop = (tokens[a + 1] ?? "true").toLowerCase() !== "false";
+        try {
+          const src = v.srcVideo ?? v.path;
+          const isVideo = !!v.srcVideo;
+          const outPath = join(tmpDir, `${varName}_spin${opCounter++}.${isVideo ? "mp4" : "gif"}`);
+          const rotateFilter = crop
+            ? `rotate=PI*t*${speed}`
+            : `rotate=PI*t*${speed}:ow='hypot(iw,ih)':oh=ow:fillcolor=black`;
+          const ffArgs = ["-y", "-i", src, "-vf", rotateFilter];
+          if (isVideo) {
+            ffArgs.push("-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart");
+            if (v.audio) ffArgs.push("-c:a", "copy");
+          }
+          ffArgs.push(outPath);
+          await execFileAsync("ffmpeg", ffArgs, { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
+          if (isVideo) {
+            vars[varName] = { kind: "gif", path: v.path, originVideo: true, srcVideo: outPath, audio: v.audio };
+          } else {
+            vars[varName] = { kind: "gif", path: outPath, originVideo: v.originVideo, audio: v.audio };
+          }
+          lastVar = varName;
+          dimCache.delete(varName);
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
       // ── distort polar|depolar <var> ────────────────────────────────────────
       if (cmd === "distort") {
         const subtype = tokens[1]?.toLowerCase() ?? "";

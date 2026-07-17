@@ -248,6 +248,7 @@ Variables are named by you with `load`. Videos are automatically extracted into 
 | `reverse <var>` | Reverse frames and audio |
 | `audiopitch <var> <factor>` | Pitch shift. Factor is a multiplier: `2**(-1/12)` = one semitone down |
 | `slide <var> <speed>` | Horizontal scroll. Positive = right-to-left. Speed = fraction of width per frame |
+| `spin <var> [speed] [crop]` | Continuous rotation via `rotate=PI*t*speed`. `speed` multiplies rotation rate (default `1` = one full rotation per 2 s). `crop` = `true` (default) keeps original canvas size; `false` expands canvas to fit the full rotated frame (no corner clipping) |
 
 ### Mediascript Example
 
