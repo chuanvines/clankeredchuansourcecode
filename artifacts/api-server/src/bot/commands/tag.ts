@@ -2206,9 +2206,22 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         await mkdir(concatTmp, { recursive: true });
 
         try {
-          const vscale = "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p,fps=30";
+          const vscale = "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p";
           const venc = ["-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-movflags", "+faststart"];
           const aenc = ["-c:a", "aac", "-ar", "44100", "-ac", "2"];
+
+          /** Probe video duration in seconds; returns undefined if unavailable. */
+          const probeDuration = async (p: string): Promise<number | undefined> => {
+            try {
+              const { stdout } = await execFileAsync(
+                "ffprobe", ["-v", "error", "-show_entries", "format=duration",
+                  "-of", "default=nk=1:noprint_wrappers=1", p],
+                { timeout: 15_000, maxBuffer: 1024 * 1024 },
+              );
+              const d = parseFloat(stdout.trim());
+              return Number.isFinite(d) && d > 0 ? d : undefined;
+            } catch { return undefined; }
+          };
 
           /** True if the file has at least one audio stream. */
           const fileHasAudio = async (p: string): Promise<boolean> => {
@@ -2222,67 +2235,72 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             } catch { return false; }
           };
 
-          const normPaths: string[] = [];
-
-          for (let ci = 0; ci < concatVarNames.length; ci++) {
-            const vn = concatVarNames[ci]!;
-            const cv = vars[vn]!;
-            const norm = join(concatTmp, `norm${ci}.mp4`);
-
+          /**
+           * Normalize one mediascript var to a self-contained MP4 with:
+           *   • H.264 video at original fps (scale enforced to even dimensions)
+           *   • AAC stereo 44 100 Hz audio (silence if no audio source)
+           * Duration is capped with -t to avoid -shortest + filtergraph frame-loss bugs.
+           */
+          const normalizeToMp4 = async (cv: MediascriptVar, norm: string, ci: number): Promise<void> => {
             if (cv.kind === "image") {
-              // Still image → 3-second video with silence
+              // Still image — 3-second clip with silence; no -shortest needed.
               await execFileAsync("ffmpeg", [
-                "-y", "-loop", "1", "-i", cv.path,
+                "-y",
+                "-loop", "1", "-i", cv.path,
                 "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
                 "-t", "3",
                 "-map", "0:v", "-map", "1:a",
-                "-vf", vscale, ...venc, ...aenc, norm,
+                "-vf", vscale, "-r", "30", ...venc, ...aenc, norm,
               ], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
-
-            } else if (cv.kind === "gif") {
-              const src = cv.srcVideo ?? cv.path;
-              const hasAudio = cv.audio ? true : await fileHasAudio(src);
-              if (hasAudio) {
-                const audioSrc = cv.audio ?? src;
-                await execFileAsync("ffmpeg", [
-                  "-y", "-i", src,
-                  ...(cv.audio ? ["-i", cv.audio] : []),
-                  "-map", "0:v:0",
-                  "-map", cv.audio ? "1:a:0" : "0:a:0",
-                  "-vf", vscale, ...venc,
-                  "-af", "apad=pad_dur=0.05", ...aenc, "-shortest", norm,
-                ], { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
-              } else {
-                await execFileAsync("ffmpeg", [
-                  "-y", "-i", src,
-                  "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
-                  "-map", "0:v:0", "-map", "1:a",
-                  "-vf", vscale, ...venc, ...aenc, "-shortest", norm,
-                ], { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
-              }
-
-            } else {
-              // video kind — reassemble frames to a temp MP4 first, then re-encode
-              // to enforce consistent resolution/fps/audio before concat.
-              const assembled = join(concatTmp, `asm${ci}.mp4`);
-              await mediascriptReassembleVideo(cv, assembled);
-              const hasAudio = cv.audio ? true : await fileHasAudio(assembled);
-              if (hasAudio) {
-                await execFileAsync("ffmpeg", [
-                  "-y", "-i", assembled,
-                  "-map", "0:v:0", "-map", "0:a:0",
-                  "-vf", vscale, ...venc, ...aenc, "-shortest", norm,
-                ], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
-              } else {
-                await execFileAsync("ffmpeg", [
-                  "-y", "-i", assembled,
-                  "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
-                  "-map", "0:v:0", "-map", "1:a",
-                  "-vf", vscale, ...venc, ...aenc, "-shortest", norm,
-                ], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
-              }
+              return;
             }
 
+            // Resolve the video source path.
+            const src = cv.kind === "gif"
+              ? (cv.srcVideo ?? cv.path)
+              : await (async () => {
+                  const assembled = join(concatTmp, `asm${ci}.mp4`);
+                  await mediascriptReassembleVideo(cv, assembled);
+                  return assembled;
+                })();
+
+            // Probe duration so we can use -t instead of -shortest.
+            // -shortest combined with fps-changing filters is known to drop frames;
+            // -t <duration> is reliable.
+            const dur = await probeDuration(src);
+            const durArgs: string[] = dur !== undefined ? ["-t", String(dur)] : [];
+
+            // Determine audio source.
+            const audioFile = cv.kind !== "image" ? cv.audio : undefined;
+            const embeddedAudio = !audioFile && await fileHasAudio(src);
+
+            const ffArgs: string[] = ["-y", "-i", src];
+            if (audioFile) ffArgs.push("-i", audioFile);
+
+            ffArgs.push("-map", "0:v:0");
+            if (audioFile) {
+              ffArgs.push("-map", "1:a:0");
+            } else if (embeddedAudio) {
+              ffArgs.push("-map", "0:a:0");
+            } else {
+              // No audio — inject silence
+              ffArgs.push("-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo", "-map", "2:a");
+            }
+
+            ffArgs.push(
+              "-vf", vscale, "-r", "30",
+              ...venc, ...aenc,
+              ...durArgs,
+              norm,
+            );
+
+            await execFileAsync("ffmpeg", ffArgs, { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
+          };
+
+          const normPaths: string[] = [];
+          for (let ci = 0; ci < concatVarNames.length; ci++) {
+            const norm = join(concatTmp, `norm${ci}.mp4`);
+            await normalizeToMp4(vars[concatVarNames[ci]!]!, norm, ci);
             normPaths.push(norm);
           }
 
