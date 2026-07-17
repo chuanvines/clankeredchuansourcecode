@@ -1291,7 +1291,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         if (v.originVideo) {
           const outPath = join(tmpDir, `render${opCounter++}.mp4`);
           const audioArgs: string[] = v.audio
-            ? ["-i", v.audio, "-af", "apad", "-c:a", "aac", "-shortest"]
+            ? ["-i", v.audio, "-af", "apad=pad_dur=0.05", "-c:a", "aac", "-shortest"]
             : [];
           await execFileAsync(
             "ffmpeg",
@@ -2252,7 +2252,8 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
                 ffArgs.push("-i", cv.audio,
                   "-map", "0:v:0", "-map", "1:a:0",
                   ...durArgs,
-                  "-vf", vscale, ...venc, ...aenc,
+                  "-vf", vscale, ...venc,
+                  "-af", "apad=pad_dur=0.05", ...aenc,
                   "-movflags", "+faststart", norm,
                 );
               } else {
