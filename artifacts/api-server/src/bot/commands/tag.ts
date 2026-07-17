@@ -1617,13 +1617,14 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const text = tokens.slice(5).join(" ");
         if (!text) return `[mediascript: "tti" requires text: tti <var> <font_size> <wrap_width> <color> <text...>]`;
         const outPath = join(tmpDir, `${varName}_tti${opCounter++}.png`);
+        const fontPath = join(dirname(fileURLToPath(import.meta.url)), "assets", "Arial.ttf");
         const sizeArgs: string[] = wrapWidth > 0 ? ["-size", `${wrapWidth}x`] : [];
         try {
           await execFileAsync("magick", [
             "-background", "none",
             ...sizeArgs,
             "-fill", color,
-            "-font", "Arial",
+            "-font", fontPath,
             "-pointsize", String(fontSize),
             `caption:${text}`,
             outPath,
