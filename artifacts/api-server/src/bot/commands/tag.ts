@@ -2386,7 +2386,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const typeKey = (tokens[a2] ?? "").toLowerCase().replace(/-/g, "_");
         const imType = DISTORT_TYPES[typeKey];
         if (!imType) return `[mediascript: unknown distort type "${tokens[a2] ?? ""}" — supported: ${Object.keys(DISTORT_TYPES).map(k => k.toUpperCase()).join(", ")}]`;
-        const distortValue = tokens.slice(a2 + 1).join(" ");
+        const distortValue = tokens.slice(a2 + 1).join(" ") || "0";
         try {
           await applyIM(distortVar, ["-distort", imType, distortValue]);
           lastVar = distortVar;
