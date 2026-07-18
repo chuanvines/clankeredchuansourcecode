@@ -2358,22 +2358,38 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         continue;
       }
 
-      // ── distort polar|depolar <var> ────────────────────────────────────────
+      // ── distort <var> <type> [value...] ──────────────────────────────────
+      // Supported types (case-insensitive): ARC, AFFINE, AFFINE_PROJECTION,
+      // BARREL, BARREL_INVERSE, BILINEAR_FORWARD, BILINEAR_REVERSE,
+      // CYLINDER_2_PLANE, DEPOLAR, PERSPECTIVE, PERSPECTIVE_PROJECTION,
+      // PLANE_2_CYLINDER, POLAR, POLYNOMIAL, RESIZE, RIGIDAFFINE,
+      // SCALE_ROTATE_TRANSLATE, SENTINEL, SHEPARDS
+      // e.g.  distort image arc 250
+      //       distort image barrel -4 1 4 -1
+      //       distort image polar
       if (cmd === "distort") {
-        const subtype = tokens[1]?.toLowerCase() ?? "";
-        const effVar2: string = tokens[2] ?? lastVar ?? "";
-        if (!vars[effVar2]) return `[mediascript: undefined variable "${effVar2}" — use "load <url> <var>" first]`;
-        let imArgs2: string[];
-        if (subtype === "polar") {
-          imArgs2 = ["-background", "black", "-virtual-pixel", "black", "-distort", "Polar", "0"];
-        } else if (subtype === "depolar") {
-          imArgs2 = ["-distort", "DePolar", "0"];
-        } else {
-          return `[mediascript: unknown distort type "${subtype}" — use "polar" or "depolar"]`;
-        }
+        const DISTORT_TYPES: Record<string, string> = {
+          arc: "Arc", affine: "Affine", affine_projection: "AffineProjection",
+          barrel: "Barrel", barrel_inverse: "BarrelInverse",
+          bilinear_forward: "BilinearForward", bilinear_reverse: "BilinearReverse",
+          cylinder_2_plane: "Cylinder2Plane", depolar: "DePolar",
+          perspective: "Perspective", perspective_projection: "PerspectiveProjection",
+          plane_2_cylinder: "Plane2Cylinder", polar: "Polar",
+          polynomial: "Polynomial", resize: "Resize", rigidaffine: "RigidAffine",
+          scale_rotate_translate: "ScaleRotateTranslate", sentinel: "Sentinel",
+          shepards: "Shepards",
+        };
+        const hasVar2 = tokens[1] !== undefined && vars[tokens[1]] !== undefined;
+        const distortVar: string = hasVar2 ? tokens[1]! : (lastVar ?? "");
+        const a2 = hasVar2 ? 2 : 1;
+        if (!vars[distortVar]) return `[mediascript: undefined variable "${distortVar}" — use "load <url> <var>" first]`;
+        const typeKey = (tokens[a2] ?? "").toLowerCase().replace(/-/g, "_");
+        const imType = DISTORT_TYPES[typeKey];
+        if (!imType) return `[mediascript: unknown distort type "${tokens[a2] ?? ""}" — supported: ${Object.keys(DISTORT_TYPES).map(k => k.toUpperCase()).join(", ")}]`;
+        const distortValue = tokens.slice(a2 + 1).join(" ");
         try {
-          await applyIM(effVar2, imArgs2);
-          lastVar = effVar2;
+          await applyIM(distortVar, ["-distort", imType, distortValue]);
+          lastVar = distortVar;
         } catch (err) {
           return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
         }
