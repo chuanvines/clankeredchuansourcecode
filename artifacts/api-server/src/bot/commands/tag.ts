@@ -2337,7 +2337,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           const outPath = join(tmpDir, `${varName}_spin${opCounter++}.${isVideo ? "mp4" : "gif"}`);
           const rotateFilter = crop
             ? `rotate=PI*t*${speed},crop=512:512,scale=512:512`
-            : `rotate=PI*t*${speed}:ow='hypot(iw,ih)':oh=ow:fillcolor=black`;
+            : `rotate=PI*t*${speed},crop=iw:ih`;
           const ffArgs = ["-y", "-i", src, "-vf", rotateFilter];
           if (isVideo) {
             ffArgs.push("-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart");
