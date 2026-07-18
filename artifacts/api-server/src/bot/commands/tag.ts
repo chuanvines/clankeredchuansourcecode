@@ -1631,6 +1631,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             "-font", fontPath,
             "-pointsize", String(fontSize),
             textSource,
+            "-trim", "+repage",
             outPath,
           ], { timeout: 15_000, maxBuffer: 20 * 1024 * 1024 });
           vars[varName] = { kind: "image", path: outPath };
@@ -1916,12 +1917,12 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               })();
 
           if (bothImages) {
-            const outExt = extname(s1.path) || ".png";
-            const outPath = join(tmpDir, `${var1Name}_join${opCounter++}${outExt}`);
-            await execFileAsync("ffmpeg", [
-              "-y", "-i", s1.path, "-i", s2.path,
-              "-filter_complex", stackFilter,
-              "-map", "[v]", outPath,
+            // Use ImageMagick for static images: +append = horizontal (v1 left, v2 right),
+            // -append = vertical (v1 top, v2 bottom). First arg is always first, unambiguous.
+            const outPath = join(tmpDir, `${var1Name}_join${opCounter++}.png`);
+            const appendFlag = vertical ? "-append" : "+append";
+            await execFileAsync("magick", [
+              s1.path, s2.path, appendFlag, outPath,
             ], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
             vars[var1Name] = { kind: "image", path: outPath };
           } else {

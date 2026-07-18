@@ -3715,5 +3715,40 @@
     "ownerUsername": "gucci_17__75369",
     "createdAt": "2026-07-16T19:16:52.348Z",
     "updatedAt": "2026-07-16T19:39:03.792Z"
+  },
+  "pneumonoultramicroscopicsilicovolcanoconiosis": {
+    "script": "{ihtx:huehsv=50,swirl=75,nbfxearthquake,pitch=10;20;30;40;50}",
+    "ownerId": "1355759019330895973",
+    "ownerUsername": "thatoneguynobodyinvited",
+    "createdAt": "2026-07-17T13:32:33.680Z",
+    "updatedAt": "2026-07-17T13:32:33.680Z"
+  },
+  "tti": {
+    "script": "{mediascript:\ntti t 100 0 white {args}\nrender t\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-07-17T19:22:57.964Z",
+    "updatedAt": "2026-07-17T19:22:57.964Z"
+  },
+  "mygm31": {
+    "script": "{ihtx:channelblend=b;g;r,hflip,mirror=90,tvsim=0.75,invlum,fisheye=0.5,pitch=10;5;-14}",
+    "ownerId": "1398694515363024986",
+    "ownerUsername": "qrs0767_56497",
+    "createdAt": "2026-07-17T19:41:50.775Z",
+    "updatedAt": "2026-07-17T19:41:50.775Z"
+  },
+  "ihtx_result": {
+    "script": "&ihtx {args}",
+    "ownerId": "1398694515363024986",
+    "ownerUsername": "qrs0767_56497",
+    "createdAt": "2026-07-17T19:48:18.476Z",
+    "updatedAt": "2026-07-17T19:48:18.476Z"
+  },
+  "gm178": {
+    "script": "this is only the visuals, say .audio put replace https://cdn.discordapp.com/attachments/1511450277662949510/1527766657823539271/snip.5227b9a5.mp4?ex=6a5bdb13&is=6a5a8993&hm=87210646b559fba2e14cfaf8b0985b11e4d8afa624e4df9810589c2bb8e7d256& to make it have the sound {ihtx:hue=180,wave=T*7;T*7;T*7;T*7;T*7;T*7;0.16}",
+    "ownerId": "1524677346529906839",
+    "ownerUsername": "mason125_",
+    "createdAt": "2026-07-17T19:55:27.181Z",
+    "updatedAt": "2026-07-17T20:00:12.188Z"
   }
 }
