@@ -1236,6 +1236,10 @@ async function mediascriptReassembleVideo(
  *   implode <n>                   → -implode <n>
  *   magik                         → -liquid-rescale 50%x50%
  *   hueshifthsv <h> <s> <l>       → -modulate <100+l>,<100+s>,<100+h*200/360>
+ *   haah                          → mirror left half rightward (left–left)
+ *   waaw                          → mirror right half leftward (right–right)
+ *   hooh                          → mirror top half downward (top–top)
+ *   woow                          → mirror bottom half upward (bottom–bottom)
  *
  * Video-specific commands (require a variable loaded from mp4/webm/mov/etc.):
  *   snip <var> <start> [end]      — trim to time range in seconds (end defaults to clip length)
@@ -2714,6 +2718,23 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           ];
           break;
         }
+        // ── mirror effects ──────────────────────────────────────────────────
+        // haah: take left half, mirror it rightward  (left–left mirror)
+        case "haah":
+          imArgs = ["-crop", "50%x100%+0+0", "+repage", "(", "+clone", "-flop", ")", "+append"];
+          break;
+        // waaw: flop first, then take left half and mirror it  (right–right mirror)
+        case "waaw":
+          imArgs = ["-flop", "-crop", "50%x100%+0+0", "+repage", "(", "+clone", "-flop", ")", "+append"];
+          break;
+        // hooh: take top half, mirror it downward  (top–top mirror)
+        case "hooh":
+          imArgs = ["-rotate", "90", "-crop", "50%x100%+0+0", "+repage", "(", "+clone", "-flop", ")", "+append", "-rotate", "-90"];
+          break;
+        // woow: flip first, then take top half and mirror it  (bottom–bottom mirror)
+        case "woow":
+          imArgs = ["-rotate", "90", "-flop", "-crop", "50%x100%+0+0", "+repage", "(", "+clone", "-flop", ")", "+append", "-rotate", "-90"];
+          break;
         default:
           return `[mediascript: unknown command "${cmd}"]`;
       }
@@ -3823,6 +3844,10 @@ export async function handleTagCommand(
       "  slide <var> <speed>           — horizontally scroll (ffmpeg scroll filter); speed = fraction of width per frame, e.g. 0.05",
       "  snip <var> <start> [end]      — trim to time range in seconds; on video input, trims the source before GIF conversion so full duration is accessible",
       "  convert <var> <format>        — convert variable to a different format: gif, mp4, png, jpg, webp",
+      "  haah <var>                    — mirror left half rightward (left–left)",
+      "  waaw <var>                    — mirror right half leftward (right–right)",
+      "  hooh <var>                    — mirror top half downward (top–top)",
+      "  woow <var>                    — mirror bottom half upward (bottom–bottom)",
       "  audioreverse <var>            — reverse audio only (video frames unchanged)",
       "  bitrate <var> <value>         — re-encode video at given bitrate e.g. 500k / 1M (requires source video)",
       "  audiobitrate <var> <value>    — re-encode audio at given bitrate e.g. 128k / 320k",
