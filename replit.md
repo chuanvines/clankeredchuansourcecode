@@ -34,15 +34,15 @@ This builds the TypeScript (via esbuild) then starts the server with auto-restar
 
 ## Required Secrets
 
-| Secret | Purpose |
-|---|---|
-| `DISCORD_TOKEN` | Discord bot token |
-| `CLIENT_ID` | Discord application client ID |
-| `GROQ_API_KEY` | AI commands |
-| `GOOGLE_API_KEY` | Google image search command |
-| `GOOGLE_CSE_ID` | Google Custom Search Engine ID |
-| `CATBOX_USER` | Catbox file uploads |
-| `CATBOX_USERHASH` | Catbox file uploads |
+| Secret | Purpose | Status |
+|---|---|---|
+| `BOT_TOKEN` | Discord bot token | ✅ Set |
+| `CLIENT_ID` | Discord application client ID (needed for slash command registration) | ⚠️ Missing |
+| `GROQ_API_KEY` | AI commands | ✅ Set |
+| `GOOGLE_API_KEY` | Google image search command | Optional |
+| `GOOGLE_CSE_ID` | Google Custom Search Engine ID | Optional |
+| `CATBOX_USER` | Catbox file uploads | Optional |
+| `CATBOX_USERHASH` | Catbox file uploads | Optional |
 
 `DATABASE_URL` is automatically provided by Replit's built-in PostgreSQL.
 
