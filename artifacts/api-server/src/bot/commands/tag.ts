@@ -1244,7 +1244,12 @@ async function mediascriptReassembleVideo(
  *   volume <var> <factor>         — adjust audio volume (2 = double, 0.5 = half)
  *   mute <var>                    — remove audio track
  *   reverse <var>                 — reverse frames and audio
+ *   audioreverse <var>            — reverse audio only (frames unchanged)
  *   audiopitch <var> <factor>     — shift audio pitch (2**(-1/12) = one semitone down); speed unchanged
+ *   bitrate <var> <value>         — re-encode video at given bitrate (e.g. "500k", "1M"); requires source video
+ *   audiobitrate <var> <value>    — re-encode audio at given bitrate (e.g. "128k", "320k")
+ *   samplerate <var> <value>      — resample audio to given sample rate in Hz (e.g. "44100", "22050")
+ *   setfps <var> <value>          — change frame rate; re-encodes srcVideo or adjusts GIF frame delays
  *   slide <var> <speed>           — horizontally scroll via ffmpeg scroll filter (fraction of width/frame, e.g. 0.05)
  *
  * GIF handling: GIFs are stored and processed as GIF files. Effects apply to
@@ -2275,6 +2280,145 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             await execFileAsync("ffmpeg", ["-y", "-i", v.audio, "-af", "areverse", newAudio], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
           }
           vars[varName] = { kind: "gif", path: outGif, originVideo: v.originVideo, audio: newAudio };
+          lastVar = varName;
+          dimCache.delete(varName);
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── audioreverse <var> ────────────────────────────────────────────────
+      // Reverses the audio track only — video frames are left unchanged.
+      if (cmd === "audioreverse") {
+        const varName: string = (tokens[1] !== undefined && vars[tokens[1]]) ? tokens[1] : (lastVar ?? "");
+        const v = vars[varName];
+        if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
+        if (v.kind === "image") return `[mediascript: "audioreverse" requires a video or GIF variable, not an image]`;
+        if (!v.audio) return `[mediascript: "audioreverse": variable "${varName}" has no audio track]`;
+        try {
+          const newAudio = join(tmpDir, `${varName}_audrev${opCounter++}.mp3`);
+          await execFileAsync("ffmpeg", ["-y", "-i", v.audio, "-af", "areverse", newAudio], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+          vars[varName] = { ...v, audio: newAudio };
+          lastVar = varName;
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── bitrate <var> <value> ─────────────────────────────────────────────
+      // Re-encodes the video stream at the given bitrate (e.g. "500k", "1M").
+      // Requires a variable backed by a source video (loaded from mp4/webm/etc.).
+      if (cmd === "bitrate") {
+        const hasVar = tokens[1] !== undefined && vars[tokens[1]] !== undefined;
+        const varName: string = hasVar ? tokens[1]! : (lastVar ?? "");
+        const a = hasVar ? 2 : 1;
+        const v = vars[varName];
+        if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
+        if (v.kind === "image") return `[mediascript: "bitrate" requires a video or GIF variable, not an image]`;
+        if (v.kind !== "gif" || !v.srcVideo) return `[mediascript: "bitrate" requires a variable loaded from a video file (must have a source video)]`;
+        const bitrateVal = tokens[a] ?? "500k";
+        try {
+          const outPath = join(tmpDir, `${varName}_bitrate${opCounter++}.mp4`);
+          const ffArgs = [
+            "-y", "-i", v.srcVideo,
+            "-c:v", "libx264", "-b:v", bitrateVal, "-maxrate", bitrateVal, "-bufsize", bitrateVal,
+            "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+          ];
+          if (v.audio) ffArgs.push("-c:a", "copy");
+          ffArgs.push(outPath);
+          await execFileAsync("ffmpeg", ffArgs, { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
+          vars[varName] = { kind: "gif", path: v.path, originVideo: true, srcVideo: outPath, audio: v.audio };
+          lastVar = varName;
+          dimCache.delete(varName);
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── audiobitrate <var> <value> ────────────────────────────────────────
+      // Re-encodes the audio track at the given bitrate (e.g. "128k", "320k").
+      if (cmd === "audiobitrate") {
+        const hasVar = tokens[1] !== undefined && vars[tokens[1]] !== undefined;
+        const varName: string = hasVar ? tokens[1]! : (lastVar ?? "");
+        const a = hasVar ? 2 : 1;
+        const v = vars[varName];
+        if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
+        if (v.kind === "image" || !v.audio) return `[mediascript: "audiobitrate": variable "${varName}" has no audio track]`;
+        const bitrateVal = tokens[a] ?? "128k";
+        try {
+          const newAudio = join(tmpDir, `${varName}_abr${opCounter++}.mp3`);
+          await execFileAsync("ffmpeg", ["-y", "-i", v.audio, "-c:a", "libmp3lame", "-b:a", bitrateVal, newAudio], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+          vars[varName] = { ...v, audio: newAudio };
+          lastVar = varName;
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── samplerate <var> <value> ──────────────────────────────────────────
+      // Resamples the audio track to the given sample rate in Hz (e.g. "44100", "22050").
+      if (cmd === "samplerate") {
+        const hasVar = tokens[1] !== undefined && vars[tokens[1]] !== undefined;
+        const varName: string = hasVar ? tokens[1]! : (lastVar ?? "");
+        const a = hasVar ? 2 : 1;
+        const v = vars[varName];
+        if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
+        if (v.kind === "image" || !v.audio) return `[mediascript: "samplerate": variable "${varName}" has no audio track]`;
+        const rateVal = tokens[a] ?? "44100";
+        const rateNum = parseInt(rateVal, 10);
+        if (!isFinite(rateNum) || rateNum <= 0) return `[mediascript: "samplerate" value must be a positive integer (Hz), got "${rateVal}"]`;
+        try {
+          const newAudio = join(tmpDir, `${varName}_sr${opCounter++}.mp3`);
+          await execFileAsync("ffmpeg", ["-y", "-i", v.audio, "-ar", String(rateNum), newAudio], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+          vars[varName] = { ...v, audio: newAudio };
+          lastVar = varName;
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
+      // ── setfps <var> <value> ──────────────────────────────────────────────
+      // Changes the frame rate of a video or GIF.
+      // For source-video-backed variables: re-encodes with the fps filter.
+      // For plain GIFs: adjusts frame delays (delay = 100/fps centiseconds).
+      if (cmd === "setfps") {
+        const hasVar = tokens[1] !== undefined && vars[tokens[1]] !== undefined;
+        const varName: string = hasVar ? tokens[1]! : (lastVar ?? "");
+        const a = hasVar ? 2 : 1;
+        const v = vars[varName];
+        if (!v) return `[mediascript: undefined variable "${varName}" — use "load <url> <var>" first]`;
+        if (v.kind === "image") return `[mediascript: "setfps" requires a video or GIF variable, not an image]`;
+        if (v.kind !== "gif") return `[mediascript: "setfps" requires a GIF variable (videos are auto-converted on load)]`;
+        const fpsExpr = tokens[a] ?? "30";
+        const fpsVal = await mediascriptEvalNum(fpsExpr, vars, dimCache);
+        if (!isFinite(fpsVal) || fpsVal <= 0) return `[mediascript: "setfps" value must be a positive number, got "${fpsExpr}"]`;
+        try {
+          if (v.srcVideo) {
+            // Source-video path: apply fps filter, re-encode to new MP4.
+            const outPath = join(tmpDir, `${varName}_setfps${opCounter++}.mp4`);
+            const ffArgs = [
+              "-y", "-i", v.srcVideo,
+              "-vf", `fps=${fpsVal}`,
+              "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+            ];
+            if (v.audio) ffArgs.push("-c:a", "copy");
+            ffArgs.push(outPath);
+            await execFileAsync("ffmpeg", ffArgs, { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
+            vars[varName] = { kind: "gif", path: v.path, originVideo: true, srcVideo: outPath, audio: v.audio };
+          } else {
+            // Plain GIF path: set frame delay to 100/fps centiseconds.
+            const newDelay = Math.max(2, Math.round(100 / fpsVal));
+            const outGif = join(tmpDir, `${varName}_setfps${opCounter++}.gif`);
+            await execFileAsync("magick", [
+              v.path, "-coalesce", "-set", "delay", String(newDelay), "-layers", "optimize", "-loop", "0", outGif,
+            ], { timeout: 120_000, maxBuffer: 200 * 1024 * 1024 });
+            vars[varName] = { kind: "gif", path: outGif, originVideo: v.originVideo, audio: v.audio };
+          }
           lastVar = varName;
           dimCache.delete(varName);
         } catch (err) {
@@ -3679,6 +3823,11 @@ export async function handleTagCommand(
       "  slide <var> <speed>           — horizontally scroll (ffmpeg scroll filter); speed = fraction of width per frame, e.g. 0.05",
       "  snip <var> <start> [end]      — trim to time range in seconds; on video input, trims the source before GIF conversion so full duration is accessible",
       "  convert <var> <format>        — convert variable to a different format: gif, mp4, png, jpg, webp",
+      "  audioreverse <var>            — reverse audio only (video frames unchanged)",
+      "  bitrate <var> <value>         — re-encode video at given bitrate e.g. 500k / 1M (requires source video)",
+      "  audiobitrate <var> <value>    — re-encode audio at given bitrate e.g. 128k / 320k",
+      "  samplerate <var> <value>      — resample audio to given Hz e.g. 44100 / 22050",
+      "  setfps <var> <value>          — change frame rate e.g. setfps i 24",
       "  e.g.  load {iv} image / snip image 5 15 / explode image 1 / render image",
       "  animated GIFs are auto-split into frame_00001.png, frame_00002.png, … — effects",
       "  apply frame by frame, and render re-encodes at the source GIF's frame rate",
