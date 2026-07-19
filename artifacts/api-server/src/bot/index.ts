@@ -21,6 +21,7 @@ import { runLastExport } from "./commands/lastexport.js";
 import { runNparison, MAX_N } from "./commands/nparison.js";
 import { execute as executeCatbox, downloadUrl, uploadToCatbox, toCdnUrl } from "./commands/catboxupload.js";
 import { handleTagCommand } from "./commands/tag.js";
+import { handleMediaEffectCommand, executeMediaEffectSlash, MEDIA_EFFECT_SLASH_NAMES } from "./commands/mediaeffects.js";
 import { handleBlockCommand, handleUnblockCommand, isBlocked, getBlockInfo } from "./commands/block.js";
 import { runAi } from "./commands/ai.js";
 import { execute as executeEffectsGif } from "./commands/effectsgif.js";
@@ -164,7 +165,16 @@ export async function startBot(): Promise<void> {
       await executeGoogleSearchImage(cmd);
     } else if (cmd.commandName === "canvas") {
       await executeCanvas(cmd);
+    } else if (MEDIA_EFFECT_SLASH_NAMES.has(cmd.commandName)) {
+      await executeMediaEffectSlash(cmd);
     }
+  });
+
+  // ── shorthand effect commands: &rotate, &explode, &join, &audio, etc. ─────
+  client.on(Events.MessageCreate, async (message: Message) => {
+    if (message.author.bot) return;
+    if (blockedMessages.has(message.id)) return;
+    await handleMediaEffectCommand(message);
   });
 
   // ── &ihtx handler (extracted so MessageUpdate can call it too) ───────────
@@ -648,6 +658,65 @@ export async function startBot(): Promise<void> {
       "/canvas [rows] [cols] [char]       - same, as slash command",
       "&addsource <src_url> [rows] [xpos] [ypos]  - overlay source on base; rows divides source width (0=native); xpos: 0=left 1=center 2=right (center blocked when rows is even); ypos: 0=top 1=middle 2=bottom",
       "&help                              - show this help",
+      "",
+      "=== Effect Shortcuts (slash commands also available) ===",
+      "All shortcuts accept: attachment, reply-to-attachment, or inline URL.",
+      "Optional flags: -s <val> (strength), -d <deg> (degrees), -vertical.",
+      "",
+      "&rotate [-d deg]                   - rotate (default 90°)",
+      "&explode [-s val]                  - explode outward (default 1)",
+      "&implode [-s val]                  - implode inward (default 0.5)",
+      "&swirl [-d deg]                    - swirl distortion (default 45°)",
+      "&hue [-d deg]                      - shift hue (default 90°)",
+      "&zoom [-s factor]                  - zoom in (default 2)",
+      "&blur [-s strength]                - gaussian blur (default 5)",
+      "&fisheye [-s strength]             - fisheye lens warp (default 1.5)",
+      "&mirror [-d angle]                 - mirror fold at angle (default 45°)",
+      "&polar                             - unroll circular image to strip",
+      "&depolar                           - wrap strip into disk",
+      "&flip                              - flip horizontally",
+      "&vflip                             - flip vertically",
+      "&invert                            - invert colours",
+      "&grayscale                         - desaturate",
+      "&sepia                             - sepia tone",
+      "&spin [-s speed]                   - continuous rotation",
+      "&orb / &deorb                      - fisheye orb effect and reverse",
+      "&sphere / &desphere                - rolling sphere effect and reverse",
+      "&nervous                           - frei0r nervous glitch",
+      "&wiggle [-s strength]              - ripple warp",
+      "&cartoon [-s triLevel]             - cartoon effect",
+      "&kek [-s sat]                      - kek meme effect",
+      "&vreverse                          - reverse video frames (and audio)",
+      "&distort <type> [value]            - any named distortion, e.g. &distort depolar 640",
+      "",
+      "=== Mediascript Mirror Effects ===",
+      "&haah                              - mirror left half rightward",
+      "&waaw                              - mirror right half leftward",
+      "&hooh                              - mirror top half downward",
+      "&woow                              - mirror bottom half upward",
+      "",
+      "=== Mediascript Reversal ===",
+      "&reverse                           - reverse video frames + audio",
+      "&audioreverse / &arev              - reverse audio only, video unchanged",
+      "",
+      "=== Mediascript Encoding ===",
+      "&bitrate <val>                     - re-encode video at bitrate, e.g. &bitrate 500k",
+      "&audiobitrate / &abitrate <val>    - re-encode audio at bitrate, e.g. &audiobitrate 128k",
+      "&samplerate / &sr <hz>             - resample audio, e.g. &samplerate 44100",
+      "&setfps / &fps <fps>               - change frame rate, e.g. &setfps 30",
+      "",
+      "=== Join ===",
+      "&join <url1> <url2> [-vertical]    - stack two media (default horizontal)",
+      "  Can also: attach file + &join <url> [-vertical]",
+      "  Or: reply to message + attach file + &join [-vertical]",
+      "",
+      "=== Audio Subcommands ===",
+      "&audio reverse                     - reverse audio (same as areverse ihtx effect)",
+      "&audio pitch <st> [st2] ...        - pitch shift semitones (e.g. &a pitch -s 5)",
+      "&audio volume <factor>             - volume multiplier (e.g. &a volume -s 1.5)",
+      "&audio vibrato [freq] [depth]      - vibrato (e.g. &a vibrato 6 0.8)",
+      "&audio acontrast [val]             - audio contrast 0–100",
+      "  &a is short for &audio. Flags: -s <val> for numeric arg.",
     ].join("\n");
 
     const txtFile = new AttachmentBuilder(Buffer.from(help, "utf-8"), { name: "ihtx_help.txt" });

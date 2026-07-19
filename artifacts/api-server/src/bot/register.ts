@@ -5,6 +5,7 @@ import { data as effectsGifCommand } from "./commands/effectsgif.js";
 import { data as statusCommand } from "./commands/status.js";
 import { data as googleSearchImageCommand } from "./commands/googlesearchimage.js";
 import { data as canvasCommand } from "./commands/canvas.js";
+import { mediaEffectSlashCommandJSON } from "./commands/mediaeffects.js";
 import { logger } from "./lib/logger.js";
 
 export async function registerCommands(): Promise<void> {
@@ -17,7 +18,11 @@ export async function registerCommands(): Promise<void> {
   }
 
   const rest = new REST().setToken(token);
-  const commands = [ihtxCommand.toJSON(), catboxCommand.toJSON(), effectsGifCommand.toJSON(), statusCommand.toJSON(), googleSearchImageCommand.toJSON(), canvasCommand.toJSON()];
+  const commands = [
+    ihtxCommand.toJSON(), catboxCommand.toJSON(), effectsGifCommand.toJSON(),
+    statusCommand.toJSON(), googleSearchImageCommand.toJSON(), canvasCommand.toJSON(),
+    ...mediaEffectSlashCommandJSON,
+  ];
 
   try {
     logger.info("Registering global slash commands");
