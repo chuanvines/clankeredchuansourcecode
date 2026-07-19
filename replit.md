@@ -37,7 +37,7 @@ This builds the TypeScript (via esbuild) then starts the server with auto-restar
 | Secret | Purpose | Status |
 |---|---|---|
 | `BOT_TOKEN` | Discord bot token | ✅ Set |
-| `CLIENT_ID` | Discord application client ID (needed for slash command registration) | ⚠️ Missing |
+| `CLIENT_ID` | Discord application client ID (needed for slash command registration) | ✅ Set |
 | `GROQ_API_KEY` | AI commands | ✅ Set |
 | `GOOGLE_API_KEY` | Google image search command | Optional |
 | `GOOGLE_CSE_ID` | Google Custom Search Engine ID | Optional |
