@@ -361,14 +361,14 @@ export async function handleMediaEffectCommand(message: Message): Promise<boolea
       const val  = nums.length > 0 ? nums.join(";") : String(subS ?? 0);
       effectStr = `pitch=${val}`; label = `pitch ${val}st`;
     } else if (sub === "volume") {
-      const val = subS ?? parseFloat(subPos[0] ?? "") || 1.5;
+      const val = subS ?? (parseFloat(subPos[0] ?? "") || 1.5);
       effectStr = `volume=${val}`; label = `volume ×${val}`;
     } else if (sub === "vibrato") {
       const freq  = subS?.toString() ?? (subPos[0] !== undefined && /^[\d.]+$/.test(subPos[0]) ? subPos[0] : "5");
       const depth = subPos[1] !== undefined && /^[\d.]+$/.test(subPos[1]) ? subPos[1] : "0.5";
       effectStr = `vibrato=${freq};${depth}`; label = `vibrato ${freq}Hz d=${depth}`;
     } else if (sub === "acontrast") {
-      const val = subS ?? parseFloat(subPos[0] ?? "") || 33;
+      const val = subS ?? (parseFloat(subPos[0] ?? "") || 33);
       effectStr = `acontrast=${val}`; label = `acontrast ${val}`;
     } else {
       await message.reply(
