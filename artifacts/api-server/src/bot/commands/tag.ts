@@ -1240,6 +1240,9 @@ async function mediascriptReassembleVideo(
  *   waaw                          → mirror right half leftward (right–right)
  *   hooh                          → mirror top half downward (top–top)
  *   woow                          → mirror bottom half upward (bottom–bottom)
+ *   rain                          → sRGB→HSV colorspace tint (rainbow shift)
+ *   derain                        → inverse colorspace shift (undo rain)
+ *   zoom <var> [factor]           → scale image by factor (default 2; 0.5 = half size)
  *
  * Video-specific commands (require a variable loaded from mp4/webm/mov/etc.):
  *   snip <var> <start> [end]      — trim to time range in seconds (end defaults to clip length)
@@ -2735,6 +2738,21 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         case "woow":
           imArgs = ["-rotate", "90", "-flop", "-crop", "50%x100%+0+0", "+repage", "(", "+clone", "-flop", ")", "+append", "-rotate", "-90"];
           break;
+        // rain: sRGB → HSV colour space shift (rainbow/rain tint)
+        case "rain":
+          imArgs = ["-colorspace", "sRGB", "-set", "colorspace", "HSV", "-colorspace", "scRGB", "-set", "colorspace", "sRGB"];
+          break;
+        // derain: inverse colour space shift
+        case "derain":
+          imArgs = ["-colorspace", "sRGB", "-set", "colorspace", "RGB", "-colorspace", "HSV", "-set", "colorspace", "RGB"];
+          break;
+        // zoom: scale image by factor (e.g. 2 = 200%, 0.5 = 50%)
+        case "zoom": {
+          const factor = parseFloat(args[0] ?? "2");
+          const pct = Math.round((Number.isFinite(factor) && factor > 0 ? factor : 2) * 100);
+          imArgs = ["-resize", `${pct}%`];
+          break;
+        }
         default:
           return `[mediascript: unknown command "${cmd}"]`;
       }
