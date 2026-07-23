@@ -2030,13 +2030,11 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
                 return `[0:v]scale=-2:${th},setsar=1[a];[1:v]scale=-2:${th},setsar=1[b];[a][b]hstack[v]`;
               })();
 
-          // For GIFs with no srcVideo, loop them so they match the longer clip.
-          const i1Args = s1.isStill
-            ? ["-loop", "1", "-i", s1.path]
-            : ["-stream_loop", "-1", "-i", s1.path];
-          const i2Args = s2.isStill
-            ? ["-loop", "1", "-i", s2.path]
-            : ["-stream_loop", "-1", "-i", s2.path];
+          // Still images need -loop 1 so they have an infinite duration (stopped
+          // by -shortest). Animated inputs (GIF / video / srcVideo) are read
+          // normally — their natural duration governs output length via -shortest.
+          const i1Args = s1.isStill ? ["-loop", "1", "-i", s1.path] : ["-i", s1.path];
+          const i2Args = s2.isStill ? ["-loop", "1", "-i", s2.path] : ["-i", s2.path];
 
           if (bothStill) {
             // Both images → single PNG frame via ffmpeg hstack/vstack
