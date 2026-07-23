@@ -62,3 +62,9 @@ externalPort = 3002
 [nix]
 channel = "stable-25_05"
 packages = ["cairo", "ffmpeg-full", "freetype", "ghostscript", "gobject-introspection", "gtk3", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "pkg-config", "qhull", "tcl", "tk", "zlib"]
+
+[userenv]
+
+[userenv.shared]
+CATBOX_USER = "d468b10921a0e6f79ba933dff"
+CLIENT_ID = "1510163168490557620"
