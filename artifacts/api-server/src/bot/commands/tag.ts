@@ -1655,10 +1655,20 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         continue;
       }
 
-      // ── overlay <base> <top> [x_pos] [y_pos] [opacity] ──────────────────
-      // Composites <top> onto <base>. Without x_pos/y_pos top is centred (old
-      // behaviour). With x_pos & y_pos (pixels from top-left) top is placed at
-      // that offset. opacity is 0–1, default 1 (fully opaque).
+      // ── overlay <base> <top> [align] [x:N] [y:N] [opacity] ──────────────────
+      // Composites <top> onto <base>.
+      //
+      // align   = center (default) | left | right | top | bottom |
+      //           topleft | topright | bottomleft | bottomright
+      // x:N     = pixel offset from the alignment anchor (e.g. x:255)
+      // y:N     = pixel offset from the alignment anchor (e.g. y:100)
+      // opacity = 0–1 float (default 1, fully opaque)
+      //
+      // Backward compat: two bare numbers after the var names are treated as
+      // old-style NorthWest x y [opacity].
+      //
+      // Works for all combinations of image / GIF / video base and top,
+      // including an animated GIF or video overlaid on an image or GIF base.
       if (cmd === "overlay") {
         const baseName: string = tokens[1] ?? lastVar ?? "";
         const topName = tokens[2] ?? "";
@@ -1667,21 +1677,65 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const top = vars[topName];
         if (!base) return `[mediascript: undefined variable "${baseName}" — use "load <url> <var>" first]`;
         if (!top) return `[mediascript: undefined variable "${topName}" — use "load <url> <var>" first]`;
+        if (base.kind === "audio") return `[mediascript: "overlay" cannot use an audio variable as base]`;
+        if (top.kind === "audio") return `[mediascript: "overlay" cannot use an audio variable as top]`;
 
-        // Optional position & opacity
-        const hasPos = tokens[3] !== undefined && tokens[4] !== undefined;
-        const xPos = hasPos ? Math.round(await mediascriptEvalNum(tokens[3]!, vars, dimCache)) : 0;
-        const yPos = hasPos ? Math.round(await mediascriptEvalNum(tokens[4]!, vars, dimCache)) : 0;
-        const opacity = tokens[5] !== undefined
-          ? Math.min(1, Math.max(0, await mediascriptEvalNum(tokens[5], vars, dimCache)))
-          : 1.0;
+        // ── Parse alignment / x:N / y:N / opacity from remaining tokens ────
+        const ALIGN_KW = new Map<string, string>([
+          ["center",      "Center"],
+          ["left",        "West"],   ["right",       "East"],
+          ["top",         "North"],  ["bottom",      "South"],
+          ["topleft",     "NorthWest"], ["topright",  "NorthEast"],
+          ["bottomleft",  "SouthWest"], ["bottomright","SouthEast"],
+          ["northwest",   "NorthWest"], ["northeast", "NorthEast"],
+          ["southwest",   "SouthWest"], ["southeast", "SouthEast"],
+          ["north",       "North"],  ["south",       "South"],
+          ["east",        "East"],   ["west",        "West"],
+        ]);
+        const isNumStr = (s: string) => /^-?\d+(\.\d+)?$/.test(s);
+        let magickGravity = "Center";
+        let xOffset: number | null = null;
+        let yOffset: number | null = null;
+        let opacity = 1.0;
+        const extraToks = tokens.slice(3);
 
-        // Build ImageMagick args to insert between [base_input] and [output].
-        // Handles opacity via alpha channel multiplication and gravity/geometry for position.
+        // Backward compat: two bare numbers → NorthWest x y [opacity]
+        if (extraToks.length >= 2 && isNumStr(extraToks[0]!) && isNumStr(extraToks[1]!)) {
+          xOffset = Math.round(await mediascriptEvalNum(extraToks[0]!, vars, dimCache));
+          yOffset = Math.round(await mediascriptEvalNum(extraToks[1]!, vars, dimCache));
+          magickGravity = "NorthWest";
+          if (extraToks[2] !== undefined && isNumStr(extraToks[2])) {
+            opacity = Math.min(1, Math.max(0, await mediascriptEvalNum(extraToks[2], vars, dimCache)));
+          }
+        } else {
+          // New syntax: alignment keyword + x:/y: named params in any order
+          const numToks: string[] = [];
+          for (const tok of extraToks) {
+            const lower = tok.toLowerCase();
+            if (ALIGN_KW.has(lower)) {
+              magickGravity = ALIGN_KW.get(lower)!;
+            } else if (lower.startsWith("x:")) {
+              xOffset = Math.round(await mediascriptEvalNum(tok.slice(2), vars, dimCache));
+            } else if (lower.startsWith("y:")) {
+              yOffset = Math.round(await mediascriptEvalNum(tok.slice(2), vars, dimCache));
+            } else if (isNumStr(tok)) {
+              numToks.push(tok);
+            }
+          }
+          // Last lone number is opacity
+          if (numToks.length > 0) {
+            opacity = Math.min(1, Math.max(0, await mediascriptEvalNum(numToks[numToks.length - 1]!, vars, dimCache)));
+          }
+        }
+
+        const xOff = xOffset ?? 0;
+        const yOff = yOffset ?? 0;
+        const hasOffset = xOffset !== null || yOffset !== null;
+
+        // ImageMagick composite args (gravity + optional pixel offset).
         const buildMagickComposite = (topPath: string): string[] => {
-          const gravArgs = hasPos
-            ? ["-gravity", "NorthWest", "-geometry", `+${xPos}+${yPos}`]
-            : ["-gravity", "Center"];
+          const gravArgs: string[] = ["-gravity", magickGravity];
+          if (hasOffset) gravArgs.push("-geometry", `+${xOff}+${yOff}`);
           if (opacity < 1.0) {
             return ["(", topPath, "-alpha", "set", "-channel", "alpha", "-evaluate", "multiply",
               opacity.toFixed(4), ")", ...gravArgs, "-composite"];
@@ -1689,9 +1743,23 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
           return [topPath, ...gravArgs, "-composite"];
         };
 
-        // Build ffmpeg overlay filter_complex string.
+        // ffmpeg overlay filter_complex: gravity anchor + pixel offset.
         const buildFFmpegOverlay = (): string => {
-          const pos = hasPos ? `x=${xPos}:y=${yPos}` : `x=(W-w)/2:y=(H-h)/2`;
+          const anchors: Record<string, [string, string]> = {
+            "Center":    ["(W-w)/2",   "(H-h)/2"],
+            "West":      ["0",         "(H-h)/2"],
+            "East":      ["W-w",       "(H-h)/2"],
+            "North":     ["(W-w)/2",   "0"],
+            "South":     ["(W-w)/2",   "H-h"],
+            "NorthWest": ["0",         "0"],
+            "NorthEast": ["W-w",       "0"],
+            "SouthWest": ["0",         "H-h"],
+            "SouthEast": ["W-w",       "H-h"],
+          };
+          const [ax, ay] = anchors[magickGravity] ?? anchors["Center"]!;
+          const fx = hasOffset ? `${ax}+${xOff}` : ax;
+          const fy = hasOffset ? `${ay}+${yOff}` : ay;
+          const pos = `x=${fx}:y=${fy}`;
           if (opacity < 1.0) {
             return `[1:v]format=rgba,colorchannelmixer=aa=${opacity.toFixed(4)}[_ovtop];[0:v][_ovtop]overlay=${pos}[v]`;
           }
@@ -1702,7 +1770,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const baseIsGif = base.kind === "gif";
         const baseIsImage = base.kind === "image";
 
-        // Mix two audio tracks; if only one exists, return it; if neither, return undefined.
+        // Mix two audio tracks; if only one exists return it; if neither, undefined.
         const overlayMixAudio = async (aAudio: string | undefined, bAudio: string | undefined): Promise<string | undefined> => {
           if (aAudio && bAudio) {
             const mixPath = join(tmpDir, `mix${opCounter++}.mp3`);
@@ -1717,17 +1785,15 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         };
 
         try {
-          // ── base=gif+srcVideo → ffmpeg overlay (single-pass, any top kind) ──────
+          // ── base=gif+srcVideo → ffmpeg overlay (single-pass, any top kind) ──
           if (base.kind === "gif" && base.srcVideo) {
             const baseSrc = base.srcVideo;
             const outPath = join(tmpDir, `overlay${opCounter++}.mp4`);
-
-            // Resolve top video/image source; loop animated tops to match base duration
             let topSrc: string;
             let topInputPrefix: string[];
             if (top.kind === "image") {
               topSrc = top.path;
-              topInputPrefix = ["-loop", "1"];          // still image loops to video length
+              topInputPrefix = ["-loop", "1"];
             } else if (top.kind === "gif" && top.srcVideo) {
               topSrc = top.srcVideo;
               topInputPrefix = ["-stream_loop", "-1"];
@@ -1737,36 +1803,31 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             } else {
               // top is video kind — reassemble frames to a temp MP4 first
               const tmpTop = join(tmpDir, `overlay_top${opCounter++}.mp4`);
-              await mediascriptReassembleVideo(top, tmpTop);
+              await mediascriptReassembleVideo(top as Extract<MediascriptVar, { kind: "video" }>, tmpTop);
               topSrc = tmpTop;
               topInputPrefix = ["-stream_loop", "-1"];
             }
-
-            const ffArgs = [
+            await execFileAsync("ffmpeg", [
               "-y",
               "-i", baseSrc,
               ...topInputPrefix, "-i", topSrc,
               "-filter_complex", buildFFmpegOverlay(),
               "-map", "[v]",
-              "-map", "0:a?",        // carry base audio through unchanged
+              "-map", "0:a?",
               "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p",
               "-c:a", "copy",
               "-movflags", "+faststart",
               "-shortest",
               outPath,
-            ];
-            await execFileAsync("ffmpeg", ffArgs, { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
-
-            const topAudio = top.kind === "gif" ? top.audio : top.audio;
+            ], { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
+            const topAudio = (top.kind === "gif" || top.kind === "video") ? top.audio : undefined;
             const newAudio = await overlayMixAudio(base.audio, topAudio);
             vars[baseName] = { kind: "gif", path: base.path, originVideo: true, srcVideo: outPath, audio: newAudio };
 
-          // ── base=video kind + animated top → per-frame with frame cycling ────────
+          // ── base=video + animated top (gif or video) → per-frame cycling ──
           } else if (base.kind === "video" && (top.kind === "gif" || top.kind === "video")) {
-            // Resolve top frames directory (1-indexed, cycling)
             let topDir: string;
             let topCount: number;
-
             if (top.kind === "video") {
               topDir = top.dir;
               topCount = top.frameCount;
@@ -1784,17 +1845,15 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               await execFileAsync("ffmpeg", ["-y", "-i", top.srcVideo, "-vf", `fps=${tFps}`, ...tLimit, "-start_number", "1", join(topDir, "frame_%05d.png")], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
               topCount = (await readdir(topDir)).filter(f => f.endsWith(".png")).length;
             } else {
-              // Plain GIF — extract all frames with ffmpeg (1-indexed)
               topDir = join(tmpDir, `overlay_top_frames${opCounter++}`);
               await mkdir(topDir, { recursive: true });
               await execFileAsync("ffmpeg", ["-y", "-i", top.path, "-start_number", "1", join(topDir, "frame_%05d.png")], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
               topCount = (await readdir(topDir)).filter(f => f.endsWith(".png")).length;
             }
-
             if (topCount > 0) {
               await mediascriptMapLimit(base.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
                 const baseFp = mediascriptFramePath(base.dir, i);
-                const topIdx = ((i - 1) % topCount) + 1;   // cycle top frames (1-indexed)
+                const topIdx = ((i - 1) % topCount) + 1;
                 const topFp = mediascriptFramePath(topDir, topIdx);
                 await execFileAsync("magick", [baseFp, ...buildMagickComposite(topFp), baseFp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
               });
@@ -1802,15 +1861,52 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             const patchedAudio = await overlayMixAudio(base.audio, top.audio);
             if (patchedAudio !== base.audio) vars[baseName] = { ...base, audio: patchedAudio };
 
-          // ── animated top over image/gif base → magick -layers composite ──────────
+          // ── base=video + static image top → per-frame with static image ───
+          } else if (base.kind === "video" && top.kind === "image") {
+            await mediascriptMapLimit(base.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
+              const fp = mediascriptFramePath(base.dir, i);
+              await execFileAsync("magick", [fp, ...buildMagickComposite(top.path), fp],
+                { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+            });
+
+          // ── image/gif base + video top → ffmpeg: loop base, overlay video ─
+          // Animates a video-kind top over a still image or plain GIF base.
+          } else if ((baseIsImage || baseIsGif) && top.kind === "video") {
+            const outPath = join(tmpDir, `overlay${opCounter++}.mp4`);
+            const tmpTop = join(tmpDir, `overlay_top${opCounter++}.mp4`);
+            await mediascriptReassembleVideo(top, tmpTop);
+            let baseFFArgs: string[];
+            if (baseIsImage) {
+              baseFFArgs = ["-loop", "1", "-i", base.path];
+            } else {
+              const baseSrc = base.srcVideo ?? base.path;
+              baseFFArgs = base.srcVideo ? ["-i", baseSrc] : ["-stream_loop", "-1", "-i", baseSrc];
+            }
+            await execFileAsync("ffmpeg", [
+              "-y", ...baseFFArgs,
+              "-i", tmpTop,
+              "-filter_complex", buildFFmpegOverlay(),
+              "-map", "[v]", "-map", "0:a?",
+              "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p",
+              "-c:a", "copy", "-movflags", "+faststart", "-shortest",
+              outPath,
+            ], { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
+            const previewGif = join(tmpDir, `overlay_preview${opCounter++}.gif`);
+            await execFileAsync("ffmpeg", ["-y", "-i", outPath, "-frames:v", "1",
+              "-vf", "scale=min(480\\,iw):-2:flags=lanczos", previewGif],
+              { timeout: 30_000, maxBuffer: 10 * 1024 * 1024 });
+            const baseAudio = baseIsGif ? base.audio : undefined;
+            vars[baseName] = { kind: "gif", path: previewGif, originVideo: true, srcVideo: outPath,
+              audio: await overlayMixAudio(baseAudio, top.audio) };
+
+          // ── animated gif top over image/gif base → magick -layers composite
           } else if (topIsGif && (baseIsImage || baseIsGif)) {
             const outPath = join(tmpDir, `out${opCounter++}.gif`);
             const baseArgs: string[] = baseIsImage
               ? ["(", base.path, ")"]
               : ["(", base.path, "-coalesce", ")"];
-            const gravArgs = hasPos
-              ? ["-gravity", "NorthWest", "-geometry", `+${xPos}+${yPos}`]
-              : ["-gravity", "Center"];
+            const gravArgs: string[] = ["-gravity", magickGravity];
+            if (hasOffset) gravArgs.push("-geometry", `+${xOff}+${yOff}`);
             const topArgs: string[] = opacity < 1.0
               ? ["(", top.path, "-coalesce", "-alpha", "set", "-channel", "alpha",
                   "-evaluate", "multiply", opacity.toFixed(4), ")"]
@@ -1827,8 +1923,9 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               originVideo: baseIsGif ? base.originVideo : false,
               audio: await overlayMixAudio(baseAudio, top.audio),
             };
+
+          // ── static top over image/gif/video base ───────────────────────────
           } else {
-            // Static top: flatten to a single image first.
             let topFlatPath: string;
             let topAudio: string | undefined;
             if (top.kind === "image") {
@@ -1838,10 +1935,10 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               await execFileAsync("magick", [`${top.path}[0]`, topFlatPath], { timeout: 30_000, maxBuffer: 50 * 1024 * 1024 });
               topAudio = top.audio;
             } else {
+              // video kind — use first frame
               topFlatPath = mediascriptFramePath(top.dir, 1);
               topAudio = top.audio;
             }
-
             if (baseIsImage) {
               const outPath = join(tmpDir, `out${opCounter++}${extname(base.path)}`);
               await execFileAsync("magick", [base.path, ...buildMagickComposite(topFlatPath), outPath],
@@ -1849,9 +1946,8 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               vars[baseName] = { kind: "image", path: outPath };
             } else if (baseIsGif) {
               const outPath = join(tmpDir, `out${opCounter++}.gif`);
-              const gravArgs = hasPos
-                ? ["-gravity", "NorthWest", "-geometry", `+${xPos}+${yPos}`]
-                : ["-gravity", "Center"];
+              const gravArgs: string[] = ["-gravity", magickGravity];
+              if (hasOffset) gravArgs.push("-geometry", `+${xOff}+${yOff}`);
               const topLayerArgs: string[] = opacity < 1.0
                 ? ["(", topFlatPath, "-alpha", "set", "-channel", "alpha",
                     "-evaluate", "multiply", opacity.toFixed(4), ")"]
@@ -1864,7 +1960,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
               vars[baseName] = { kind: "gif", path: outPath, originVideo: base.originVideo, audio: await overlayMixAudio(base.audio, topAudio) };
             } else {
-              // base is video kind, top is static image
+              // base is video kind, top is static
               await mediascriptMapLimit(base.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
                 const fp = mediascriptFramePath(base.dir, i);
                 await execFileAsync("magick", [fp, ...buildMagickComposite(topFlatPath), fp],
