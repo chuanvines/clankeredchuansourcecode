@@ -1981,6 +1981,12 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       // ── join <var1> <var2> [vertical] ────────────────────────────────────
       // Joins two variables side-by-side (hstack) or vertically (vstack).
       // vertical defaults to false. Output is stored back into var1.
+      // ── join <var1> <var2> [true] ─────────────────────────────────────────
+      // Stacks two variables side-by-side (hstack, default) or vertically
+      // (vstack when third token is "true"). Always uses ffmpeg so images,
+      // GIFs, and videos all go through the same path.
+      //   join a b        →  ffmpeg -i a -i b -filter_complex hstack
+      //   join a b true   →  ffmpeg -i a -i b -filter_complex vstack
       if (cmd === "join") {
         const var1Name: string = tokens[1] ?? lastVar ?? "";
         const var2Name: string = tokens[2] ?? "";
@@ -2009,10 +2015,10 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
 
           const s1 = await resolveSrc(v1);
           const s2 = await resolveSrc(v2);
-          const bothImages = v1.kind === "image" && v2.kind === "image";
-          // Normalise both inputs to the same dimension before stacking so that
-          // hstack/vstack don't error when the two sources have different sizes.
-          // Use v1's dimension as the reference (height for hstack, width for vstack).
+          const bothStill = s1.isStill && s2.isStill;
+
+          // Scale inputs to matching height (hstack) or width (vstack) so
+          // ffmpeg doesn't error on mismatched dimensions.
           const refDims = await mediascriptGetDims(v1);
           const stackFilter = vertical
             ? (() => {
@@ -2024,23 +2030,28 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
                 return `[0:v]scale=-2:${th},setsar=1[a];[1:v]scale=-2:${th},setsar=1[b];[a][b]hstack[v]`;
               })();
 
-          if (bothImages) {
-            // Use ImageMagick for static images: +append = horizontal (v1 left, v2 right),
-            // -append = vertical (v1 top, v2 bottom). First arg is always first, unambiguous.
+          const i1Args = s1.isStill ? ["-loop", "1", "-i", s1.path] : ["-i", s1.path];
+          const i2Args = s2.isStill ? ["-loop", "1", "-i", s2.path] : ["-stream_loop", "-1", "-i", s2.path];
+
+          if (bothStill) {
+            // Both images → single PNG frame via ffmpeg hstack/vstack
             const outPath = join(tmpDir, `${var1Name}_join${opCounter++}.png`);
-            const appendFlag = vertical ? "-append" : "+append";
-            await execFileAsync("magick", [
-              s1.path, s2.path, appendFlag, outPath,
+            await execFileAsync("ffmpeg", [
+              "-y", ...i1Args, ...i2Args,
+              "-filter_complex", stackFilter,
+              "-map", "[v]",
+              "-frames:v", "1",
+              outPath,
             ], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
             vars[var1Name] = { kind: "image", path: outPath };
           } else {
+            // At least one animated → mp4 via ffmpeg hstack/vstack
             const outPath = join(tmpDir, `${var1Name}_join${opCounter++}.mp4`);
-            const i1Args = s1.isStill ? ["-loop", "1", "-i", s1.path] : ["-i", s1.path];
-            const i2Args = s2.isStill ? ["-loop", "1", "-i", s2.path] : ["-stream_loop", "-1", "-i", s2.path];
+            const audioIdx = 2; // index of optional audio input (0-based)
             const ffArgs: string[] = ["-y", ...i1Args, ...i2Args];
             if (s1.audio) ffArgs.push("-i", s1.audio);
             ffArgs.push("-filter_complex", stackFilter, "-map", "[v]");
-            if (s1.audio) ffArgs.push("-map", "2:a", "-c:a", "aac");
+            if (s1.audio) ffArgs.push(`-map`, `${audioIdx}:a`, "-c:a", "aac");
             ffArgs.push(
               "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
               "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-shortest", outPath,
