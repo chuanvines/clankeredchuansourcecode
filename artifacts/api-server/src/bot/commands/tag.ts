@@ -1979,10 +1979,8 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
       }
 
       // ── join <var1> <var2> [vertical] ────────────────────────────────────
-      // Joins two variables side-by-side (hstack) or vertically (vstack) via ffmpeg.
-      //   join a b        →  ffmpeg -i a -i b -filter_complex hstack  (default)
-      //   join a b true   →  ffmpeg -i a -i b -filter_complex vstack
-      // Output is stored back into var1.
+      // Joins two variables side-by-side (hstack) or vertically (vstack).
+      // vertical defaults to false. Output is stored back into var1.
       if (cmd === "join") {
         const var1Name: string = tokens[1] ?? lastVar ?? "";
         const var2Name: string = tokens[2] ?? "";
@@ -1994,35 +1992,27 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         if (v1.kind === "audio") return `[mediascript: "join" requires image/gif/video variables, not audio]`;
         if (v2.kind === "audio") return `[mediascript: "join" requires image/gif/video variables, not audio]`;
         try {
-          // Resolve a var to a concrete ffmpeg-readable path.
-          // Plain GIFs (no srcVideo) are converted to MP4 so -stream_loop works reliably.
-          const resolveSrc = async (v: MediascriptVar, tag: string): Promise<{ path: string; isStill: boolean; audio?: string }> => {
+          // Resolve each var to a concrete ffmpeg-readable path.
+          const resolveSrc = async (v: MediascriptVar): Promise<{ path: string; isStill: boolean; audio?: string }> => {
             if (v.kind === "image") return { path: v.path, isStill: true };
             if (v.kind === "gif") {
               if (v.srcVideo) return { path: v.srcVideo, isStill: false, audio: v.audio };
-              // Convert plain GIF → MP4 so ffmpeg can loop it reliably
-              const mp4 = join(tmpDir, `join_gif2mp4_${tag}${opCounter++}.mp4`);
-              await execFileAsync("ffmpeg", [
-                "-y", "-i", v.path,
-                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
-                "-pix_fmt", "yuv420p", "-movflags", "+faststart", mp4,
-              ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
-              return { path: mp4, isStill: false, audio: v.audio };
+              return { path: v.path, isStill: false, audio: v.audio };
             }
             if (v.kind === "video") {
-              const tmp = join(tmpDir, `join_src_${tag}${opCounter++}.mp4`);
+              const tmp = join(tmpDir, `join_src${opCounter++}.mp4`);
               await mediascriptReassembleVideo(v, tmp);
               return { path: tmp, isStill: false, audio: v.audio };
             }
             return { path: "", isStill: true };
           };
 
-          const [s1, s2] = await Promise.all([resolveSrc(v1, "v1"), resolveSrc(v2, "v2")]);
-          const bothStill = s1.isStill && s2.isStill;
-
-          // Normalise both inputs to matching dimension before stacking.
-          // hstack needs equal heights; vstack needs equal widths.
-          // Scale to v1's dimension, keeping even pixel counts for libx264.
+          const s1 = await resolveSrc(v1);
+          const s2 = await resolveSrc(v2);
+          const bothImages = v1.kind === "image" && v2.kind === "image";
+          // Normalise both inputs to the same dimension before stacking so that
+          // hstack/vstack don't error when the two sources have different sizes.
+          // Use v1's dimension as the reference (height for hstack, width for vstack).
           const refDims = await mediascriptGetDims(v1);
           const stackFilter = vertical
             ? (() => {
@@ -2034,41 +2024,32 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
                 return `[0:v]scale=-2:${th},setsar=1[a];[1:v]scale=-2:${th},setsar=1[b];[a][b]hstack[v]`;
               })();
 
-          if (bothStill) {
-            // Both static images → output a PNG via ffmpeg
+          if (bothImages) {
+            // Use ImageMagick for static images: +append = horizontal (v1 left, v2 right),
+            // -append = vertical (v1 top, v2 bottom). First arg is always first, unambiguous.
             const outPath = join(tmpDir, `${var1Name}_join${opCounter++}.png`);
-            await execFileAsync("ffmpeg", [
-              "-y",
-              "-i", s1.path,
-              "-i", s2.path,
-              "-filter_complex", stackFilter,
-              "-map", "[v]",
-              "-frames:v", "1",
-              outPath,
+            const appendFlag = vertical ? "-append" : "+append";
+            await execFileAsync("magick", [
+              s1.path, s2.path, appendFlag, outPath,
             ], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
             vars[var1Name] = { kind: "image", path: outPath };
           } else {
-            // At least one animated → output MP4, stored as gif+srcVideo
             const outPath = join(tmpDir, `${var1Name}_join${opCounter++}.mp4`);
             const i1Args = s1.isStill ? ["-loop", "1", "-i", s1.path] : ["-i", s1.path];
             const i2Args = s2.isStill ? ["-loop", "1", "-i", s2.path] : ["-stream_loop", "-1", "-i", s2.path];
-            // Prefer v1 audio; fall back to v2 audio
-            const audioSrc = s1.audio ?? s2.audio;
             const ffArgs: string[] = ["-y", ...i1Args, ...i2Args];
-            if (audioSrc) ffArgs.push("-i", audioSrc);
+            if (s1.audio) ffArgs.push("-i", s1.audio);
             ffArgs.push("-filter_complex", stackFilter, "-map", "[v]");
-            // Audio input index is always 2 (after the two video inputs)
-            if (audioSrc) ffArgs.push("-map", "2:a", "-c:a", "aac");
+            if (s1.audio) ffArgs.push("-map", "2:a", "-c:a", "aac");
             ffArgs.push(
               "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
               "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-shortest", outPath,
             );
             await execFileAsync("ffmpeg", ffArgs, { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
-            const thumbPath = join(tmpDir, `${var1Name}_join_thumb${opCounter++}.gif`);
-            await execFileAsync("ffmpeg", ["-y", "-i", outPath, "-frames:v", "1",
-              "-vf", "scale=min(480\\,iw):-2:flags=lanczos", thumbPath],
+            const thumbPath = join(tmpDir, `${var1Name}_join_thumb${opCounter++}.png`);
+            await execFileAsync("ffmpeg", ["-y", "-i", outPath, "-frames:v", "1", thumbPath],
               { timeout: 10_000, maxBuffer: 10 * 1024 * 1024 });
-            vars[var1Name] = { kind: "gif", path: thumbPath, originVideo: true, srcVideo: outPath, audio: audioSrc };
+            vars[var1Name] = { kind: "gif", path: thumbPath, originVideo: true, srcVideo: outPath, audio: s1.audio };
           }
           lastVar = var1Name;
           dimCache.delete(var1Name);
