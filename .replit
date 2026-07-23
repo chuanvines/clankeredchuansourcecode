@@ -66,5 +66,4 @@ packages = ["cairo", "ffmpeg-full", "freetype", "ghostscript", "gobject-introspe
 [userenv]
 
 [userenv.shared]
-CATBOX_USER = "d468b10921a0e6f79ba933dff"
 CLIENT_ID = "1510163168490557620"
