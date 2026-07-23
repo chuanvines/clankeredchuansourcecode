@@ -2030,8 +2030,13 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
                 return `[0:v]scale=-2:${th},setsar=1[a];[1:v]scale=-2:${th},setsar=1[b];[a][b]hstack[v]`;
               })();
 
-          const i1Args = s1.isStill ? ["-loop", "1", "-i", s1.path] : ["-i", s1.path];
-          const i2Args = s2.isStill ? ["-loop", "1", "-i", s2.path] : ["-stream_loop", "-1", "-i", s2.path];
+          // For GIFs with no srcVideo, loop them so they match the longer clip.
+          const i1Args = s1.isStill
+            ? ["-loop", "1", "-i", s1.path]
+            : ["-stream_loop", "-1", "-i", s1.path];
+          const i2Args = s2.isStill
+            ? ["-loop", "1", "-i", s2.path]
+            : ["-stream_loop", "-1", "-i", s2.path];
 
           if (bothStill) {
             // Both images → single PNG frame via ffmpeg hstack/vstack
@@ -2045,22 +2050,43 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             ], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
             vars[var1Name] = { kind: "image", path: outPath };
           } else {
-            // At least one animated → mp4 via ffmpeg hstack/vstack
+            // At least one animated → mp4 via ffmpeg hstack/vstack.
+            // Collect audio inputs after the two video inputs (indices 2, 3…).
+            const extraAudioArgs: string[] = [];
+            let nextIdx = 2;
+            const a1Idx = s1.audio ? nextIdx++ : null;
+            if (s1.audio) extraAudioArgs.push("-i", s1.audio);
+            const a2Idx = s2.audio ? nextIdx++ : null;
+            if (s2.audio) extraAudioArgs.push("-i", s2.audio);
+
+            // Build filter_complex: video stack + optional audio mix.
+            let fullFilter = stackFilter;
+            let audioMapArg: string[] = [];
+            if (a1Idx !== null && a2Idx !== null) {
+              // Mix both audio tracks
+              fullFilter += `;[${a1Idx}:a][${a2Idx}:a]amix=inputs=2:duration=first:normalize=0[aout]`;
+              audioMapArg = ["-map", "[aout]", "-c:a", "aac"];
+            } else if (a1Idx !== null) {
+              audioMapArg = ["-map", `${a1Idx}:a`, "-c:a", "aac"];
+            } else if (a2Idx !== null) {
+              audioMapArg = ["-map", `${a2Idx}:a`, "-c:a", "aac"];
+            }
+
             const outPath = join(tmpDir, `${var1Name}_join${opCounter++}.mp4`);
-            const audioIdx = 2; // index of optional audio input (0-based)
-            const ffArgs: string[] = ["-y", ...i1Args, ...i2Args];
-            if (s1.audio) ffArgs.push("-i", s1.audio);
-            ffArgs.push("-filter_complex", stackFilter, "-map", "[v]");
-            if (s1.audio) ffArgs.push(`-map`, `${audioIdx}:a`, "-c:a", "aac");
-            ffArgs.push(
+            await execFileAsync("ffmpeg", [
+              "-y", ...i1Args, ...i2Args, ...extraAudioArgs,
+              "-filter_complex", fullFilter,
+              "-map", "[v]", ...audioMapArg,
               "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
-              "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-shortest", outPath,
-            );
-            await execFileAsync("ffmpeg", ffArgs, { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
+              "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-shortest",
+              outPath,
+            ], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
+
             const thumbPath = join(tmpDir, `${var1Name}_join_thumb${opCounter++}.png`);
             await execFileAsync("ffmpeg", ["-y", "-i", outPath, "-frames:v", "1", thumbPath],
               { timeout: 10_000, maxBuffer: 10 * 1024 * 1024 });
-            vars[var1Name] = { kind: "gif", path: thumbPath, originVideo: true, srcVideo: outPath, audio: s1.audio };
+            const mixedAudio = s1.audio ?? s2.audio;
+            vars[var1Name] = { kind: "gif", path: thumbPath, originVideo: true, srcVideo: outPath, audio: mixedAudio };
           }
           lastVar = var1Name;
           dimCache.delete(var1Name);
