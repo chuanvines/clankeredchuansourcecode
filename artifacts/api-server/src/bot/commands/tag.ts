@@ -2102,6 +2102,143 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         continue;
       }
 
+      // ── concat / concatmultiple ──────────────────────────────────────────
+      // concat <var1> <var2>
+      // concatmultiple <var1> <var2> [<var3> ...]
+      // Appends clips sequentially (temporal). Still images are shown for 1 s.
+      // Result stored in var1.
+      if (cmd === "concat" || cmd === "concatmultiple") {
+        const varNames: string[] = tokens.slice(1).filter(t => vars[t] !== undefined);
+        if (varNames.length < 2) {
+          const bad = tokens.slice(1).filter(t => !vars[t]);
+          if (bad.length) return `[mediascript: "${cmd}" — undefined variable(s): ${bad.join(", ")}]`;
+          return `[mediascript: "${cmd}" requires at least 2 variable names]`;
+        }
+        for (const vn of varNames) {
+          if (vars[vn]!.kind === "audio") return `[mediascript: "${cmd}" requires image/gif/video variables, not audio]`;
+        }
+        try {
+          const STILL_DUR = 1; // seconds a still image occupies
+          const destVar = varNames[0]!;
+          const n = varNames.length;
+
+          // Resolve each var to an ffmpeg-readable mp4 or image path
+          const resolveForConcat = async (v: MediascriptVar): Promise<{ path: string; isStill: boolean; audio?: string }> => {
+            if (v.kind === "image") return { path: v.path, isStill: true };
+            if (v.kind === "gif") {
+              if (v.srcVideo) return { path: v.srcVideo, isStill: false, audio: v.audio };
+              const tmp = join(tmpDir, `concat_src${opCounter++}.mp4`);
+              await execFileAsync("ffmpeg", [
+                "-y", "-i", v.path,
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                "-pix_fmt", "yuv420p", "-movflags", "+faststart", tmp,
+              ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
+              return { path: tmp, isStill: false, audio: v.audio };
+            }
+            if (v.kind === "video") {
+              const tmp = join(tmpDir, `concat_src${opCounter++}.mp4`);
+              await mediascriptReassembleVideo(v, tmp);
+              return { path: tmp, isStill: false, audio: v.audio };
+            }
+            return { path: "", isStill: true };
+          };
+
+          const resolved = await Promise.all(varNames.map(vn => resolveForConcat(vars[vn]!)));
+          const hasAnyAudio = resolved.some(r => r.audio);
+
+          // Probe durations (needed to synthesise silence for audio-less segments)
+          const durations: number[] = hasAnyAudio
+            ? await Promise.all(resolved.map(async r => {
+                if (r.isStill) return STILL_DUR;
+                try {
+                  const { stdout } = await execFileAsync("ffprobe", [
+                    "-v", "error", "-show_entries", "format=duration",
+                    "-of", "default=noprint_wrappers=1:nokey=1", r.path,
+                  ], { timeout: 10_000, maxBuffer: 1024 * 1024 });
+                  return parseFloat(stdout.trim()) || STILL_DUR;
+                } catch { return STILL_DUR; }
+              }))
+            : [];
+
+          // Reference dimensions from first var
+          const refDims = await mediascriptGetDims(vars[destVar]!);
+          const tw = refDims.w % 2 === 0 ? refDims.w : refDims.w - 1;
+          const th = refDims.h % 2 === 0 ? refDims.h : refDims.h - 1;
+
+          // Build ffmpeg inputs — stills need -loop 1 -t to give them a duration
+          const inputArgs: string[] = [];
+          for (const r of resolved) {
+            if (r.isStill) {
+              inputArgs.push("-loop", "1", "-t", String(STILL_DUR), "-framerate", "25", "-i", r.path);
+            } else {
+              inputArgs.push("-i", r.path);
+            }
+          }
+
+          // Extra audio inputs come after the N video inputs (indices n, n+1, …)
+          const audioInputArgs: string[] = [];
+          if (hasAnyAudio) {
+            for (const r of resolved) {
+              if (r.audio) audioInputArgs.push("-i", r.audio);
+            }
+          }
+
+          // Scale filter for each segment
+          const scaleFilters = resolved.map((_, i) =>
+            `[${i}:v]scale=${tw}:${th}:force_original_aspect_ratio=decrease,` +
+            `pad=${tw}:${th}:(ow-iw)/2:(oh-ih)/2,format=yuv420p,setsar=1,fps=25[cv${i}]`
+          );
+
+          let fullFilter: string;
+          let audioMapArg: string[] = [];
+
+          if (!hasAnyAudio) {
+            // Video-only concat
+            const vLabels = Array.from({ length: n }, (_, i) => `[cv${i}]`).join("");
+            fullFilter = [...scaleFilters, `${vLabels}concat=n=${n}:v=1:a=0[v]`].join(";");
+          } else {
+            // Per-segment audio: real track or synthesised silence
+            let extraIdx = n;
+            const aFilters: string[] = [];
+            for (let i = 0; i < n; i++) {
+              const r = resolved[i]!;
+              if (r.audio) {
+                aFilters.push(`[${extraIdx++}:a]aformat=sample_rates=44100:channel_layouts=stereo[ca${i}]`);
+              } else {
+                const dur = durations[i] ?? STILL_DUR;
+                // aevalsrc generates silent audio with a known duration
+                aFilters.push(`aevalsrc=0:d=${dur}:s=44100:c=stereo[ca${i}]`);
+              }
+            }
+            // Interleave video + audio per segment: [cv0][ca0][cv1][ca1]...
+            const concatInputs = Array.from({ length: n }, (_, i) => `[cv${i}][ca${i}]`).join("");
+            fullFilter = [...scaleFilters, ...aFilters, `${concatInputs}concat=n=${n}:v=1:a=1[v][a]`].join(";");
+            audioMapArg = ["-map", "[a]", "-c:a", "aac"];
+          }
+
+          const outPath = join(tmpDir, `${destVar}_concat${opCounter++}.mp4`);
+          await execFileAsync("ffmpeg", [
+            "-y", ...inputArgs, ...audioInputArgs,
+            "-filter_complex", fullFilter,
+            "-map", "[v]", ...audioMapArg,
+            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+            "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+            outPath,
+          ], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
+
+          const thumbPath = join(tmpDir, `${destVar}_concat_thumb${opCounter++}.png`);
+          await execFileAsync("ffmpeg", ["-y", "-i", outPath, "-frames:v", "1", thumbPath],
+            { timeout: 10_000, maxBuffer: 10 * 1024 * 1024 });
+
+          vars[destVar] = { kind: "gif", path: thumbPath, originVideo: true, srcVideo: outPath };
+          lastVar = destVar;
+          dimCache.delete(destVar);
+        } catch (err) {
+          return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
+        }
+        continue;
+      }
+
       // ── audiopitch <var> <factor-expr> ────────────────────────────────────
       // factor is a multiplier: e.g. 2**(-1/12) = one semitone down
       if (cmd === "audiopitch") {
