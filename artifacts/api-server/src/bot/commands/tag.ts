@@ -1785,190 +1785,72 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         };
 
         try {
-          // ── base=gif+srcVideo → ffmpeg overlay (single-pass, any top kind) ──
-          if (base.kind === "gif" && base.srcVideo) {
-            const baseSrc = base.srcVideo;
-            const outPath = join(tmpDir, `overlay${opCounter++}.mp4`);
-            let topSrc: string;
-            let topInputPrefix: string[];
-            if (top.kind === "image") {
-              topSrc = top.path;
-              topInputPrefix = ["-loop", "1"];
-            } else if (top.kind === "gif" && top.srcVideo) {
-              topSrc = top.srcVideo;
-              topInputPrefix = ["-stream_loop", "-1"];
-            } else if (top.kind === "gif") {
-              topSrc = top.path;
-              topInputPrefix = ["-stream_loop", "-1"];
-            } else {
-              // top is video kind — reassemble frames to a temp MP4 first
-              const tmpTop = join(tmpDir, `overlay_top${opCounter++}.mp4`);
-              await mediascriptReassembleVideo(top as Extract<MediascriptVar, { kind: "video" }>, tmpTop);
-              topSrc = tmpTop;
-              topInputPrefix = ["-stream_loop", "-1"];
+          // Resolve any MediascriptVar to an ffmpeg-readable mp4 or image path.
+          // Plain GIFs are converted to mp4 so all frames are available.
+          // Videos are reassembled from their frame directory.
+          const resolveOvSrc = async (v: MediascriptVar): Promise<{ path: string; isStill: boolean; audio?: string }> => {
+            if (v.kind === "image") return { path: v.path, isStill: true };
+            if (v.kind === "gif") {
+              if (v.srcVideo) return { path: v.srcVideo, isStill: false, audio: v.audio };
+              const tmp = join(tmpDir, `ov_src${opCounter++}.mp4`);
+              await execFileAsync("ffmpeg", [
+                "-y", "-i", v.path,
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                "-pix_fmt", "yuv420p", "-movflags", "+faststart", tmp,
+              ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
+              return { path: tmp, isStill: false, audio: v.audio };
             }
+            // video kind — reassemble frame dir to mp4
+            const tmp = join(tmpDir, `ov_src${opCounter++}.mp4`);
+            await mediascriptReassembleVideo(v as Extract<MediascriptVar, { kind: "video" }>, tmp);
+            return { path: tmp, isStill: false, audio: v.audio };
+          };
+
+          const [baseRes, topRes] = await Promise.all([resolveOvSrc(base), resolveOvSrc(top)]);
+
+          if (baseRes.isStill && topRes.isStill) {
+            // ── image + image → single magick composite ───────────────────────
+            const outPath = join(tmpDir, `out${opCounter++}${extname(base.path)}`);
+            await execFileAsync("magick", [base.path, ...buildMagickComposite(top.path), outPath],
+              { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
+            vars[baseName] = { kind: "image", path: outPath };
+          } else {
+            // ── at least one animated → single ffmpeg overlay pass ────────────
+            // Still inputs get -loop 1 (infinite); animated tops get -stream_loop -1
+            // so they loop for the duration of the base. -shortest stops at base end.
+            const baseInputArgs: string[] = baseRes.isStill
+              ? ["-loop", "1", "-i", baseRes.path]
+              : ["-i", baseRes.path];
+            const topInputArgs: string[] = topRes.isStill
+              ? ["-loop", "1", "-i", topRes.path]
+              : ["-stream_loop", "-1", "-i", topRes.path];
+
+            // Mixed audio: base audio (index 2) + top audio (index 3), both separate files.
+            const mixedAudio = await overlayMixAudio(baseRes.audio, topRes.audio);
+            const audioInputArgs: string[] = mixedAudio ? ["-i", mixedAudio] : [];
+            const audioMapArgs: string[] = mixedAudio
+              ? ["-map", "2:a", "-c:a", "aac"]
+              : [];
+
+            const outPath = join(tmpDir, `overlay${opCounter++}.mp4`);
             await execFileAsync("ffmpeg", [
               "-y",
-              "-i", baseSrc,
-              ...topInputPrefix, "-i", topSrc,
+              ...baseInputArgs,
+              ...topInputArgs,
+              ...audioInputArgs,
               "-filter_complex", buildFFmpegOverlay(),
               "-map", "[v]",
-              "-map", "0:a?",
-              "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p",
-              "-c:a", "copy",
-              "-movflags", "+faststart",
+              ...audioMapArgs,
+              "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+              "-pix_fmt", "yuv420p", "-movflags", "+faststart",
               "-shortest",
               outPath,
             ], { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
-            const topAudio = (top.kind === "gif" || top.kind === "video") ? top.audio : undefined;
-            const newAudio = await overlayMixAudio(base.audio, topAudio);
-            vars[baseName] = { kind: "gif", path: base.path, originVideo: true, srcVideo: outPath, audio: newAudio };
 
-          // ── base=video + animated top (gif or video) → per-frame cycling ──
-          } else if (base.kind === "video" && (top.kind === "gif" || top.kind === "video")) {
-            let topDir: string;
-            let topCount: number;
-            if (top.kind === "video") {
-              topDir = top.dir;
-              topCount = top.frameCount;
-            } else if (top.srcVideo) {
-              topDir = join(tmpDir, `overlay_top_frames${opCounter++}`);
-              await mkdir(topDir, { recursive: true });
-              const [{ stdout: tFpsOut }, { stdout: tNbOut }] = await Promise.all([
-                execFileAsync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=r_frame_rate", "-of", "default=nk=1:noprint_wrappers=1", top.srcVideo], { timeout: 15_000, maxBuffer: 1024 * 1024 }),
-                execFileAsync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=nb_frames", "-of", "default=nk=1:noprint_wrappers=1", top.srcVideo], { timeout: 15_000, maxBuffer: 1024 * 1024 }),
-              ]);
-              const tFpsParts = tFpsOut.trim().split("/").map(Number);
-              const tFps = (tFpsParts[0] && tFpsParts[1]) ? tFpsParts[0] / tFpsParts[1] : 30;
-              const tNb = parseInt(tNbOut.trim(), 10);
-              const tLimit = Number.isFinite(tNb) && tNb > 0 ? ["-vframes", String(tNb)] : [];
-              await execFileAsync("ffmpeg", ["-y", "-i", top.srcVideo, "-vf", `fps=${tFps}`, ...tLimit, "-start_number", "1", join(topDir, "frame_%05d.png")], { timeout: 300_000, maxBuffer: 500 * 1024 * 1024 });
-              topCount = (await readdir(topDir)).filter(f => f.endsWith(".png")).length;
-            } else {
-              topDir = join(tmpDir, `overlay_top_frames${opCounter++}`);
-              await mkdir(topDir, { recursive: true });
-              await execFileAsync("ffmpeg", ["-y", "-i", top.path, "-start_number", "1", join(topDir, "frame_%05d.png")], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
-              topCount = (await readdir(topDir)).filter(f => f.endsWith(".png")).length;
-            }
-            if (topCount > 0) {
-              await mediascriptMapLimit(base.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
-                const baseFp = mediascriptFramePath(base.dir, i);
-                const topIdx = ((i - 1) % topCount) + 1;
-                const topFp = mediascriptFramePath(topDir, topIdx);
-                await execFileAsync("magick", [baseFp, ...buildMagickComposite(topFp), baseFp], { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
-              });
-            }
-            const patchedAudio = await overlayMixAudio(base.audio, top.audio);
-            if (patchedAudio !== base.audio) vars[baseName] = { ...base, audio: patchedAudio };
-
-          // ── base=video + static image top → per-frame with static image ───
-          } else if (base.kind === "video" && top.kind === "image") {
-            await mediascriptMapLimit(base.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
-              const fp = mediascriptFramePath(base.dir, i);
-              await execFileAsync("magick", [fp, ...buildMagickComposite(top.path), fp],
-                { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
-            });
-
-          // ── image/gif base + video top → ffmpeg: loop base, overlay video ─
-          // Animates a video-kind top over a still image or plain GIF base.
-          } else if ((baseIsImage || baseIsGif) && top.kind === "video") {
-            const outPath = join(tmpDir, `overlay${opCounter++}.mp4`);
-            const tmpTop = join(tmpDir, `overlay_top${opCounter++}.mp4`);
-            await mediascriptReassembleVideo(top, tmpTop);
-            let baseFFArgs: string[];
-            if (baseIsImage) {
-              baseFFArgs = ["-loop", "1", "-i", base.path];
-            } else {
-              const baseSrc = base.srcVideo ?? base.path;
-              baseFFArgs = base.srcVideo ? ["-i", baseSrc] : ["-stream_loop", "-1", "-i", baseSrc];
-            }
-            await execFileAsync("ffmpeg", [
-              "-y", ...baseFFArgs,
-              "-i", tmpTop,
-              "-filter_complex", buildFFmpegOverlay(),
-              "-map", "[v]", "-map", "0:a?",
-              "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p",
-              "-c:a", "copy", "-movflags", "+faststart", "-shortest",
-              outPath,
-            ], { timeout: 600_000, maxBuffer: 500 * 1024 * 1024 });
-            const previewGif = join(tmpDir, `overlay_preview${opCounter++}.gif`);
-            await execFileAsync("ffmpeg", ["-y", "-i", outPath, "-frames:v", "1",
-              "-vf", "scale=min(480\\,iw):-2:flags=lanczos", previewGif],
-              { timeout: 30_000, maxBuffer: 10 * 1024 * 1024 });
-            const baseAudio = baseIsGif ? base.audio : undefined;
-            vars[baseName] = { kind: "gif", path: previewGif, originVideo: true, srcVideo: outPath,
-              audio: await overlayMixAudio(baseAudio, top.audio) };
-
-          // ── animated gif top over image/gif base → magick -layers composite
-          } else if (topIsGif && (baseIsImage || baseIsGif)) {
-            const outPath = join(tmpDir, `out${opCounter++}.gif`);
-            const baseArgs: string[] = baseIsImage
-              ? ["(", base.path, ")"]
-              : ["(", base.path, "-coalesce", ")"];
-            const gravArgs: string[] = ["-gravity", magickGravity];
-            if (hasOffset) gravArgs.push("-geometry", `+${xOff}+${yOff}`);
-            const topArgs: string[] = opacity < 1.0
-              ? ["(", top.path, "-coalesce", "-alpha", "set", "-channel", "alpha",
-                  "-evaluate", "multiply", opacity.toFixed(4), ")"]
-              : ["(", top.path, "-coalesce", ")"];
-            await execFileAsync("magick", [
-              ...baseArgs,
-              "null:", ...topArgs,
-              ...gravArgs, "-layers", "composite", "-loop", "0",
-              outPath,
-            ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
-            const baseAudio = baseIsGif ? base.audio : undefined;
-            vars[baseName] = {
-              kind: "gif", path: outPath,
-              originVideo: baseIsGif ? base.originVideo : false,
-              audio: await overlayMixAudio(baseAudio, top.audio),
-            };
-
-          // ── static top over image/gif/video base ───────────────────────────
-          } else {
-            let topFlatPath: string;
-            let topAudio: string | undefined;
-            if (top.kind === "image") {
-              topFlatPath = top.path;
-            } else if (top.kind === "gif") {
-              topFlatPath = join(tmpDir, `overlay_top${opCounter++}.png`);
-              await execFileAsync("magick", [`${top.path}[0]`, topFlatPath], { timeout: 30_000, maxBuffer: 50 * 1024 * 1024 });
-              topAudio = top.audio;
-            } else {
-              // video kind — use first frame
-              topFlatPath = mediascriptFramePath(top.dir, 1);
-              topAudio = top.audio;
-            }
-            if (baseIsImage) {
-              const outPath = join(tmpDir, `out${opCounter++}${extname(base.path)}`);
-              await execFileAsync("magick", [base.path, ...buildMagickComposite(topFlatPath), outPath],
-                { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
-              vars[baseName] = { kind: "image", path: outPath };
-            } else if (baseIsGif) {
-              const outPath = join(tmpDir, `out${opCounter++}.gif`);
-              const gravArgs: string[] = ["-gravity", magickGravity];
-              if (hasOffset) gravArgs.push("-geometry", `+${xOff}+${yOff}`);
-              const topLayerArgs: string[] = opacity < 1.0
-                ? ["(", topFlatPath, "-alpha", "set", "-channel", "alpha",
-                    "-evaluate", "multiply", opacity.toFixed(4), ")"]
-                : [topFlatPath];
-              await execFileAsync("magick", [
-                base.path, "-coalesce",
-                "null:", ...topLayerArgs,
-                ...gravArgs, "-layers", "composite",
-                outPath,
-              ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
-              vars[baseName] = { kind: "gif", path: outPath, originVideo: base.originVideo, audio: await overlayMixAudio(base.audio, topAudio) };
-            } else {
-              // base is video kind, top is static
-              await mediascriptMapLimit(base.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
-                const fp = mediascriptFramePath(base.dir, i);
-                await execFileAsync("magick", [fp, ...buildMagickComposite(topFlatPath), fp],
-                  { timeout: 60_000, maxBuffer: 100 * 1024 * 1024 });
-              });
-              const patchedAudio = await overlayMixAudio(base.audio, topAudio);
-              if (patchedAudio !== base.audio) vars[baseName] = { ...base, audio: patchedAudio };
-            }
+            const thumbPath = join(tmpDir, `overlay_thumb${opCounter++}.png`);
+            await execFileAsync("ffmpeg", ["-y", "-i", outPath, "-frames:v", "1", thumbPath],
+              { timeout: 10_000, maxBuffer: 10 * 1024 * 1024 });
+            vars[baseName] = { kind: "gif", path: thumbPath, originVideo: true, srcVideo: outPath, audio: mixedAudio };
           }
           lastVar = baseName;
           dimCache.delete(baseName);
