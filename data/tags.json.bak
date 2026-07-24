@@ -3750,5 +3750,12 @@
     "ownerUsername": "mason125_",
     "createdAt": "2026-07-17T19:55:27.181Z",
     "updatedAt": "2026-07-17T20:00:12.188Z"
+  },
+  "crying_x_mscript": {
+    "script": "{mediascript:\nload {iv} i\ncopy i ii\nwave i iw/40 iw/5\ncover i iiw iih\ncopy i i2\naudiopitch i2 0.75\noverlay i i2\n}",
+    "ownerId": "1431176242614501538",
+    "ownerUsername": "btve436",
+    "createdAt": "2026-07-17T20:04:30.451Z",
+    "updatedAt": "2026-07-17T20:04:30.451Z"
   }
 }

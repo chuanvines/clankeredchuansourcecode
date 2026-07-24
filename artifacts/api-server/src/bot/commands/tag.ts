@@ -1998,12 +1998,22 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         if (v1.kind === "audio") return `[mediascript: "join" requires image/gif/video variables, not audio]`;
         if (v2.kind === "audio") return `[mediascript: "join" requires image/gif/video variables, not audio]`;
         try {
-          // Resolve each var to a concrete ffmpeg-readable path.
+          // Resolve each var to a concrete mp4 (or image) path ffmpeg can
+          // decode reliably. Plain GIFs are pre-converted to mp4 so that
+          // hstack/vstack see all frames — ffmpeg's GIF demuxer sometimes
+          // only decodes the first frame inside a filtergraph.
           const resolveSrc = async (v: MediascriptVar): Promise<{ path: string; isStill: boolean; audio?: string }> => {
             if (v.kind === "image") return { path: v.path, isStill: true };
             if (v.kind === "gif") {
               if (v.srcVideo) return { path: v.srcVideo, isStill: false, audio: v.audio };
-              return { path: v.path, isStill: false, audio: v.audio };
+              // Pre-convert plain GIF → mp4 so all frames are available.
+              const tmp = join(tmpDir, `join_src${opCounter++}.mp4`);
+              await execFileAsync("ffmpeg", [
+                "-y", "-i", v.path,
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                "-pix_fmt", "yuv420p", "-movflags", "+faststart", tmp,
+              ], { timeout: 120_000, maxBuffer: 100 * 1024 * 1024 });
+              return { path: tmp, isStill: false, audio: v.audio };
             }
             if (v.kind === "video") {
               const tmp = join(tmpDir, `join_src${opCounter++}.mp4`);
@@ -2013,26 +2023,24 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
             return { path: "", isStill: true };
           };
 
-          const s1 = await resolveSrc(v1);
-          const s2 = await resolveSrc(v2);
+          const [s1, s2] = await Promise.all([resolveSrc(v1), resolveSrc(v2)]);
           const bothStill = s1.isStill && s2.isStill;
 
-          // Scale inputs to matching height (hstack) or width (vstack) so
-          // ffmpeg doesn't error on mismatched dimensions.
+          // Scale inputs to matching height (hstack) or width (vstack) and
+          // normalise to yuv420p so palette/color-space differences don't error.
           const refDims = await mediascriptGetDims(v1);
           const stackFilter = vertical
             ? (() => {
                 const tw = refDims.w % 2 === 0 ? refDims.w : refDims.w - 1;
-                return `[0:v]scale=${tw}:-2,setsar=1[a];[1:v]scale=${tw}:-2,setsar=1[b];[a][b]vstack[v]`;
+                return `[0:v]scale=${tw}:-2,format=yuv420p,setsar=1[a];[1:v]scale=${tw}:-2,format=yuv420p,setsar=1[b];[a][b]vstack[v]`;
               })()
             : (() => {
                 const th = refDims.h % 2 === 0 ? refDims.h : refDims.h - 1;
-                return `[0:v]scale=-2:${th},setsar=1[a];[1:v]scale=-2:${th},setsar=1[b];[a][b]hstack[v]`;
+                return `[0:v]scale=-2:${th},format=yuv420p,setsar=1[a];[1:v]scale=-2:${th},format=yuv420p,setsar=1[b];[a][b]hstack[v]`;
               })();
 
-          // Still images need -loop 1 so they have an infinite duration (stopped
-          // by -shortest). Animated inputs (GIF / video / srcVideo) are read
-          // normally — their natural duration governs output length via -shortest.
+          // Still images: -loop 1 gives them infinite duration, stopped by -shortest.
+          // Animated mp4s: plain -i, natural duration governs output length.
           const i1Args = s1.isStill ? ["-loop", "1", "-i", s1.path] : ["-i", s1.path];
           const i2Args = s2.isStill ? ["-loop", "1", "-i", s2.path] : ["-i", s2.path];
 
@@ -2108,7 +2116,19 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const cents = Math.round(1200 * Math.log2(factor));
         const newAudioPath = join(tmpDir, `${varName}_pitched${opCounter++}.mp3`);
         try {
-          await execFileAsync("ffmpeg", ["-y", "-i", v.audio, "-af", `rubberband=pitch=${factor}`, newAudioPath], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
+          // Probe original duration so we can pad rubberband's latency tail back.
+          const { stdout: durProbe } = await execFileAsync(
+            "ffprobe", ["-v", "error", "-show_entries", "format=duration",
+              "-of", "default=noprint_wrappers=1:nokey=1", v.audio],
+            { timeout: 10_000, maxBuffer: 1024 * 1024 }
+          );
+          const origDur = parseFloat(durProbe.trim());
+          // apad=whole_dur flushes rubberband's internal buffer without adding
+          // visible silence beyond the original clip length.
+          const afFilter = isFinite(origDur) && origDur > 0
+            ? `rubberband=pitch=${factor},apad=whole_dur=${origDur}`
+            : `rubberband=pitch=${factor}`;
+          await execFileAsync("ffmpeg", ["-y", "-i", v.audio, "-af", afFilter, newAudioPath], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
           vars[varName] = { ...v, audio: newAudioPath };
           lastVar = varName;
         } catch (err) {
