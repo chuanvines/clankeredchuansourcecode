@@ -1,1 +1,2 @@
 - [API Server port conflict](api-server-port-conflict.md) — Discord Bot and artifacts/api-server workflows both bind port 8080; stop the artifact one, keep Discord Bot.
+- [Mediascript smoke tests](mediascript-smoke-tests.md) — test runMediascript as an ESM bundle from the API workspace; standalone /tmp CJS harnesses break import.meta and package resolution.

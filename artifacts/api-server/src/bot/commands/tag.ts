@@ -731,7 +731,7 @@ async function joinMediaHStack(
  *
  * Syntax:
  *   load <url> <var>                    — download URL into variable (use {iv} for attached media)
- *   copy <var> <dest>                   — copy a variable to another name (no processing)
+ *   copy <var> <dest>                   — deep-copy an image, GIF, video, or audio variable
  *   join <var1> <var2> [dest]           — hstack two variables side by side
  *   <effect>[=<p>;<p>] <var> [<dest>]  — apply &ihtx effect; optional positional numeric params
  *                                         become subparams: `hueshifthsv i 180` → hueshifthsv=180
@@ -1562,20 +1562,36 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         if (!src) return `[mediascript: undefined variable "${srcName}" — use "load <url> <var>" first]`;
         try {
           if (src.kind === "image") {
-            const newPath = join(tmpDir, `${dstName}_copy${opCounter++}${extname(src.path)}`);
+            const newPath = join(tmpDir, `${dstName}_copy${opCounter++}${extname(src.path) || ".png"}`);
             await copyFile(src.path, newPath);
             vars[dstName] = { kind: "image", path: newPath };
           } else if (src.kind === "gif") {
             const newPath = join(tmpDir, `${dstName}_copy${opCounter++}.gif`);
             await copyFile(src.path, newPath);
+
             let newGifAudio: string | undefined;
             if (src.audio) {
               newGifAudio = join(tmpDir, `${dstName}_audio${opCounter++}.mp3`);
               await copyFile(src.audio, newGifAudio);
             }
-            vars[dstName] = { kind: "gif", path: newPath, originVideo: src.originVideo, audio: newGifAudio };
-          } else {
-            // video
+
+            // A GIF loaded from a video can retain the original video so render
+            // can return it without converting the GIF and losing quality/audio.
+            let newSrcVideo: string | undefined;
+            if (src.srcVideo) {
+              newSrcVideo = join(tmpDir, `${dstName}_src${opCounter++}${extname(src.srcVideo) || ".mp4"}`);
+              await copyFile(src.srcVideo, newSrcVideo);
+            }
+
+            vars[dstName] = {
+              kind: "gif",
+              path: newPath,
+              originVideo: src.originVideo,
+              srcVideo: newSrcVideo,
+              audio: newGifAudio,
+            };
+          } else if (src.kind === "video") {
+            // Videos are represented by a frame directory plus optional audio.
             const newDir = join(tmpDir, `${dstName}_frames${opCounter++}`);
             await mkdir(newDir, { recursive: true });
             await mediascriptMapLimit(src.frameCount, MEDIASCRIPT_FRAME_CONCURRENCY, async (i) => {
@@ -1587,6 +1603,12 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
               await copyFile(src.audio, newAudio);
             }
             vars[dstName] = { kind: "video", dir: newDir, frameCount: src.frameCount, fps: src.fps, audio: newAudio };
+          } else {
+            // Audio variables are not rendered by the image/video effects, but
+            // can still be copied safely for audio commands.
+            const newPath = join(tmpDir, `${dstName}_copy${opCounter++}${extname(src.path) || src.ext}`);
+            await copyFile(src.path, newPath);
+            vars[dstName] = { kind: "audio", path: newPath, ext: src.ext };
           }
           lastVar = dstName;
           dimCache.delete(dstName);
@@ -4124,7 +4146,7 @@ export async function handleTagCommand(
       "{eval:<tagscript>}        — evaluate content as tagscript and insert the result  e.g. {eval:{arg:0}}",
       "{imagescript:<code>}      — media scripting language: load + ihtx effects + multipitch + speed",
       "  load <url> <var>        — download URL into variable",
-      "  copy <var> <dest>       — copy a variable",
+      "  copy <var> <dest>       — deep-copy an image, GIF, video, or audio variable",
       "  join <var1> <var2> [dest] — hstack two variables side by side",
       "  <effect> <var> [param...] — apply &ihtx effect",
       "  pitch/audiopitch <var> <s1> [s2...]",
