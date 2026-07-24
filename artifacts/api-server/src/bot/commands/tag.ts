@@ -2690,7 +2690,7 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         if (!imType) return `[mediascript: unknown distort type "${tokens[a2] ?? ""}" — supported: ${Object.keys(DISTORT_TYPES).map(k => k.toUpperCase()).join(", ")}]`;
         const distortValue = tokens.slice(a2 + 1).join(" ") || "0";
         try {
-          await applyIM(distortVar, ["-background", "black", "-virtual-pixel", "background", "-distort", imType, distortValue]);
+          await applyIM(distortVar, ["-background", "black", "-virtual-pixel", "background", "-distort", imType, distortValue, "-background", "black", "-flatten"]);
           lastVar = distortVar;
         } catch (err) {
           return `[mediascript error on "${line}": ${mediascriptErrorDetail(err)}]`;
