@@ -34,17 +34,25 @@ This builds the TypeScript (via esbuild) then starts the server with auto-restar
 
 ## Required Secrets
 
-| Secret | Purpose | Status |
+| Variable | Purpose | Status |
 |---|---|---|
-| `BOT_TOKEN` | Discord bot token | ✅ Set |
-| `CLIENT_ID` | Discord application client ID (needed for slash command registration) | ✅ Set |
-| `GROQ_API_KEY` | AI commands | ✅ Set |
-| `GOOGLE_API_KEY` | Google image search command | Optional |
-| `GOOGLE_CSE_ID` | Google Custom Search Engine ID | Optional |
-| `CATBOX_USER` | Catbox file uploads | Optional |
-| `CATBOX_USERHASH` | Catbox file uploads | Optional |
+| `BOT_TOKEN` | Discord bot token | ✅ Secret configured |
+| `CLIENT_ID` | Discord application ID for global slash-command registration | ✅ Environment variable configured |
+| `GROQ_API_KEY` | AI commands | Optional; `&ai` is unavailable until configured |
+| `GOOGLE_API_KEY` / `GOOGLE_CSE_ID` | Google image search command | Optional |
+| `CATBOX_USER` / `CATBOX_USERHASH` | Catbox file uploads | Optional |
 
 `DATABASE_URL` is automatically provided by Replit's built-in PostgreSQL.
+
+The verified workflow is **Discord Bot**. It runs the API and bot on port 8080:
+
+```
+PORT=8080 pnpm --filter @workspace/api-server run dev
+```
+
+The server's status page is available at `/`. The imported project currently has
+pre-existing TypeScript typecheck errors in media-effect and mediascript command
+types, but its esbuild-based development workflow builds and starts successfully.
 
 ## Bot Commands
 
