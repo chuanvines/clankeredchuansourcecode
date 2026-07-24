@@ -2275,18 +2275,8 @@ export async function runMediascript(code: string): Promise<ScriptResult> {
         const cents = Math.round(1200 * Math.log2(factor));
         const newAudioPath = join(tmpDir, `${varName}_pitched${opCounter++}.mp3`);
         try {
-          // Probe original duration so we can pad rubberband's latency tail back.
-          const { stdout: durProbe } = await execFileAsync(
-            "ffprobe", ["-v", "error", "-show_entries", "format=duration",
-              "-of", "default=noprint_wrappers=1:nokey=1", v.audio],
-            { timeout: 10_000, maxBuffer: 1024 * 1024 }
-          );
-          const origDur = parseFloat(durProbe.trim());
-          // apad=whole_dur flushes rubberband's internal buffer without adding
-          // visible silence beyond the original clip length.
-          const afFilter = isFinite(origDur) && origDur > 0
-            ? `rubberband=pitch=${factor},apad=whole_dur=${origDur}`
-            : `rubberband=pitch=${factor}`;
+          // Add a short tail so rubberband's internal latency is flushed.
+          const afFilter = `rubberband=pitch=${factor},apad=pad_dur=0.05`;
           await execFileAsync("ffmpeg", ["-y", "-i", v.audio, "-af", afFilter, newAudioPath], { timeout: 60_000, maxBuffer: 50 * 1024 * 1024 });
           vars[varName] = { ...v, audio: newAudioPath };
           lastVar = varName;
